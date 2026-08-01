@@ -43,6 +43,9 @@ const installTouchReleaseGuard = () => {
     const clickedButton = getButton(event.target);
     const originalButton = lastTouchRelease.button;
     lastTouchRelease = null;
+    // Canvas/grid clicks are intentional non-button actions, such as quick
+    // assembly. Only guard a touch when at least one side is a button.
+    if (!originalButton && !clickedButton) return;
     const sameButton = originalButton && clickedButton && (originalButton === clickedButton || originalButton.contains(clickedButton) || clickedButton.contains(originalButton));
     if (event.detail !== 0 && !sameButton) { event.preventDefault(); event.stopImmediatePropagation(); }
   }, true);
@@ -57,6 +60,26 @@ const bindTap = (element, handler) => {
   });
 };
 
+// 设置项的整行都是释放触发区域，避免手机只点到文字时依赖浏览器的
+// label 默认行为而失效。直接点击复选框仍交给原生 change 事件处理。
+const bindSettingToggle = (input, handler) => {
+  if (!input) return;
+  const label = input.closest("label");
+  const emit = () => {
+    label?.setAttribute("aria-checked", String(input.checked));
+    handler?.(input.checked);
+  };
+  input.addEventListener("change", emit);
+  label?.addEventListener("click", (event) => {
+    if (event.target === input) return;
+    event.preventDefault();
+    input.checked = !input.checked;
+    emit();
+  });
+  label?.setAttribute("role", "switch");
+  label?.setAttribute("aria-checked", String(input.checked));
+};
+
 export class UI {
   constructor() {
     this.deleteZone = document.querySelector("#delete-zone");
@@ -67,7 +90,7 @@ export class UI {
     this.openBuilderButton = this.open_builder_button; this.menuBattleButton = this.menu_battle_button; this.modeBackButton = this.mode_back_button; this.endlessModeButton = this.endless_mode_button; this.levelModeButton = this.level_mode_button; this.levelBackButton = this.level_back_button; this.levelGrid = this.level_grid; this.builderSaveButton = this.builder_save_button; this.battleMenuButton = this.battle_menu_button; this.nextLevelButton = this.next_level_button; this.returnLevelSelectButton = this.return_level_select_button; this.pauseOverlay = this.pause_overlay; this.pauseContinueButton = this.pause_continue_button; this.pauseReturnButton = this.pause_return_button; this.pauseConfirm = this.pause_confirm; this.pauseCancelButton = this.pause_cancel_button; this.pauseConfirmButton = this.pause_confirm_button; this.clearButton = this.clear_loadout; this.quickAssemblyToggle = this.quick_assembly_toggle; this.builderUndoButton = this.builder_undo_button; this.loadoutCodeButton = this.loadout_code_button; this.loadoutCodeModal = this.loadout_code_modal; this.loadoutCodeClose = this.loadout_code_close; this.loadoutCodeInput = this.loadout_code_input; this.loadoutCodeMessage = this.loadout_code_message; this.loadoutCodeExport = this.loadout_code_export; this.loadoutCodeImport = this.loadout_code_import; this.attackSpeedModal = this.attack_speed_modal; this.attackSpeedClose = this.attack_speed_close; this.detailModal = this.module_detail_modal; this.detailClose = this.module_detail_close; this.detailIconCanvas = this.detail_icon_canvas; this.detailType = this.detail_type; this.detailName = this.detail_name; this.detailDescription = this.detail_description; this.detailStats = this.detail_stats; this.assemblyBoard = this.assembly_board; this.moduleLibrary = this.module_library; this.moduleLibraryScrollbar = this.module_library_scrollbar; this.moduleLibraryScrollbarThumb = this.module_library_scrollbar_thumb; this.skillPanel = this.skill_panel; this.healthValue = this.health_value; this.scoreValue = this.score_value; this.levelValue = this.level_value; this.timeValue = this.time_value; this.finalScoreValue = this.final_score_value; this.loadoutStatus = this.loadout_status; this.previewAttackSpeed = this.preview_attack_speed; this.gameOverScreen = this.game_over_screen; this.gameOverEyebrow = this.game_over_eyebrow; this.gameOverTitle = this.game_over_title; this.gameOverMessage = this.game_over_message;
     this.loadout = createLoadout(); this.history = []; this.dragState = null; this.suppressClick = false; this.instanceCounter = 1; this.selectedMode = "endless"; this.selectedLevel = 1; this.quickAssemblyEnabled = false; this.quickAssemblyModuleId = null;
     this.renderModuleLibrary(); this.renderAssembly(); this.renderLevelGrid(); this.showMenu();
-    bindTap(this.settingsButton, () => this.settingsModal.classList.remove("is-hidden")); bindTap(this.settingsClose, () => this.settingsModal.classList.add("is-hidden")); this.settingsModal.addEventListener("click", (event) => { if (event.target === this.settingsModal) this.settingsModal.classList.add("is-hidden"); }); this.damageNumberToggle.addEventListener("change", () => this.onDamageNumbersChanged?.(this.damageNumberToggle.checked)); this.vibrationToggle.addEventListener("change", () => this.onVibrationChanged?.(this.vibrationToggle.checked)); this.soundToggle.addEventListener("change", () => this.onSoundChanged?.(this.soundToggle.checked));
+    bindTap(this.settingsButton, () => this.settingsModal.classList.remove("is-hidden")); bindTap(this.settingsClose, () => this.settingsModal.classList.add("is-hidden")); this.settingsModal.addEventListener("click", (event) => { if (event.target === this.settingsModal) this.settingsModal.classList.add("is-hidden"); }); bindSettingToggle(this.damageNumberToggle, (enabled) => this.onDamageNumbersChanged?.(enabled)); bindSettingToggle(this.vibrationToggle, (enabled) => this.onVibrationChanged?.(enabled)); bindSettingToggle(this.soundToggle, (enabled) => this.onSoundChanged?.(enabled));
     this.moduleLibrary.addEventListener("pointerdown", (event) => { const source = event.target.closest("[data-drag-module]"); if (source && !this.quickAssemblyEnabled) this.beginDrag(source.dataset.dragModule, null, event); });
     this.moduleLibrary.addEventListener("click", (event) => { if (this.suppressClick) return; const source = event.target.closest("[data-drag-module]"); if (!source) return; if (this.quickAssemblyEnabled) this.selectQuickAssemblyModule(source.dataset.dragModule); else this.showModuleDetail(getModuleById(source.dataset.dragModule)); });
     this.assemblyBoard.addEventListener("pointerdown", (event) => { if (this.quickAssemblyEnabled) { this.updateQuickAssemblyPreview(event); return; } const source = event.target.closest("[data-instance-id]"); if (source) this.beginDrag(source.dataset.moduleId, source.dataset.instanceId, event); });
@@ -184,7 +207,7 @@ export class UI {
   updateLibraryScrollbar() {
     if (!this.moduleLibrary || !this.moduleLibraryScrollbar || !this.moduleLibraryScrollbarThumb) return;
     const viewport = this.moduleLibrary.clientHeight; const content = this.moduleLibrary.scrollHeight; const track = this.moduleLibraryScrollbar.clientHeight;
-    const thumbHeight = Math.max(24, Math.min(track - 4, content > 0 ? track * viewport / content : track - 4));
+    const thumbHeight = Math.max(52, Math.min(track - 4, content > 0 ? track * viewport / content : track - 4));
     const scrollRange = Math.max(0, content - viewport); const travel = Math.max(0, track - thumbHeight - 4); const progress = scrollRange ? this.moduleLibrary.scrollTop / scrollRange : 0;
     this.moduleLibraryScrollbarThumb.style.height = `${thumbHeight}px`; this.moduleLibraryScrollbarThumb.style.transform = `translateY(${progress * travel}px)`;
   }
@@ -214,6 +237,19 @@ export class UI {
   placeModule(module, x, y, instanceId = null) { if (!module) return false; const candidate = this.buildCandidate(module, x, y, instanceId); if (!validateGeometry(candidate, { requireConnected: false }).valid) return false; if (countSkillModules(candidate) > MAX_SKILL_MODULES) { this.setStatus(`主动技能模块最多装配 ${MAX_SKILL_MODULES} 个`); return false; } if (!instanceId && module.maxCount && this.loadout.modules.filter(({ module: current }) => current?.id === module.id).length >= module.maxCount) return false; this.pushHistory(); const repaired = pruneDisconnected(candidate); this.loadout = repaired.loadout; this.renderAssembly(); return repaired.loadout.modules.some((entry) => entry.instanceId === candidate.modules[candidate.modules.length - 1]?.instanceId); }
   updatePreview() { const stats = calculateFinalStats(PLAYER_BASE_STATS, getInstalledModules(this.loadout)); this.previewAttackSpeed.textContent = `${Math.round(stats.attackSpeed * 100)}%`; }
   updateHud({ hp, maxHp, score, elapsed, level = null, goal = null, boss = false }) { this.healthValue.textContent = `${hp} / ${maxHp}`; this.scoreValue.textContent = scoreText(score); this.timeValue.textContent = timeText(elapsed); if (this.levelValue) this.levelValue.textContent = level ? `${level}${boss ? " BOSS" : ` / ${goal ?? "-"}`}` : "ENDLESS"; }
-  updateSkills(skills = []) { this.skillPanel.innerHTML = skills.map((skill, index) => { const cooldown = Math.max(0, skill.cooldownRemaining ?? 0); const cooling = cooldown > 0; return `<button class="skill-button ${cooling ? "is-cooling" : ""}" type="button" data-skill-index="${index}" ${cooling ? "disabled" : ""}><b>${index + 1}</b><span>${escapeHtml(skill.name)}</span><small>${cooling ? `${cooldown.toFixed(1)}s` : "\u5c31\u7eea"}</small></button>`; }).join(""); }
+  updateSkills(skills = []) {
+    if (this.skillPanel.children.length !== skills.length) {
+      this.skillPanel.innerHTML = skills.map((skill, index) => `<button class="skill-button" type="button" data-skill-index="${index}"><b>${index + 1}</b><span>${escapeHtml(skill.name)}</span><small></small></button>`).join("");
+    }
+    skills.forEach((skill, index) => {
+      const button = this.skillPanel.querySelector(`[data-skill-index="${index}"]`);
+      if (!button) return;
+      const cooldown = Math.max(0, skill.cooldownRemaining ?? 0);
+      const cooling = cooldown > 0;
+      button.classList.toggle("is-cooling", cooling);
+      button.disabled = cooling;
+      button.querySelector("small").textContent = cooling ? `${cooldown.toFixed(1)}s` : "\u5c31\u7eea";
+    });
+  }
   showGameOver({ score, elapsed, victory = false, level = null, mode = "endless" }) { this.battleScreen.classList.remove("is-hidden"); this.gameOverScreen.classList.remove("is-hidden"); this.finalScoreValue.textContent = scoreText(score); this.timeValue.textContent = timeText(elapsed); this.gameOverEyebrow.textContent = victory ? "MISSION CLEAR" : "SIGNAL LOST"; this.gameOverTitle.textContent = victory ? "关卡完成" : "任务结束"; this.gameOverMessage.textContent = victory ? `第 ${level} 关已完成，准备迎接下一场战斗。` : "你的战机已失去战斗能力。"; this.nextLevelButton.classList.toggle("is-hidden", !victory || !level || level >= 25); this.gameOverReturnTarget = mode === "endless" ? "mode" : "level"; this.returnLevelSelectButton.textContent = this.gameOverReturnTarget === "mode" ? "返回模式选择" : "返回选关"; }
 }

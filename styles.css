@@ -185,10 +185,10 @@ select:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(100,231,255
 }
 
 /* V-04 game flow: menu, builder and battle are separate full-screen states. */
-html, body { width: 100%; height: 100%; overflow: hidden; }
+html, body { width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; }
 body { background: #050a14; }
 .app-shell { position: relative; width: 100%; height: 100%; min-height: 100dvh; padding: 0; overflow: hidden; }
-.game-screen { position: absolute; inset: 0; min-height: 100dvh; overflow: hidden; }
+.game-screen { position: absolute; inset: 0; min-height: 100dvh; overflow: hidden; overscroll-behavior: none; }
 .game-screen.is-hidden { display: none !important; }
 
 /* Mode and mission selection stay inside the portrait game viewport. */
@@ -240,7 +240,7 @@ body { background: #050a14; }
 .settings-toggle input { width: 17px; height: 17px; accent-color: var(--cyan); }
 .round-button { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 1px solid rgba(100,231,255,.34); border-radius: 50%; color: var(--cyan); background: rgba(5,21,39,.75); font-size: 1.1rem; }
 .round-button:hover { border-color: var(--cyan); box-shadow: 0 0 16px rgba(100,231,255,.25); }
-.builder-screen { background: radial-gradient(circle at 50% 35%, rgba(20,70,103,.34), transparent 34%), #050b17; overflow: auto; }
+.builder-screen { background: radial-gradient(circle at 50% 35%, rgba(20,70,103,.34), transparent 34%), #050b17; overflow: hidden; overscroll-behavior: none; touch-action: pan-x pan-y; }
 .builder-topbar { display: flex; align-items: center; gap: 14px; width: min(1040px, calc(100% - 24px)); margin: 0 auto; padding: 15px 0 9px; }
 .builder-topbar > div { flex: 1; }
 .builder-topbar h2 { margin: 4px 0 0; font-size: 1.35rem; letter-spacing: .14em; }
@@ -353,12 +353,13 @@ body { background: #02050c; }
 .detail-stats strong { color: var(--text); font-weight: 600; text-align: right; }
 
 /* The palette is the only scrollable region: four modules per row, vertical overflow only. */
-.builder-content { overflow: hidden; gap: 8px; }
+.builder-content { overflow: hidden; gap: 8px; min-height: 0; }
 .builder-board-area .assembly-board { width: min(100%, 260px); }
-.module-palette { max-height: 205px; overflow: hidden; }
-.module-library { display: block; max-height: 145px; overflow-x: hidden; overflow-y: auto; padding: 2px 3px 6px; }
-.module-library-scrollbar { position: absolute; top: 58px; right: 5px; bottom: 30px; z-index: 3; display: block; width: 9px; border: 1px solid rgba(100,231,255,.28); border-radius: 8px; background: rgba(2,10,22,.78); box-shadow: inset 0 0 8px rgba(100,231,255,.08); touch-action: none; user-select: none; }
-.module-library-scrollbar-thumb { position: absolute; top: 2px; left: 1px; display: block; width: 5px; min-height: 24px; border: 1px solid rgba(184,245,255,.82); border-radius: 6px; background: linear-gradient(180deg, rgba(114,241,192,.92), rgba(100,231,255,.72)); box-shadow: 0 0 9px rgba(100,231,255,.55); transform: translateY(0); }
+.builder-board-area { flex: 0 0 auto; }
+.module-palette { display: flex; flex: 1 1 0; flex-direction: column; min-height: 0; max-height: none; overflow: hidden; touch-action: pan-y; }
+.module-library { display: block; flex: 1 1 auto; min-height: 0; max-height: none; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; padding: 2px 3px 6px; touch-action: pan-y; -webkit-overflow-scrolling: touch; }
+.module-library-scrollbar { position: absolute; top: 58px; right: 5px; bottom: 30px; z-index: 3; display: block; width: 16px; border: 1px solid rgba(100,231,255,.34); border-radius: 9px; background: rgba(2,10,22,.86); box-shadow: inset 0 0 10px rgba(100,231,255,.12), 0 0 8px rgba(100,231,255,.08); touch-action: none; user-select: none; }
+.module-library-scrollbar-thumb { position: absolute; top: 2px; left: 2px; display: block; width: 10px; min-height: 52px; border: 1px solid rgba(184,245,255,.9); border-radius: 7px; background: linear-gradient(180deg, rgba(114,241,192,.98), rgba(100,231,255,.8)); box-shadow: 0 0 12px rgba(100,231,255,.66); transform: translateY(0); }
 .module-library-scrollbar:active .module-library-scrollbar-thumb, .module-library-scrollbar:hover .module-library-scrollbar-thumb { background: linear-gradient(180deg, #d9fff4, #72f1c0); box-shadow: 0 0 13px rgba(114,241,192,.76); }
 .module-library { scrollbar-width: thin; scrollbar-color: rgba(100,231,255,.38) transparent; padding-right: 15px; }
 .module-library .library-group { display: contents; }
@@ -381,8 +382,6 @@ body { background: #02050c; }
 
 @media (max-height: 700px) {
   .builder-board-area .assembly-board { width: min(100%, 200px); }
-  .module-palette { max-height: 180px; }
-  .module-library { max-height: 125px; }
 }
 
 @media (max-height: 760px) {
