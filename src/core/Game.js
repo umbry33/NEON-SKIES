@@ -1,6 +1,7 @@
 import { GAME_CONFIG, IMPACT_CONFIG, PLAYER_BASE_STATS, SONIC_WAVE_CONFIG } from "../config/game-config.js";
 import { LEVEL_CONFIG, getLevelConfig } from "../config/level-config.js";
 import { createBossDefinition, getEnemyById } from "../config/enemy-config.js";
+import { getEnvironmentPool } from "../config/environment-config.js";
 import { ModuleSystem } from "../systems/ModuleSystem.js";
 import { WeaponSystem } from "../systems/WeaponSystem.js";
 import { SkillSystem } from "../systems/SkillSystem.js";
@@ -47,7 +48,7 @@ export class Game {
       size: 0.6 + Math.random() * 1.8, speed: GAME_CONFIG.stars.speedMin + Math.random() * (GAME_CONFIG.stars.speedMax - GAME_CONFIG.stars.speedMin),
       alpha: 0.25 + Math.random() * 0.65,
     }));
-    this.ui.bind({ onStart: (spec) => this.start(spec), onMenu: () => this.toMenu(), onPause: () => this.pause(), onResume: () => this.resume(), onSkill: (index) => this.activateSkill(index), onDamageNumbersChanged: (enabled) => { this.damageNumbersEnabled = enabled; if (!enabled) this.damageNumbers = []; }, onVibrationChanged: (enabled) => { this.vibrationEnabled = enabled; }, onSoundChanged: (enabled) => this.sound.setEnabled(enabled), onNextLevel: () => this.start({ ...this.ui.getSelectedIds(), mode: "levels", level: Math.min(25, this.levelNumber + 1) }), onLevelSelect: () => this.toLevelSelect(), onModeSelect: () => this.toModeSelect() });
+    this.ui.bind({ onStart: (spec) => this.start(spec), onMenu: () => this.toMenu(), onPause: () => this.pause(), onResume: () => this.resume(), onSkill: (index) => this.activateSkill(index), onDamageNumbersChanged: (enabled) => { this.damageNumbersEnabled = enabled; if (!enabled) this.damageNumbers = []; }, onVibrationChanged: (enabled) => { this.vibrationEnabled = enabled; }, onSoundChanged: (enabled) => this.sound.setEnabled(enabled), onNextLevel: () => this.start({ ...this.ui.getSelectedIds(), mode: "levels", level: Math.min(50, this.levelNumber + 1) }), onLevelSelect: () => this.toLevelSelect(), onModeSelect: () => this.toModeSelect() });
     this.input.setSkillHandler((index) => this.activateSkill(index));
     this.render();
   }
@@ -85,6 +86,9 @@ export class Game {
     this.boss = null;
     this.bossSummonTimer = 0;
     this.bossSummonCount = 0;
+    this.environment = null;
+    this.environmentTimer = this.levelConfig?.environment?.firstDelay ?? Infinity;
+    this.environmentPool = this.levelConfig?.environmentPool ?? [];
     this.state = "playing";
     this.ui.showPlaying({ hp: this.player.hp, maxHp: this.player.stats.maxHp, score: 0, elapsed: 0, skills: this.skillSystem.getState(), level: this.levelConfig?.number ?? null, goal: this.levelConfig?.targetScore ?? null, boss: false });
     this.lastFrame = performance.now();
@@ -110,6 +114,29 @@ export class Game {
   createDecoy(duration) { this.decoys.push(new Decoy(this.player, duration)); }
   startIonSaw(duration) { this.ionSaw.active = true; this.ionSaw.duration = Math.max(this.ionSaw.duration ?? 0, duration); this.ionSaw.damageTimer = 0; }
   startSonicWave(duration) { this.sonicWaves.push({ duration, spawnTimer: 0, nextY: this.player.y, step: SONIC_WAVE_CONFIG.spawnStep }); }
+
+  updateEnvironment(dt) {
+    if (!this.levelConfig?.environment) return;
+    if (this.environment) {
+      this.environment.remaining -= dt;
+      if (this.environment.remaining <= 0) {
+        this.environment = null;
+        this.environmentTimer = this.levelConfig.environment.interval;
+      }
+      return;
+    }
+    this.environmentTimer -= dt;
+    if (this.environmentTimer > 0) return;
+    const pool = this.environmentPool.length ? this.environmentPool : getEnvironmentPool(this.levelNumber);
+    const definition = pool[Math.floor(Math.random() * pool.length)];
+    if (!definition) return;
+    this.environment = { definition, remaining: definition.duration };
+  }
+
+  environmentEffects() {
+    const active = this.environment?.definition;
+    return { player: active?.player ?? {}, enemy: active?.enemy ?? {} };
+  }
 
   updateBossSummons(dt) {
     const summon = this.boss?.definition?.summon;
@@ -182,6 +209,8 @@ export class Game {
 
   update(dt) {
     this.elapsed += dt;
+    this.updateEnvironment(dt);
+    const environmentEffects = this.environmentEffects();
     this.shakeTime = Math.max(0, this.shakeTime - dt);
     this.skillSystem.update(dt);
     this.freezeTimer = Math.max(0, this.freezeTimer - dt);
@@ -189,7 +218,8 @@ export class Game {
     this.ionSaw.active = this.ionSaw.duration > 0;
     this.ionSaw.damageTimer -= dt;
     this.updateSonicWave(dt);
-    this.player.update(dt, this.input, this.bounds);
+    this.player.environmentAttackSpeedMultiplier = environmentEffects.player.attackSpeed ?? 1;
+    this.player.update(dt, this.input, this.bounds, environmentEffects.player.moveSpeed ?? 1);
     const playerShots = this.weaponSystem.firePlayer(this.player, this.enemies);
     if (playerShots.length) this.sound.play("shot");
     this.projectiles.push(...playerShots);
@@ -210,6 +240,9 @@ export class Game {
     if (this.bossSpawned && this.boss && this.boss.hp > 0) this.enemies.push(...this.updateBossSummons(dt));
     for (const current of this.enemies) {
       current.frozen = this.freezeTimer > 0 && !current.definition.boss;
+      current.environmentSpeedMultiplier = environmentEffects.enemy.speed ?? 1;
+      current.environmentShootIntervalMultiplier = environmentEffects.enemy.shootInterval ?? 1;
+      current.environmentProjectileSpeedMultiplier = environmentEffects.enemy.projectileSpeed ?? 1;
       current.update(dt, this.bounds);
       if (current.canShoot()) {
         const shots = this.weaponSystem.fireEnemy(current, this.player);
@@ -225,8 +258,12 @@ export class Game {
     if (collision.sawTriggered) this.ionSaw.damageTimer = 1 / 6;
     this.score += collision.score;
     this.explosions.push(...(collision.explosionEvents ?? []));
-    if ((collision.damageEvents?.length ?? 0) > 0) { this.triggerShake("hit"); this.sound.play("hit"); }
-    if (this.damageNumbersEnabled) for (const event of collision.damageEvents ?? []) this.damageNumbers.push({ x: event.x + (Math.random() - 0.5) * 8, y: event.y - 15, amount: event.amount, age: 0, life: 0.65 });
+    if ((collision.damageEvents?.length ?? 0) > 0) { this.triggerShake("hit"); this.sound.play("playerImpact"); }
+    if (this.damageNumbersEnabled) for (const event of collision.damageEvents ?? []) {
+      const angle = Math.random() * Math.PI * 2;
+      const radius = Math.sqrt(Math.random()) * 10;
+      this.damageNumbers.push({ x: event.x + Math.cos(angle) * radius, y: event.y + Math.sin(angle) * radius, amount: event.amount, age: 0, life: 0.65 });
+    }
     const bossDefeated = this.boss && collision.destroyedEnemies.has(this.boss);
     this.enemies = this.enemies.filter((current) => !collision.destroyedEnemies.has(current) && (current.boss || current.y < this.bounds.height + 80));
     this.projectiles = this.projectiles.filter((projectile) => !collision.removedProjectiles.has(projectile) && !projectile.isOffscreen(this.bounds.width, this.bounds.height));
@@ -239,7 +276,7 @@ export class Game {
     this.updateExplosions(dt);
     this.stars.forEach((star) => { star.y += star.speed * dt; if (star.y > this.bounds.height) star.y = -4; });
     if (bossDefeated || (this.levelConfig && !this.levelConfig.boss && this.score >= this.levelConfig.targetScore)) { this.endGame({ victory: true }); return; }
-    this.ui.updateHud({ hp: this.player.hp, maxHp: this.player.stats.maxHp, score: this.score, elapsed: this.elapsed, level: this.levelConfig?.number ?? null, goal: this.levelConfig?.targetScore ?? null, boss: Boolean(this.bossSpawned && this.boss) });
+    this.ui.updateHud({ hp: this.player.hp, maxHp: this.player.stats.maxHp, score: this.score, elapsed: this.elapsed, level: this.levelConfig?.number ?? null, goal: this.levelConfig?.targetScore ?? null, boss: Boolean(this.bossSpawned && this.boss), environment: this.environment });
     this.ui.updateSkills(this.skillSystem.getState());
   }
 
@@ -265,6 +302,7 @@ export class Game {
     this.player?.draw(this.ctx);
     this.drawExplosions();
     this.drawDamageNumbers();
+    this.drawEnvironment();
     if (this.ionSaw.active) this.drawIonSaw();
     if (this.freezeTimer > 0) { this.ctx.save(); this.ctx.fillStyle = "rgba(150,230,255,.045)"; this.ctx.fillRect(0, 0, this.bounds.width, this.bounds.height); this.ctx.restore(); }
     this.ctx.restore();
@@ -278,6 +316,24 @@ export class Game {
       this.ctx.shadowBlur = 20; this.ctx.shadowColor = "#b6f7ff"; this.ctx.strokeStyle = "#b6f7ff"; this.ctx.lineWidth = 4;
       this.ctx.beginPath(); this.ctx.moveTo(-4, -23); this.ctx.lineTo(6, 0); this.ctx.lineTo(-4, 23); this.ctx.stroke();
     }
+    this.ctx.restore();
+  }
+
+  drawEnvironment() {
+    if (!this.environment) return;
+    const { definition, remaining } = this.environment;
+    this.ctx.save();
+    this.ctx.globalCompositeOperation = "screen";
+    this.ctx.globalAlpha = 0.11 + Math.sin(this.elapsed * 4) * 0.025;
+    this.ctx.fillStyle = definition.color;
+    this.ctx.fillRect(0, 0, this.bounds.width, this.bounds.height);
+    this.ctx.globalAlpha = 0.95;
+    this.ctx.fillStyle = definition.color;
+    this.ctx.font = "700 11px system-ui";
+    this.ctx.textAlign = "center";
+    this.ctx.shadowBlur = 12;
+    this.ctx.shadowColor = definition.color;
+    this.ctx.fillText(`${definition.name}  ${remaining.toFixed(1)}s`, this.bounds.width / 2, 26);
     this.ctx.restore();
   }
 

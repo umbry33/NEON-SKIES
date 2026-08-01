@@ -1,8 +1,8 @@
 const SOUND_CONFIG = {
-  shot: { frequency: 720, duration: 0.035, volume: 0.025, cooldown: 0.07, type: "square" },
-  hit: { frequency: 240, duration: 0.045, volume: 0.035, cooldown: 0.055, type: "triangle" },
-  playerHit: { frequency: 95, duration: 0.12, volume: 0.07, cooldown: 0.18, type: "sawtooth" },
-  skill: { frequency: 480, duration: 0.1, volume: 0.05, cooldown: 0.12, type: "sine" },
+  shot: { frequency: 720, duration: 0.035, volume: 0.05, cooldown: 0.07, type: "square" },
+  playerImpact: { frequency: 240, duration: 0.06, volume: 0.075, cooldown: 0.045, type: "triangle" },
+  playerHit: { frequency: 95, duration: 0.12, volume: 0.12, cooldown: 0.18, type: "sawtooth" },
+  skill: { frequency: 480, duration: 0.1, volume: 0.09, cooldown: 0.12, type: "sine" },
 };
 
 export class SoundSystem {

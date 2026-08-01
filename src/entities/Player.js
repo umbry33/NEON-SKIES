@@ -17,15 +17,15 @@ export class Player {
     this.invulnerabilityTimer = 0;
   }
 
-  update(dt, input, bounds) {
+  update(dt, input, bounds, movementMultiplier = 1) {
     if (input.pointer.active) {
       const target = input.pointer;
       this.x += (target.x - this.x) * Math.min(1, dt * 15);
       this.y += (target.y - this.y) * Math.min(1, dt * 15);
     } else {
       const movement = input.getMovementVector();
-      this.x += movement.x * this.stats.moveSpeed * dt;
-      this.y += movement.y * this.stats.moveSpeed * dt;
+      this.x += movement.x * this.stats.moveSpeed * movementMultiplier * dt;
+      this.y += movement.y * this.stats.moveSpeed * movementMultiplier * dt;
     }
     this.x = Math.max(this.radius + 5, Math.min(bounds.width - this.radius - 5, this.x));
     this.y = Math.max(this.radius + 45, Math.min(bounds.height - this.radius - 10, this.y));

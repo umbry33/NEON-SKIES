@@ -25,7 +25,7 @@ function moduleOrigin(player, entry) {
 
 function nearestEnemy(enemies, x, y) { return enemies.filter((enemy) => enemy.hp > 0).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0] ?? null; }
 function nearestForwardEnemy(enemies, x, y) { const visible = enemies.filter((enemy) => enemy.hp > 0 && enemy.x >= 0 && enemy.x <= GAME_CONFIG.canvas.width && enemy.y >= 0 && enemy.y <= GAME_CONFIG.canvas.height); const ahead = visible.filter((enemy) => enemy.y < y); return nearestEnemy(ahead.length ? ahead : visible, x, y); }
-function attackSpeedOf(player) { return Math.min(GAME_CONFIG.player.maxAttackSpeed, Math.max(0.01, player?.stats?.attackSpeed ?? GAME_CONFIG.player.attackSpeed)); }
+function attackSpeedOf(player) { return Math.min(GAME_CONFIG.player.maxAttackSpeed, Math.max(0.01, (player?.stats?.attackSpeed ?? GAME_CONFIG.player.attackSpeed) * (player?.environmentAttackSpeedMultiplier ?? 1))); }
 
 function angleDistance(a, b) {
   let delta = Math.abs(a - b) % (Math.PI * 2);
@@ -115,23 +115,25 @@ export class WeaponSystem {
     const dx = player.x - enemy.x;
     const dy = player.y - enemy.y;
     const length = Math.hypot(dx, dy) || 1;
-    const makeShot = (angle, kind = "enemyBolt", damage = GAME_CONFIG.projectile.enemyDamage) => new Projectile({
-      x: enemy.x, y: enemy.y + enemy.radius * 0.7, vx: (dx / length) * GAME_CONFIG.projectile.enemySpeed,
-      vy: (dy / length) * GAME_CONFIG.projectile.enemySpeed, damage: GAME_CONFIG.projectile.enemyDamage,
+    const base = Math.atan2(dx, -dy);
+    const speed = GAME_CONFIG.projectile.enemySpeed * (enemy.environmentProjectileSpeedMultiplier ?? 1);
+    const makeShot = (angle = base, kind = "enemyBolt") => new Projectile({
+      x: enemy.x, y: enemy.y + enemy.radius * 0.7, vx: Math.sin(angle) * speed,
+      vy: -Math.cos(angle) * speed, damage: GAME_CONFIG.projectile.enemyDamage,
       radius: enemy.boss ? 7 : GAME_CONFIG.projectile.enemyRadius, color: enemy.boss ? "#ff3c70" : "#ff638c", life: GAME_CONFIG.projectile.enemyLife, team: "enemy", kind,
     });
-    if (!enemy.boss) return makeShot(0);
-    const base = Math.atan2(dx, -dy);
+    if (!enemy.boss) {
+      if (enemy.definition.attackPattern === "burst") return [-0.22, 0, 0.22].map((offset) => makeShot(base + offset, "burstBolt"));
+      return makeShot();
+    }
+    if (enemy.definition.attackPattern === "radial") {
+      const count = 10 + Math.min(6, Math.floor(enemy.level / 10));
+      return Array.from({ length: count }, (_, index) => makeShot((Math.PI * 2 * index) / count, "bossRadial"));
+    }
     const count = 5 + Math.min(4, Math.floor(enemy.level / 5));
     return Array.from({ length: count }, (_, index) => {
       const spread = (index - (count - 1) / 2) * 0.14;
-      const angle = base + spread;
-      return new Projectile({
-        x: enemy.x, y: enemy.y + enemy.radius * 0.45,
-        vx: Math.sin(angle) * GAME_CONFIG.projectile.enemySpeed * 0.9,
-        vy: -Math.cos(angle) * GAME_CONFIG.projectile.enemySpeed * 0.9,
-        damage: GAME_CONFIG.projectile.enemyDamage, radius: 7, color: "#ff3c70", life: GAME_CONFIG.projectile.enemyLife, team: "enemy", kind: "bossBolt",
-      });
+      return makeShot(base + spread, "bossBolt");
     });
   }
 }

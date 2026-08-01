@@ -238,6 +238,12 @@ body { background: #050a14; }
 .settings-toggle { display: flex; align-items: center; gap: 10px; padding: 11px 10px; border: 1px solid rgba(139,202,255,.18); border-radius: 9px; color: var(--text); background: rgba(10,28,51,.72); font-size: .78rem; cursor: pointer; }
 .settings-toggle + .settings-toggle { margin-top: 9px; }
 .settings-toggle input { width: 17px; height: 17px; accent-color: var(--cyan); }
+.settings-changelog-button { margin-top: 12px; }
+.changelog-modal { position: absolute; inset: 0; z-index: 45; display: grid; grid-template-rows: minmax(0, 1fr); place-items: center; overflow: hidden; padding: 16px; background: rgba(2,7,16,.82); backdrop-filter: blur(6px); }
+.changelog-modal.is-hidden { display: none; }
+.changelog-card { position: relative; display: flex; flex-direction: column; width: min(520px, calc(100% - 12px)); height: min(720px, calc(100% - 24px)); min-height: 0; max-height: calc(100% - 24px); overflow: hidden; padding: 25px 18px 18px; border: 1px solid rgba(100,231,255,.42); border-radius: 15px; color: var(--text); background: rgba(8,22,41,.98); box-shadow: 0 0 35px rgba(45,181,226,.23); }
+.changelog-card h2 { margin: 6px 0 12px; font-size: 1.35rem; }
+.changelog-card pre { flex: 1 1 auto; min-height: 0; margin: 0; padding: 12px; overflow: auto; border: 1px solid rgba(139,202,255,.18); border-radius: 9px; color: #dffaff; background: rgba(1,8,19,.72); font: .72rem/1.7 ui-monospace, SFMono-Regular, Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
 .round-button { display: grid; place-items: center; width: 38px; height: 38px; padding: 0; border: 1px solid rgba(100,231,255,.34); border-radius: 50%; color: var(--cyan); background: rgba(5,21,39,.75); font-size: 1.1rem; }
 .round-button:hover { border-color: var(--cyan); box-shadow: 0 0 16px rgba(100,231,255,.25); }
 .builder-screen { background: radial-gradient(circle at 50% 35%, rgba(20,70,103,.34), transparent 34%), #050b17; overflow: hidden; overscroll-behavior: none; touch-action: pan-x pan-y; }
@@ -397,3 +403,23 @@ body { background: #02050c; }
 
 /* Multi-cell modules use the whole footprint instead of a centered one-cell icon. */
 .placed-module .placed-icon-canvas, .drag-preview .placed-icon-canvas { width: 100%; height: 100%; }
+
+/* Game encyclopedia stays inside the portrait game shell; only its archive list scrolls. */
+.encyclopedia-screen { display: grid; place-items: center; background: radial-gradient(circle at 50% 18%, rgba(87, 53, 132, .34), transparent 34%), linear-gradient(150deg, #071427, #030711 72%); }
+.encyclopedia-shell { position: relative; display: flex; flex-direction: column; width: min(440px, calc(100% - 28px)); height: min(780px, calc(100dvh - 28px)); min-height: 0; padding: 30px 18px 16px; border: 1px solid rgba(160, 118, 255, .36); border-radius: 18px; background: rgba(5, 15, 31, .88); box-shadow: 0 0 50px rgba(130, 79, 218, .16); }
+.encyclopedia-shell .screen-back-button { top: 13px; left: 13px; }
+.encyclopedia-shell > .eyebrow { margin: 0; color: #c7a8ff; text-align: center; }
+.encyclopedia-shell h2 { margin: 5px 0 4px; color: var(--text); font-size: 1.45rem; text-align: center; letter-spacing: .14em; }
+.encyclopedia-intro { margin: 0 8px 12px; color: var(--muted); font-size: .68rem; line-height: 1.6; text-align: center; }
+.encyclopedia-content { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 1px 5px 18px 1px; scrollbar-width: thin; scrollbar-color: rgba(168, 124, 255, .7) transparent; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+.encyclopedia-section + .encyclopedia-section { margin-top: 18px; }
+.encyclopedia-section h3 { margin: 0 0 7px; color: #d5bfff; font-size: .82rem; letter-spacing: .12em; }
+.encyclopedia-entries { display: grid; gap: 7px; }
+.encyclopedia-entry { padding: 10px; border: 1px solid rgba(139, 202, 255, .16); border-radius: 10px; background: rgba(6, 23, 44, .68); }
+.encyclopedia-entry.has-enemy-visual { display: grid; grid-template-columns: minmax(0, 1fr) 64px; align-items: center; gap: 8px; }
+.encyclopedia-copy > div { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.encyclopedia-entry strong { color: #e7faff; font-size: .8rem; }
+.encyclopedia-entry small { color: #bda4ff; font-size: .53rem; letter-spacing: .09em; text-align: right; }
+.encyclopedia-entry p { margin: 6px 0; color: var(--muted); font-size: .65rem; line-height: 1.55; }
+.encyclopedia-copy > span { color: var(--cyan); font-size: .57rem; }
+.encyclopedia-enemy-canvas { display: block; width: 64px; height: 64px; filter: drop-shadow(0 0 7px rgba(100, 231, 255, .22)); }

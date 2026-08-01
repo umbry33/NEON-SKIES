@@ -16,19 +16,46 @@ export class Enemy {
     this.silenceTimer = 0;
     this.frozen = false;
     this.summoned = Boolean(difficulty.summoned);
+    this.environmentSpeedMultiplier = 1;
+    this.environmentShootIntervalMultiplier = 1;
+    this.environmentProjectileSpeedMultiplier = 1;
+    this.dashTimer = definition.dashInterval ? definition.dashInterval * (0.55 + Math.random() * 0.3) : 0;
+    this.dashTime = 0;
+    this.bossChargeTimer = definition.dashInterval ?? 0;
+    this.bossChargeTime = 0;
+    this.shieldActive = false;
   }
 
   update(dt, bounds = { width: 480 }) {
     if (this.frozen) return;
     this.age += dt;
     if (this.boss) {
-      this.x = bounds.width / 2 + Math.sin(this.age * 0.9) * bounds.width * 0.32;
+      this.bossChargeTimer -= dt;
+      if (this.bossChargeTimer <= 0 && this.definition.dashInterval) {
+        this.bossChargeTime = this.definition.dashDuration ?? 0.5;
+        this.bossChargeTimer = this.definition.dashInterval;
+      }
+      this.bossChargeTime = Math.max(0, this.bossChargeTime - dt);
+      const movement = this.bossChargeTime > 0 ? 1.85 : 0.9;
+      this.x = bounds.width / 2 + Math.sin(this.age * movement) * bounds.width * (this.bossChargeTime > 0 ? 0.43 : 0.32);
       this.y = 118 + Math.sin(this.age * 1.55) * 66;
     } else {
-      this.y += this.speed * dt;
+      this.dashTimer -= dt;
+      if (this.definition.movement === "dash" && this.dashTimer <= 0) {
+        this.dashTime = this.definition.dashDuration ?? 0.6;
+        this.dashTimer = this.definition.dashInterval ?? 3;
+      }
+      this.dashTime = Math.max(0, this.dashTime - dt);
+      const speed = this.speed * this.environmentSpeedMultiplier * (this.dashTime > 0 ? (this.definition.dashMultiplier ?? 2.6) : 1);
+      this.y += speed * dt;
       if (this.definition.movement === "sine") this.x = this.baseX + Math.sin(this.age * 3.2) * 38;
       if (this.definition.movement === "orbit") this.x = this.baseX + Math.sin(this.age * 2.1) * 70;
+      if (this.definition.movement === "zigzag") this.x = this.baseX + Math.sin(this.age * 4.6) * 64;
       this.isPhased = this.definition.ability === "phase" && Math.sin(this.age * 2.5) > 0.45;
+      if (this.definition.ability === "shield") {
+        const cycle = this.definition.shieldCycle ?? 4;
+        this.shieldActive = (this.age % cycle) < (this.definition.shieldDuration ?? 1.4);
+      }
     }
     this.shootTimer -= dt;
     this.silenceTimer = Math.max(0, this.silenceTimer - dt);
@@ -36,12 +63,12 @@ export class Enemy {
 
   canShoot() {
     if (this.shootTimer > 0 || this.silenceTimer > 0 || this.frozen) return false;
-    this.shootTimer = this.definition.shootInterval;
+    this.shootTimer = this.definition.shootInterval * this.environmentShootIntervalMultiplier;
     return true;
   }
 
   takeDamage(amount) {
-    this.hp -= amount;
+    this.hp -= this.shieldActive ? amount * 0.35 : amount;
     return this.hp <= 0;
   }
 
@@ -67,6 +94,12 @@ export class Enemy {
       ctx.arc(0, 0, 19, 0, Math.PI * 2); ctx.strokeStyle = "#b4fff0"; ctx.lineWidth = 3; ctx.stroke(); ctx.moveTo(-22, 0); ctx.lineTo(22, 0); ctx.moveTo(0, -22); ctx.lineTo(0, 22);
     } else if (type === "phantom") {
       ctx.moveTo(0, 21); ctx.lineTo(18, -4); ctx.lineTo(8, -18); ctx.lineTo(0, -10); ctx.lineTo(-8, -18); ctx.lineTo(-18, -4);
+    } else if (type === "striker") {
+      ctx.moveTo(0, 24); ctx.lineTo(20, -14); ctx.lineTo(7, -10); ctx.lineTo(0, -22); ctx.lineTo(-7, -10); ctx.lineTo(-20, -14);
+    } else if (type === "bulwark") {
+      ctx.rect(-22, -20, 44, 40);
+    } else if (type === "rammer") {
+      ctx.moveTo(0, -26); ctx.lineTo(18, 18); ctx.lineTo(0, 12); ctx.lineTo(-18, 18);
     } else {
       ctx.moveTo(0, 21); ctx.lineTo(16, -8); ctx.lineTo(6, -5); ctx.lineTo(0, -18); ctx.lineTo(-6, -5); ctx.lineTo(-16, -8);
     }
@@ -77,6 +110,13 @@ export class Enemy {
     ctx.beginPath(); ctx.arc(0, 0, type === "guardian" ? 7 : 5, 0, Math.PI * 2); ctx.fill();
     if (this.boss) {
       ctx.shadowBlur = 12; ctx.strokeStyle = "#ff496e"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 57 + Math.sin(this.age * 5) * 3, 0, Math.PI * 2); ctx.stroke();
+    }
+    if (this.shieldActive) {
+      ctx.globalAlpha = 0.72; ctx.strokeStyle = "#a8d8ff"; ctx.shadowColor = "#78b8ff"; ctx.shadowBlur = 16; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(0, 0, this.radius + 8, 0, Math.PI * 2); ctx.stroke();
+    }
+    if (this.dashTime > 0 || this.bossChargeTime > 0) {
+      ctx.globalAlpha = 0.5; ctx.strokeStyle = "#ffb6cf"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, this.radius + 8); ctx.lineTo(0, this.radius + 26); ctx.stroke();
     }
     if (this.maxHp > 1) {
       ctx.shadowBlur = 0;
