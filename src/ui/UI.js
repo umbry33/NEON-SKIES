@@ -12,54 +12,11 @@ const moduleGroups = [["weapon", "\u6b66\u5668\u6a21\u5757", MODULE_CONFIG.weapo
 const typeLabels = { core: "\u6838\u5fc3\u6a21\u5757", weapon: "\u6b66\u5668\u6a21\u5757", special: "\u7279\u6b8a\u6a21\u5757" };
 const rarityLabels = { common: "\u666e\u901a", uncommon: "\u975e\u51e1", rare: "\u7a00\u6709", epic: "\u53f2\u8bd7", legendary: "\u4f20\u8bf4" };
 
-// Buttons activate on release. The active pointer/touch is bound to the button
-// pressed at the start, so a screen change cannot retarget the held gesture.
-const activePointers = new Map();
-const activeTouches = new Map();
-let tapReleaseListenersBound = false;
-const ensureTapReleaseListeners = () => {
-  if (tapReleaseListenersBound) return;
-  tapReleaseListenersBound = true;
-  const inside = (element, point) => { const rect = element.getBoundingClientRect(); return point.clientX >= rect.left && point.clientX <= rect.right && point.clientY >= rect.top && point.clientY <= rect.bottom; };
-  window.addEventListener("pointerup", (event) => {
-    const state = activePointers.get(event.pointerId);
-    if (!state) return;
-    activePointers.delete(event.pointerId);
-    if (!state.element.disabled && inside(state.element, event)) { state.lastReleaseAt = performance.now(); state.handler(event); }
-  }, { passive: true });
-  window.addEventListener("pointercancel", (event) => activePointers.delete(event.pointerId), { passive: true });
-  window.addEventListener("touchend", (event) => {
-    for (const touch of event.changedTouches) {
-      const state = activeTouches.get(touch.identifier);
-      if (!state) continue;
-      activeTouches.delete(touch.identifier);
-      if (!state.element.disabled && inside(state.element, touch)) { state.lastReleaseAt = performance.now(); state.handler(event); }
-    }
-  }, { passive: true });
-  window.addEventListener("touchcancel", (event) => { for (const touch of event.changedTouches) activeTouches.delete(touch.identifier); }, { passive: true });
-  window.addEventListener("blur", () => { activePointers.clear(); activeTouches.clear(); }, { passive: true });
-};
 const bindTap = (element, handler) => {
   if (!element) return;
-  ensureTapReleaseListeners();
-  const binding = { element, handler, lastReleaseAt: 0 };
-  const pointerEventsAvailable = "PointerEvent" in window;
-  const rememberPointer = (event) => {
-    // Mouse uses the browser's native click event (which fires on release).
-    // Only direct-touch pointers need the explicit release bridge below.
-    if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
-    if (element.disabled) return;
-    activePointers.set(event.pointerId, binding);
-    try { element.setPointerCapture?.(event.pointerId); } catch {}
-  };
-  if (pointerEventsAvailable) element.addEventListener("pointerdown", rememberPointer, { passive: false });
-  else element.addEventListener("touchstart", (event) => {
-    if (element.disabled) return;
-    for (const touch of event.changedTouches) activeTouches.set(touch.identifier, binding);
-  }, { passive: false });
   element.addEventListener("click", (event) => {
-    // Keyboard activation and browsers without release events still use click.
-    if (performance.now() - binding.lastReleaseAt >= 700) handler(event);
+    // Native click is fired after release for mouse, touch and keyboard.
+    if (!element.disabled) handler(event);
   });
 };
 

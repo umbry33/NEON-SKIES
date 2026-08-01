@@ -12,7 +12,7 @@
   <section id="main-menu-screen" class="game-screen menu-screen" aria-label="&#20027;&#33756;&#21333;">
     <div class="menu-stars" aria-hidden="true"></div>
     <div class="menu-content">
-      <p class="eyebrow">NEON SKIES / v0.2.0</p>
+      <p class="eyebrow">NEON SKIES / v0.2.1</p>
       <h1>NEON SKIES</h1>
       <div class="menu-aircraft" aria-hidden="true"><span>&#10022;</span></div>
       <div class="menu-actions">
@@ -68,6 +68,25 @@
     <p class="battle-help">WASD / &#26041;&#21521;&#38190;&#31227;&#21160; &middot; &#35302;&#25720;&#25302;&#21160; &middot; &#33258;&#21160;&#23556;&#20987; &middot; 1-9 &#20351;&#29992;&#25216;&#33021;</p>
   </section>
 </div>
+<script>
+  // If a finger taps while ES modules are still loading, replay that release
+  // after the game has finished binding its controls instead of losing it.
+  window.__neonUiReady = false;
+  window.__neonPendingTaps = [];
+  const bootButtonIds = new Set(["settings-button", "open-builder-button", "menu-battle-button", "mode-back-button", "level-mode-button", "endless-mode-button", "builder-save-button", "loadout-code-button"]);
+  const queueBootTap = (event) => {
+    if (window.__neonUiReady) return;
+    const point = event.changedTouches?.[0] ?? event;
+    const button = event.target.closest?.("button") ?? document.elementFromPoint(point.clientX, point.clientY)?.closest?.("button");
+    if (!button || !bootButtonIds.has(button.id)) return;
+    event.preventDefault();
+    if (!window.__neonPendingTaps.includes(button.id)) window.__neonPendingTaps.push(button.id);
+  };
+  document.addEventListener("pointerup", queueBootTap, true);
+  document.addEventListener("mouseup", queueBootTap, true);
+  document.addEventListener("touchend", queueBootTap, true);
+  document.addEventListener("click", queueBootTap, true);
+</script>
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>

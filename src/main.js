@@ -7,3 +7,6 @@ const canvas = document.querySelector("#game-canvas");
 const ui = new UI();
 const input = new InputSystem(canvas, GAME_CONFIG.canvas);
 new Game({ canvas, input, ui });
+window.__neonUiReady = true;
+for (const id of window.__neonPendingTaps ?? []) document.getElementById(id)?.click();
+window.__neonPendingTaps = [];
