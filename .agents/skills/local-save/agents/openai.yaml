@@ -1,0 +1,4 @@
+interface:
+  display_name: "本地保存"
+  short_description: "仅提交当前项目到本地 Git，保留完整变更记录且绝不推送远程仓库。"
+  default_prompt: "使用 $local-save 保存当前项目的本地版本。"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "正式发布"
+  short_description: "更新玩家可见更新日志，创建提交并在双重确认后安全推送 GitHub。"
+  default_prompt: "使用 $publish-release 准备当前项目的正式发布。"
