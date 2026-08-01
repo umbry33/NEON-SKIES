@@ -52,9 +52,38 @@ const installTouchReleaseGuard = () => {
 };
 installTouchReleaseGuard();
 
+const isTouchLikePointer = (event) => event.pointerType === "touch" || event.pointerType === "pen";
+const touchHandledUntil = new WeakMap();
+const markTouchHandled = (element) => touchHandledUntil.set(element, performance.now() + 1200);
+const consumeSyntheticTouchClick = (element, event) => {
+  const until = touchHandledUntil.get(element) ?? 0;
+  if (!until || performance.now() > until || event.detail === 0) return false;
+  touchHandledUntil.delete(element);
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  return true;
+};
+
 const bindTap = (element, handler) => {
   if (!element) return;
+  let activePointerId = null;
+  element.addEventListener("pointerdown", (event) => {
+    if (isTouchLikePointer(event)) activePointerId = event.pointerId;
+  }, { passive: true });
+  element.addEventListener("pointerup", (event) => {
+    if (!isTouchLikePointer(event) || activePointerId !== event.pointerId) return;
+    activePointerId = null;
+    if (element.disabled) return;
+    event.preventDefault();
+    event.stopPropagation();
+    markTouchHandled(element);
+    handler(event);
+  }, { passive: false });
+  element.addEventListener("pointercancel", (event) => {
+    if (event.pointerId === activePointerId) activePointerId = null;
+  }, { passive: true });
   element.addEventListener("click", (event) => {
+    if (consumeSyntheticTouchClick(element, event)) return;
     // Native click is fired after release for mouse, touch and keyboard.
     if (!element.disabled) handler(event);
   });
@@ -65,12 +94,29 @@ const bindTap = (element, handler) => {
 const bindSettingToggle = (input, handler) => {
   if (!input) return;
   const label = input.closest("label");
+  let activePointerId = null;
   const emit = () => {
     label?.setAttribute("aria-checked", String(input.checked));
     handler?.(input.checked);
   };
   input.addEventListener("change", emit);
+  label?.addEventListener("pointerdown", (event) => {
+    if (isTouchLikePointer(event)) activePointerId = event.pointerId;
+  }, { passive: true });
+  label?.addEventListener("pointerup", (event) => {
+    if (!isTouchLikePointer(event) || activePointerId !== event.pointerId) return;
+    activePointerId = null;
+    event.preventDefault();
+    event.stopPropagation();
+    input.checked = !input.checked;
+    markTouchHandled(label);
+    emit();
+  }, { passive: false });
+  label?.addEventListener("pointercancel", (event) => {
+    if (event.pointerId === activePointerId) activePointerId = null;
+  }, { passive: true });
   label?.addEventListener("click", (event) => {
+    if (consumeSyntheticTouchClick(label, event)) return;
     if (event.target === input) return;
     event.preventDefault();
     input.checked = !input.checked;
@@ -92,14 +138,42 @@ export class UI {
     this.renderModuleLibrary(); this.renderAssembly(); this.renderLevelGrid(); this.showMenu();
     bindTap(this.settingsButton, () => this.settingsModal.classList.remove("is-hidden")); bindTap(this.settingsClose, () => this.settingsModal.classList.add("is-hidden")); this.settingsModal.addEventListener("click", (event) => { if (event.target === this.settingsModal) this.settingsModal.classList.add("is-hidden"); }); bindSettingToggle(this.damageNumberToggle, (enabled) => this.onDamageNumbersChanged?.(enabled)); bindSettingToggle(this.vibrationToggle, (enabled) => this.onVibrationChanged?.(enabled)); bindSettingToggle(this.soundToggle, (enabled) => this.onSoundChanged?.(enabled));
     this.moduleLibrary.addEventListener("pointerdown", (event) => { const source = event.target.closest("[data-drag-module]"); if (source && !this.quickAssemblyEnabled) this.beginDrag(source.dataset.dragModule, null, event); });
-    this.moduleLibrary.addEventListener("click", (event) => { if (this.suppressClick) return; const source = event.target.closest("[data-drag-module]"); if (!source) return; if (this.quickAssemblyEnabled) this.selectQuickAssemblyModule(source.dataset.dragModule); else this.showModuleDetail(getModuleById(source.dataset.dragModule)); });
+    this.moduleLibrary.addEventListener("pointerup", (event) => {
+      if (!isTouchLikePointer(event) || !this.quickAssemblyEnabled) return;
+      const source = event.target.closest("[data-drag-module]");
+      if (!source) return;
+      event.preventDefault();
+      event.stopPropagation();
+      markTouchHandled(source);
+      this.selectQuickAssemblyModule(source.dataset.dragModule);
+    }, { passive: false });
+    this.moduleLibrary.addEventListener("click", (event) => { if (this.suppressClick) return; const source = event.target.closest("[data-drag-module]"); if (!source || consumeSyntheticTouchClick(source, event)) return; if (this.quickAssemblyEnabled) this.selectQuickAssemblyModule(source.dataset.dragModule); else this.showModuleDetail(getModuleById(source.dataset.dragModule)); });
     this.assemblyBoard.addEventListener("pointerdown", (event) => { if (this.quickAssemblyEnabled) { this.updateQuickAssemblyPreview(event); return; } const source = event.target.closest("[data-instance-id]"); if (source) this.beginDrag(source.dataset.moduleId, source.dataset.instanceId, event); });
     this.assemblyBoard.addEventListener("pointerenter", (event) => this.updateQuickAssemblyPreview(event));
     this.assemblyBoard.addEventListener("pointermove", (event) => this.updateQuickAssemblyPreview(event), { passive: true });
     this.assemblyBoard.addEventListener("pointerleave", () => this.hideQuickAssemblyPreview());
-    this.assemblyBoard.addEventListener("click", (event) => this.handleQuickAssemblyClick(event));
+    this.assemblyBoard.addEventListener("pointerup", (event) => {
+      if (!isTouchLikePointer(event) || !this.quickAssemblyEnabled) return;
+      event.preventDefault();
+      event.stopPropagation();
+      markTouchHandled(this.assemblyBoard);
+      this.handleQuickAssemblyClick(event);
+    }, { passive: false });
+    this.assemblyBoard.addEventListener("click", (event) => {
+      if (consumeSyntheticTouchClick(this.assemblyBoard, event)) return;
+      this.handleQuickAssemblyClick(event);
+    });
     window.addEventListener("pointermove", (event) => this.moveDrag(event), { passive: false }); window.addEventListener("pointerup", (event) => this.endDrag(event)); window.addEventListener("pointercancel", (event) => this.endDrag(event));
-    this.skillPanel.addEventListener("click", (event) => { const button = event.target.closest("[data-skill-index]"); if (button && !button.disabled) this.onSkill?.(Number(button.dataset.skillIndex)); });
+    this.skillPanel.addEventListener("pointerup", (event) => {
+      if (!isTouchLikePointer(event)) return;
+      const button = event.target.closest("[data-skill-index]");
+      if (!button || button.disabled) return;
+      event.preventDefault();
+      event.stopPropagation();
+      markTouchHandled(button);
+      this.onSkill?.(Number(button.dataset.skillIndex));
+    }, { passive: false });
+    this.skillPanel.addEventListener("click", (event) => { const button = event.target.closest("[data-skill-index]"); if (button && !consumeSyntheticTouchClick(button, event) && !button.disabled) this.onSkill?.(Number(button.dataset.skillIndex)); });
     bindTap(this.clearButton, () => { this.pushHistory(); this.loadout = createLoadout({ modules: [] }); this.renderAssembly(); this.setStatus("\u88c5\u914d\u533a\u5df2\u6e05\u7a7a"); });
     bindTap(this.loadoutCodeButton, () => this.openLoadoutCode()); bindTap(this.loadoutCodeClose, () => this.hideLoadoutCode()); bindTap(this.loadoutCodeExport, () => { void this.copyLoadoutCode(); }); bindTap(this.loadoutCodeImport, () => this.importLoadoutCode()); this.loadoutCodeModal.addEventListener("click", (event) => { if (event.target === this.loadoutCodeModal) this.hideLoadoutCode(); });
     bindTap(this.previewAttackSpeed, () => this.showAttackSpeedRules()); bindTap(this.attackSpeedClose, () => this.hideAttackSpeedRules()); this.attackSpeedModal.addEventListener("click", (event) => { if (event.target === this.attackSpeedModal) this.hideAttackSpeedRules(); });
