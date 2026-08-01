@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#050a14" />
+  <title>Neon Skies</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+<div class="app-shell">
+  <section id="main-menu-screen" class="game-screen menu-screen" aria-label="&#20027;&#33756;&#21333;">
+    <div class="menu-stars" aria-hidden="true"></div>
+    <div class="menu-content">
+      <p class="eyebrow">NEON SKIES / V-05</p>
+      <h1>NEON SKIES</h1>
+      <div class="menu-aircraft" aria-hidden="true"><span>&#10022;</span></div>
+      <div class="menu-actions">
+        <button id="menu-battle-button" class="menu-button" type="button"><span>&#36873;&#25321;&#27169;&#24335;</span><small>SELECT MODE</small></button>
+        <button id="open-builder-button" class="menu-button" type="button"><span>&#25913;&#35013;&#26426;&#20307;</span><small>ASSEMBLY BAY</small></button>
+        <button id="settings-button" class="menu-button menu-settings-button" type="button" aria-label="&#35774;&#32622;"><span>&#35774;&#32622;</span><small>SETTINGS</small></button>
+      </div>
+      <p class="menu-hint">&#25302;&#21160;&#27169;&#22359;&#25340;&#35013; &middot; WASD / &#26041;&#21521;&#38190; &middot; &#35302;&#25720;&#25302;&#21160;</p>
+    </div>
+    <div id="settings-modal" class="settings-modal is-hidden" role="dialog" aria-modal="true" aria-label="&#35774;&#32622;"><div class="settings-card"><button id="settings-close" class="detail-close" type="button" aria-label="&#20851;&#38381;">X</button><p class="eyebrow">SYSTEM SETTINGS</p><h2>&#35774;&#32622;</h2><label class="settings-toggle"><input id="damage-number-toggle" type="checkbox" checked /><span>&#26174;&#31034;&#20260;&#23475;&#36339;&#23383;</span></label><label class="settings-toggle"><input id="vibration-toggle" type="checkbox" checked /><span>&#24320;&#21551;&#38663;&#21160;&#21453;&#39304;</span></label><label class="settings-toggle"><input id="sound-toggle" type="checkbox" checked /><span>&#24320;&#21551;&#38899;&#25928;</span></label><p>&#38899;&#25928;&#20351;&#29992;&#26412;&#22320;&#30005;&#23376;&#21512;&#25104;&#65292;&#26080;&#38656;&#19979;&#36733;&#36164;&#28304;&#12290;</p></div></div>
+  </section>
+
+  <section id="mode-screen" class="game-screen menu-screen sub-menu-screen is-hidden" aria-label="&#27169;&#24335;&#36873;&#25321;">
+    <div class="menu-content"><button id="mode-back-button" class="round-button screen-back-button" type="button">&lt;</button><p class="eyebrow">COMBAT PROTOCOL</p><h2>&#36873;&#25321;&#27169;&#24335;</h2><div class="mode-actions"><button id="endless-mode-button" class="mode-card" type="button"><strong>&#26080;&#23613;&#27169;&#24335;</strong><small>ENDLESS / KEEP FIGHTING</small></button><button id="level-mode-button" class="mode-card" type="button"><strong>&#20851;&#21345;&#27169;&#24335;</strong><small>MISSION / 25 &#20010;&#25112;&#21306;</small></button></div></div>
+  </section>
+
+  <section id="level-select-screen" class="game-screen menu-screen sub-menu-screen is-hidden" aria-label="&#20851;&#21345;&#36873;&#25321;"><div class="menu-content"><button id="level-back-button" class="round-button screen-back-button" type="button">&lt;</button><p class="eyebrow">MISSION SELECT</p><h2>&#20851;&#21345;&#36873;&#25321;</h2><p class="menu-hint">&#27979;&#35797;&#38454;&#27573;&#65306;&#25152;&#26377;&#20851;&#21345;&#24050;&#24320;&#25918;</p><div id="level-grid" class="level-grid"></div></div></section>
+
+  <section id="builder-screen" class="game-screen builder-screen is-hidden" aria-label="&#39134;&#26426;&#25913;&#35013;&#30028;&#38754;">
+    <header class="builder-topbar">
+      <div><p class="eyebrow">AIRFRAME BUILDER</p><h2>&#26426;&#20307;&#25913;&#35013;</h2></div>
+      <button id="builder-save-button" class="top-action-button" type="button">&#20445;&#23384;&#25913;&#35013;</button>
+    </header>
+    <div class="builder-content">
+      <div class="builder-board-area">
+        <div class="builder-board-title"><button id="quick-assembly-toggle" class="quick-assembly-toggle" type="button" aria-pressed="false"><span>&#24555;&#25463;&#35013;&#37197;</span><small>OFF</small></button><button id="builder-undo-button" class="quick-assembly-toggle" type="button">&#25764;&#38144;</button><button id="loadout-code-button" class="quick-assembly-toggle loadout-code-button" type="button">&#37197;&#32622;&#30721;</button><button id="clear-loadout" class="text-button" type="button">&#28165;&#31354;&#27169;&#22359;</button></div>
+        <div id="assembly-board" class="assembly-board" aria-label="&#39134;&#26426;&#33258;&#30001;&#35013;&#37197;&#32593;&#26684;"></div>
+        <div class="builder-status-row"><span id="loadout-status">&#35013;&#37197;&#23601;&#32490;</span></div>
+        <div class="builder-stats"><span>&#25915;&#36895; <button id="preview-attack-speed" class="attack-speed-button" type="button" aria-label="&#26597;&#30475;&#25915;&#36895;&#35268;&#21017;">100%</button></span></div>
+      </div>
+      <aside class="module-palette" aria-label="&#27169;&#22359;&#20179;&#24211;">
+        <div class="palette-heading"><div><p class="eyebrow">MODULE BAY</p><h3>&#27169;&#22359;&#20179;&#24211;</h3></div><span>&#25302;&#21040;&#32593;&#26684;</span></div>
+        <div id="module-library" class="module-library"></div>
+        <div id="module-library-scrollbar" class="module-library-scrollbar" aria-label="&#27169;&#22359;&#20179;&#24211;&#28369;&#21160;&#26438;"><span id="module-library-scrollbar-thumb" class="module-library-scrollbar-thumb"></span></div>
+        <p class="palette-note">&#27169;&#22359;&#24517;&#39035;&#19982;&#26680;&#24515;&#25110;&#24050;&#26377;&#27169;&#22359;&#30456;&#37051;&#65292;&#19981;&#33021;&#37325;&#21472;&#12290;&#28857;&#20987;&#26597;&#30475;&#35814;&#24773;&#12290;</p>
+      </aside>
+    </div>
+    <div id="delete-zone" class="delete-zone" aria-hidden="true"><span>&#21024;&#38500;</span><small>DRAG TO REMOVE</small></div>
+    <div id="module-detail-modal" class="module-detail-modal is-hidden" role="dialog" aria-modal="true" aria-label="&#27169;&#22359;&#35814;&#24773;">
+      <div class="module-detail-card"><button id="module-detail-close" class="detail-close" type="button" aria-label="&#20851;&#38381;">X</button><canvas id="detail-icon-canvas" class="detail-icon" width="64" height="64" aria-hidden="true"></canvas><p id="detail-type" class="eyebrow">MODULE</p><h3 id="detail-name">MODULE</h3><p id="detail-description" class="detail-description"></p><div id="detail-stats" class="detail-stats"></div></div>
+    </div>
+    <div id="loadout-code-modal" class="module-detail-modal is-hidden" role="dialog" aria-modal="true" aria-label="&#26426;&#20307;&#37197;&#32622;&#30721;">
+      <div class="module-detail-card loadout-code-card"><button id="loadout-code-close" class="detail-close" type="button" aria-label="&#20851;&#38381;">X</button><p class="eyebrow">BUILD CODE</p><h3>&#26426;&#20307;&#37197;&#32622;&#30721;</h3><p class="detail-description">&#37197;&#32622;&#30721;&#19981;&#21547;&#27169;&#22359;&#21517;&#31216;&#65292;&#21487;&#22797;&#21046;&#20998;&#20139;&#12290;&#23548;&#20837;&#20250;&#23436;&#25972;&#26367;&#25442;&#24403;&#21069;&#26426;&#20307;&#12290;</p><textarea id="loadout-code-input" class="loadout-code-input" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" aria-label="&#26426;&#20307;&#37197;&#32622;&#30721;"></textarea><p id="loadout-code-message" class="loadout-code-message"></p><button id="loadout-code-export" class="secondary-button" type="button">&#22797;&#21046;&#37197;&#32622;&#30721;</button><button id="loadout-code-import" class="primary-button" type="button">&#23548;&#20837;&#26426;&#20307;</button></div>
+    </div>
+    <div id="attack-speed-modal" class="module-detail-modal is-hidden" role="dialog" aria-modal="true" aria-label="&#25915;&#36895;&#35268;&#21017;">
+      <div class="module-detail-card"><button id="attack-speed-close" class="detail-close" type="button" aria-label="&#20851;&#38381;">X</button><p class="eyebrow">ATTACK SPEED</p><h3>&#25915;&#36895;&#35268;&#21017;</h3><p class="detail-description">&#22522;&#30784;&#25915;&#36895;&#20026; 100%&#12290;&#25152;&#26377;&#33258;&#21160;&#25915;&#20987;&#27169;&#22359;&#30340;&#24320;&#28779;&#38388;&#38548;&#20250;&#25353;&#26368;&#32456;&#25915;&#36895;&#32553;&#30701;&#12290;</p><div class="detail-stats"><div><span>&#33021;&#37327;&#805a;&#21512;&#22120;</span><strong>&#27599;&#20010; +20%</strong></div><div><span>&#25915;&#36895;&#19978;&#38480;</span><strong>300%</strong></div><div><span>&#36229;&#20986;&#19978;&#38480;</span><strong>&#19981;&#29983;&#25928;</strong></div><div><span>&#20027;&#21160;&#25216;&#33021;&#20919;&#21364;</span><strong>&#19981;&#21463;&#24433;&#21709;</strong></div></div></div>
+    </div>
+  </section>
+
+  <section id="battle-screen" class="game-screen battle-screen is-hidden" aria-label="&#25112;&#26007;&#30028;&#38754;">
+    <div class="battle-hud"><button id="battle-menu-button" class="round-button" type="button" aria-label="&#26242;&#20572;&#28216;&#25103;">&#10074;&#10074;</button><div class="hud-stat"><span>&#29983;&#21629;&#20540;</span><strong id="health-value">-</strong></div><div class="hud-stat hud-score"><span>&#24471;&#20998;</span><strong id="score-value">000000</strong></div><div class="hud-stat"><span>&#20851;&#21345;</span><strong id="level-value">-</strong></div><div class="hud-stat hud-time"><span>&#33322;&#31243;</span><strong id="time-value">00:00</strong></div></div>
+    <div class="battle-canvas-wrap"><canvas id="game-canvas" width="480" height="854" aria-label="&#31354;&#25112;&#28216;&#25103;&#30011;&#24067;"></canvas><div id="skill-panel" class="skill-panel" aria-label="&#20027;&#21160;&#25216;&#33021;"></div><div id="pause-overlay" class="screen-overlay is-hidden"><div class="overlay-card pause-card"><p class="eyebrow">COMBAT PAUSED</p><h2>&#28216;&#25103;&#24050;&#26242;&#20572;</h2><button id="pause-continue-button" class="primary-button" type="button">&#32487;&#32493;&#28216;&#25103;</button><button id="pause-return-button" class="secondary-button" type="button">&#36820;&#22238;&#20027;&#33756;&#21333;</button></div></div><div id="pause-confirm" class="screen-overlay is-hidden"><div class="overlay-card pause-confirm-card"><p class="eyebrow">RETURN TO MENU</p><h2>&#36820;&#22238;&#20027;&#33756;&#21333;</h2><p>&#30830;&#23450;&#35201;&#36820;&#22238;&#20027;&#33756;&#21333;&#21527;&#65311;</p><button id="pause-cancel-button" class="secondary-button" type="button">&#21462;&#28040;</button><button id="pause-confirm-button" class="primary-button" type="button">&#30830;&#23450;</button></div></div><div id="game-over-screen" class="screen-overlay is-hidden"><div class="overlay-card game-over-card"><p id="game-over-eyebrow" class="eyebrow">SIGNAL LOST</p><h2 id="game-over-title">&#20219;&#21153;&#32467;&#26463;</h2><p id="game-over-message" class="intro-copy">&#20320;&#30340;&#25112;&#26426;&#24050;&#22833;&#21435;&#25112;&#26007;&#33021;&#21147;&#12290;</p><div class="final-score"><span>&#26368;&#32456;&#24471;&#20998;</span><strong id="final-score-value">000000</strong></div><button id="next-level-button" class="primary-button" type="button">&#19979;&#19968;&#20851;</button><button id="return-level-select-button" class="secondary-button" type="button">&#36820;&#22238;&#36873;&#20851;</button></div></div></div>
+    <p class="battle-help">WASD / &#26041;&#21521;&#38190;&#31227;&#21160; &middot; &#35302;&#25720;&#25302;&#21160; &middot; &#33258;&#21160;&#23556;&#20987; &middot; 1-9 &#20351;&#29992;&#25216;&#33021;</p>
+  </section>
+</div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
