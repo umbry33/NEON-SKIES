@@ -12,6 +12,43 @@ const moduleGroups = [["weapon", "\u6b66\u5668\u6a21\u5757", MODULE_CONFIG.weapo
 const typeLabels = { core: "\u6838\u5fc3\u6a21\u5757", weapon: "\u6b66\u5668\u6a21\u5757", special: "\u7279\u6b8a\u6a21\u5757" };
 const rarityLabels = { common: "\u666e\u901a", uncommon: "\u975e\u51e1", rare: "\u7a00\u6709", epic: "\u53f2\u8bd7", legendary: "\u4f20\u8bf4" };
 
+// Keep the native click (release) as the only button action. If a touch
+// changes the screen before the browser emits its delayed click, discard the
+// retargeted click instead of activating the button now under the finger.
+const installTouchReleaseGuard = () => {
+  const activeTouches = new Map();
+  let lastTouchRelease = null;
+  const getButton = (target) => target instanceof Element ? target.closest("button") : null;
+  const remember = (event) => {
+    if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
+    activeTouches.set(event.pointerId, { button: getButton(event.target) });
+  };
+  const release = (event) => {
+    const state = activeTouches.get(event.pointerId);
+    if (!state) return;
+    activeTouches.delete(event.pointerId);
+    lastTouchRelease = { button: state.button, at: performance.now() };
+  };
+  document.addEventListener("pointerdown", remember, { capture: true, passive: true });
+  document.addEventListener("pointerup", release, { capture: true, passive: true });
+  document.addEventListener("pointercancel", (event) => activeTouches.delete(event.pointerId), { capture: true, passive: true });
+  if (!("PointerEvent" in window)) {
+    document.addEventListener("touchstart", (event) => { for (const touch of event.changedTouches) activeTouches.set(touch.identifier, { button: getButton(touch.target) }); }, { capture: true, passive: true });
+    document.addEventListener("touchend", (event) => { for (const touch of event.changedTouches) { const state = activeTouches.get(touch.identifier); if (state) { activeTouches.delete(touch.identifier); lastTouchRelease = { button: state.button, at: performance.now() }; } } }, { capture: true, passive: true });
+    document.addEventListener("touchcancel", (event) => { for (const touch of event.changedTouches) activeTouches.delete(touch.identifier); }, { capture: true, passive: true });
+  }
+  document.addEventListener("click", (event) => {
+    if (!lastTouchRelease) return;
+    if (performance.now() - lastTouchRelease.at > 1200) { lastTouchRelease = null; return; }
+    const clickedButton = getButton(event.target);
+    const originalButton = lastTouchRelease.button;
+    lastTouchRelease = null;
+    const sameButton = originalButton && clickedButton && (originalButton === clickedButton || originalButton.contains(clickedButton) || clickedButton.contains(originalButton));
+    if (event.detail !== 0 && !sameButton) { event.preventDefault(); event.stopImmediatePropagation(); }
+  }, true);
+};
+installTouchReleaseGuard();
+
 const bindTap = (element, handler) => {
   if (!element) return;
   element.addEventListener("click", (event) => {
@@ -39,9 +76,7 @@ export class UI {
     this.assemblyBoard.addEventListener("pointerleave", () => this.hideQuickAssemblyPreview());
     this.assemblyBoard.addEventListener("click", (event) => this.handleQuickAssemblyClick(event));
     window.addEventListener("pointermove", (event) => this.moveDrag(event), { passive: false }); window.addEventListener("pointerup", (event) => this.endDrag(event)); window.addEventListener("pointercancel", (event) => this.endDrag(event));
-    this.skillTouchHandledAt = 0;
-    this.skillPanel.addEventListener("pointerup", (event) => { const button = event.target.closest("[data-skill-index]"); if (!button || button.disabled || (event.pointerType !== "touch" && event.pointerType !== "pen")) return; event.preventDefault(); this.skillTouchHandledAt = performance.now(); this.onSkill?.(Number(button.dataset.skillIndex)); }, { passive: false });
-    this.skillPanel.addEventListener("click", (event) => { if (performance.now() - this.skillTouchHandledAt < 600) return; const button = event.target.closest("[data-skill-index]"); if (button) this.onSkill?.(Number(button.dataset.skillIndex)); });
+    this.skillPanel.addEventListener("click", (event) => { const button = event.target.closest("[data-skill-index]"); if (button && !button.disabled) this.onSkill?.(Number(button.dataset.skillIndex)); });
     bindTap(this.clearButton, () => { this.pushHistory(); this.loadout = createLoadout({ modules: [] }); this.renderAssembly(); this.setStatus("\u88c5\u914d\u533a\u5df2\u6e05\u7a7a"); });
     bindTap(this.loadoutCodeButton, () => this.openLoadoutCode()); bindTap(this.loadoutCodeClose, () => this.hideLoadoutCode()); bindTap(this.loadoutCodeExport, () => { void this.copyLoadoutCode(); }); bindTap(this.loadoutCodeImport, () => this.importLoadoutCode()); this.loadoutCodeModal.addEventListener("click", (event) => { if (event.target === this.loadoutCodeModal) this.hideLoadoutCode(); });
     bindTap(this.previewAttackSpeed, () => this.showAttackSpeedRules()); bindTap(this.attackSpeedClose, () => this.hideAttackSpeedRules()); this.attackSpeedModal.addEventListener("click", (event) => { if (event.target === this.attackSpeedModal) this.hideAttackSpeedRules(); });
