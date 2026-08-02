@@ -208,6 +208,8 @@ export class UI {
       markTouchHandled(this.assemblyBoard);
       this.handleQuickAssemblyClick(event);
     }, { passive: false });
+    this.assemblyBoard.addEventListener("pointercancel", (event) => this.cancelBoardGesture(event), { passive: false });
+    this.assemblyBoard.addEventListener("lostpointercapture", (event) => this.cancelBoardGesture(event), { passive: false });
     this.assemblyBoard.addEventListener("click", (event) => {
       const viewAction = event.target.closest("[data-board-view]");
       if (viewAction) { this.handleBoardViewAction(viewAction.dataset.boardView); return; }
@@ -342,7 +344,7 @@ export class UI {
   showDodgeDifficulty({ direction = "forward" } = {}) { this.transitionToScreen(this.dodgeDifficultyScreen, { direction }); }
   showTutorial(step = 0, reset = true, { direction = "forward" } = {}) { this.transitionToScreen(this.tutorialScreen, { direction }); if (reset) this.tutorialActionsDone.clear(); this.tutorialStep = step; this.renderInteractiveTutorial(); }
   renderInteractiveTutorial() { const step = tutorialSteps[this.tutorialStep]; if (!step) return; const last = this.tutorialStep === tutorialSteps.length - 1; const actionRequired = this.tutorialStep < 2; const hasModeSelectAction = this.tutorialStep === tutorialSteps.length - 1; const actionLabel = this.tutorialStep === 0 ? "打开改装机体" : this.tutorialStep === 1 ? "进入训练战斗" : "进入模式选择"; this.tutorialProgressText.textContent = `${String(this.tutorialStep + 1).padStart(2, "0")} / ${String(tutorialSteps.length).padStart(2, "0")}`; this.tutorialProgressFill.style.width = `${((this.tutorialStep + 1) / tutorialSteps.length) * 100}%`; this.tutorialStepTag.textContent = step.tag; this.tutorialStepTitle.textContent = step.title; this.tutorialStepBody.textContent = step.body; this.tutorialActionButton.classList.toggle("is-hidden", !(actionRequired || hasModeSelectAction)); this.tutorialActionButton.textContent = actionLabel; this.tutorialNextButton.disabled = actionRequired && !this.tutorialActionsDone.has(this.tutorialStep); this.tutorialPrevButton.disabled = this.tutorialStep === 0; this.tutorialNextButton.textContent = last ? "退出教程" : "下一步"; this.tutorialDots.innerHTML = tutorialSteps.map((_, index) => `<i class="${index === this.tutorialStep ? "is-active" : ""}"></i>`).join(""); }
-  handleTutorialAction() { if (this.tutorialStep === 0) { this.tutorialContext = "builder"; this.tutorialBuilderInitialSignature = this.getLoadoutSignature(); this.showBuilder(); return; } if (this.tutorialStep === 1) { this.tutorialContext = "battle"; this.onStart?.({ ...this.getSelectedIds(), mode: "tutorial", tutorial: true }); return; } if (this.tutorialStep === 3) { this.tutorialContext = null; this.showModeSelect(); } }
+  handleTutorialAction() { if (this.tutorialStep === 0) { this.tutorialContext = "builder"; this.tutorialBuilderInitialSignature = this.getLoadoutSignature(); this.showBuilder(); return; } if (this.tutorialStep === 1) { this.tutorialContext = "battle"; this.onStart?.({ ...this.getSelectedIds(), mode: "tutorial", tutorial: true }); return; } if (this.tutorialStep === tutorialSteps.length - 1) { this.tutorialContext = null; this.showModeSelect(); } }
   completeTutorialAction(step) { this.tutorialActionsDone.add(step); this.tutorialContext = null; }
   renderTutorial() { const step = tutorialSteps[this.tutorialStep]; if (!step) return; const last = this.tutorialStep === tutorialSteps.length - 1; this.tutorialProgressText.textContent = `${String(this.tutorialStep + 1).padStart(2, "0")} / ${String(tutorialSteps.length).padStart(2, "0")}`; this.tutorialProgressFill.style.width = `${((this.tutorialStep + 1) / tutorialSteps.length) * 100}%`; this.tutorialStepTag.textContent = step.tag; this.tutorialStepTitle.textContent = step.title; this.tutorialStepBody.textContent = step.body; this.tutorialPrevButton.disabled = this.tutorialStep === 0; this.tutorialNextButton.textContent = last ? "完成并返回主菜单" : "下一步"; this.tutorialDots.innerHTML = tutorialSteps.map((_, index) => `<i class="${index === this.tutorialStep ? "is-active" : ""}"></i>`).join(""); }
   previousTutorialStep() { this.tutorialStep = Math.max(0, this.tutorialStep - 1); this.renderInteractiveTutorial(); }
@@ -445,9 +447,23 @@ export class UI {
   placeModule(module, x, y, instanceId = null) { if (!module) return false; const candidate = this.buildCandidate(module, x, y, instanceId); if (!validateGeometry(candidate, { requireConnected: false }).valid) return false; if (countSkillModules(candidate) > MAX_SKILL_MODULES) { this.setStatus(`技能模块最多装配 ${MAX_SKILL_MODULES} 个`); return false; } if (!instanceId && module.maxCount && this.loadout.modules.filter(({ module: current }) => current?.id === module.id).length >= module.maxCount) return false; this.pushHistory(); const repaired = pruneDisconnected(candidate); this.loadout = repaired.loadout; this.renderAssembly(); return repaired.loadout.modules.some((entry) => entry.instanceId === candidate.modules[candidate.modules.length - 1]?.instanceId); }
   getBoardWorld() { return this.assemblyBoard?.querySelector(".assembly-board-world"); }
   clampBoardOffset(offsetX, offsetY, scale = this.boardView.scale) {
-    const size = this.assemblyBoard?.clientWidth ?? 0; const worldSize = size * scale; const margin = Math.abs(size - worldSize) / 2;
-    if (scale >= 1) return { offsetX: Math.min(0, Math.max(size - worldSize, offsetX)), offsetY: Math.min(0, Math.max(size - worldSize, offsetY)) };
-    return { offsetX: Math.min(margin, Math.max(-margin, offsetX)), offsetY: Math.min(margin, Math.max(-margin, offsetY)) };
+    const board = this.assemblyBoard;
+    const boardWidth = board?.clientWidth ?? 0;
+    const boardHeight = board?.clientHeight ?? boardWidth;
+    const worldWidth = boardWidth * scale;
+    const worldHeight = boardHeight * scale;
+    // Keep the pan bounds symmetric when the world is smaller. When zoomed in,
+    // allow the full range in both directions instead of anchoring it at (0, 0).
+    const horizontalMargin = Math.abs(boardWidth - worldWidth) / 2;
+    const verticalMargin = Math.abs(boardHeight - worldHeight) / 2;
+    const minX = worldWidth >= boardWidth ? boardWidth - worldWidth : -horizontalMargin;
+    const maxX = worldWidth >= boardWidth ? 0 : horizontalMargin;
+    const minY = worldHeight >= boardHeight ? boardHeight - worldHeight : -verticalMargin;
+    const maxY = worldHeight >= boardHeight ? 0 : verticalMargin;
+    return {
+      offsetX: Math.min(maxX, Math.max(minX, offsetX)),
+      offsetY: Math.min(maxY, Math.max(minY, offsetY)),
+    };
   }
   applyBoardView() {
     const world = this.getBoardWorld(); if (!world) return; const view = this.boardView; world.style.transform = `translate3d(${view.offsetX}px, ${view.offsetY}px, 0) scale(${view.scale})`; const label = document.querySelector("[data-board-view-label]"); if (label) label.textContent = `${Math.round(view.scale * 100)}%`;
@@ -469,7 +485,18 @@ export class UI {
     if (gesture.mode !== "pan" || gesture.pointerId !== event.pointerId) return true; const dx = event.clientX - gesture.startX; const dy = event.clientY - gesture.startY; if (Math.hypot(dx, dy) > 6) gesture.moved = true; this.setBoardView(this.boardView.scale, gesture.startOffsetX + dx, gesture.startOffsetY + dy); return true;
   }
   endBoardGesture(event) {
-    if (!this.boardPointers.has(event.pointerId)) return false; this.boardPointers.delete(event.pointerId); const gesture = this.boardGesture; if (gesture?.mode === "pinch") { if (this.boardPointers.size === 1) { const point = [...this.boardPointers.entries()][0]; this.boardGesture = { mode: "pan", pointerId: point[0], startX: point[1].x, startY: point[1].y, startOffsetX: this.boardView.offsetX, startOffsetY: this.boardView.offsetY, moved: true }; } else this.boardGesture = null; return false; } if (!gesture || gesture.pointerId !== event.pointerId) return false; const tap = !gesture.moved; this.suppressClick = gesture.moved; this.boardGesture = null; this.assemblyBoard.releasePointerCapture?.(event.pointerId); setTimeout(() => { this.suppressClick = false; }, 0); return tap;
+    if (!this.boardPointers.has(event.pointerId)) return false; this.boardPointers.delete(event.pointerId); const gesture = this.boardGesture; if (gesture?.mode === "pinch") { if (this.boardPointers.size === 1) { const point = [...this.boardPointers.entries()][0]; this.boardGesture = { mode: "pan", pointerId: point[0], startX: point[1].x, startY: point[1].y, startOffsetX: this.boardView.offsetX, startOffsetY: this.boardView.offsetY, moved: true }; } else this.boardGesture = null; return false; } if (!gesture || gesture.pointerId !== event.pointerId) return false; const tap = !gesture.moved; this.suppressClick = gesture.moved; this.boardGesture = null; if (this.assemblyBoard.hasPointerCapture?.(event.pointerId)) this.assemblyBoard.releasePointerCapture(event.pointerId); setTimeout(() => { this.suppressClick = false; }, 0); return tap;
+  }
+  cancelBoardGesture(event) {
+    if (event?.pointerId != null) this.boardPointers.delete(event.pointerId);
+    this.boardPointers.clear();
+    this.boardGesture = null;
+    const pointerId = event?.pointerId;
+    if (pointerId != null && this.assemblyBoard.hasPointerCapture?.(pointerId)) {
+      this.assemblyBoard.releasePointerCapture(pointerId);
+    }
+    this.suppressClick = true;
+    setTimeout(() => { this.suppressClick = false; }, 0);
   }
   renderAssembly() {
     const cols = ASSEMBLY_BOARD.columns; const rows = ASSEMBLY_BOARD.rows; const core = ASSEMBLY_BOARD.corePosition;

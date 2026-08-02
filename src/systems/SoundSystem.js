@@ -5,6 +5,7 @@ const SOUND_CONFIG = {
   skill: { frequency: 480, duration: 0.1, volume: 0.16, cooldown: 0.12, type: "sine" },
   blackHoleExplosion: { frequency: 82, duration: 0.34, volume: 0.3, cooldown: 0.1, type: "sawtooth" },
 };
+const MASTER_VOLUME = 2.5;
 
 export class SoundSystem {
   constructor() {
@@ -45,7 +46,7 @@ export class SoundSystem {
     this.musicStep = 0;
     this.musicBus = this.context.createGain();
     this.musicBus.gain.setValueAtTime(0.0001, this.context.currentTime);
-    this.musicBus.gain.exponentialRampToValueAtTime(0.42, this.context.currentTime + 1.8);
+    this.musicBus.gain.exponentialRampToValueAtTime(0.42 * MASTER_VOLUME, this.context.currentTime + 1.8);
     this.musicBus.connect(this.context.destination);
     const beatMs = (60 / 82) * 1000;
     this.playMusicStep();
@@ -117,7 +118,7 @@ export class SoundSystem {
     oscillator.frequency.setValueAtTime(config.frequency, now);
     oscillator.frequency.exponentialRampToValueAtTime(Math.max(45, config.frequency * 0.66), now + config.duration);
     gain.gain.setValueAtTime(0.0001, now);
-    gain.gain.exponentialRampToValueAtTime(config.volume, now + 0.006);
+    gain.gain.exponentialRampToValueAtTime(config.volume * MASTER_VOLUME, now + 0.006);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + config.duration);
     oscillator.connect(gain).connect(this.context.destination);
     oscillator.start(now); oscillator.stop(now + config.duration + 0.01);

@@ -157,8 +157,8 @@ select:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(100,231,255
 
 /* V-03 freeform brick-style builder */
 .assembly-help { margin: -3px 2px 9px; color: var(--muted); font-size: .64rem; line-height: 1.5; }
-.assembly-board { position: relative; width: min(100%, 330px); aspect-ratio: 1 / 1; margin: 0 auto; overflow: hidden; border: 1px solid rgba(100,231,255,.42); border-radius: 13px; background: #061525; box-shadow: inset 0 0 30px rgba(39,169,216,.1), 0 0 24px rgba(20,117,157,.12); touch-action: none; user-select: none; }
-.assembly-board-world { position: absolute; inset: 0; z-index: 1; transform-origin: 0 0; will-change: transform; }
+.assembly-board { position: relative; width: min(100%, 330px); aspect-ratio: 1 / 1; margin: 0 auto; overflow: hidden; border: 1px solid rgba(100,231,255,.42); border-radius: 13px; background: #061525; box-shadow: inset 0 0 30px rgba(39,169,216,.1), 0 0 24px rgba(20,117,157,.12); touch-action: none; user-select: none; -webkit-user-select: none; -webkit-user-drag: none; }
+.assembly-board-world { position: absolute; inset: 0; z-index: 1; transform-origin: 0 0; will-change: transform; touch-action: none; -webkit-user-select: none; user-select: none; }
 .assembly-view-controls { position: relative; z-index: 2; display: flex; align-items: center; gap: 3px; margin-left: auto; padding: 3px; border: 1px solid rgba(100,231,255,.28); border-radius: 9px; background: rgba(2,12,26,.84); box-shadow: 0 0 12px rgba(32,159,201,.16); pointer-events: auto; }
 .assembly-view-controls button { display: grid; place-items: center; width: 25px; height: 25px; padding: 0; border: 0; border-radius: 6px; color: var(--cyan); background: transparent; font: 700 .95rem/1 ui-monospace, monospace; touch-action: manipulation; }
 .assembly-view-controls button:hover, .assembly-view-controls button:focus-visible { color: #fff; background: rgba(100,231,255,.15); outline: none; }
