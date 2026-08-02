@@ -3,7 +3,7 @@ import { ENEMY_CONFIG, ADVANCED_ENEMY_CONFIG, createBossDefinition } from "./ene
 import { ENVIRONMENT_CONFIG } from "./environment-config.js";
 
 const rarityNames = { common: "普通", uncommon: "非凡", rare: "稀有", epic: "史诗", legendary: "传说" };
-const typeNames = { weapon: "自动武器", special: "特殊模块" };
+const typeNames = { weapon: "自动模块", special: "技能模块" };
 
 export function getEncyclopediaSections() {
   const modules = [...MODULE_CONFIG.weapons, ...MODULE_CONFIG.specials].map((module) => {

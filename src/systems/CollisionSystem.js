@@ -28,7 +28,23 @@ export class CollisionSystem {
     };
 
     for (const projectile of projectiles) {
+      if (projectile.blackHoleCapturedBy) continue;
+      if ((projectile.polarityDelay ?? 0) > 0) continue;
       if (projectile.team === "player") {
+        if (projectile.kind === "blackHole") {
+          const field = projectile.blackHole ?? {};
+          if (projectile.life <= 0 && !field.exploded) {
+            field.exploded = true; const captured = [...(field.capturedProjectiles ?? [])]; const radius = field.explosionRadius ?? 37;
+            explosionEvents.push({ x: projectile.x, y: projectile.y, radius, color: projectile.color, kind: "blackHole", capturedCount: captured.length, life: 0.5, maxLife: 0.5 });
+            for (const capturedProjectile of captured) {
+              removedProjectiles.add(capturedProjectile);
+              const damage = Math.max(0, capturedProjectile.damage ?? 0);
+              for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && !enemy.isPhased && Math.hypot(enemy.x - projectile.x, enemy.y - projectile.y) <= radius) addDamage(enemy, damage);
+            }
+            removedProjectiles.add(projectile);
+          }
+          continue;
+        }
         if (projectile.kind === "electricWhirlwind") {
           if (projectile.active !== false && (projectile.whirlwind?.damageTimer ?? 0) <= 0) {
             for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && !enemy.isPhased && circleIntersects(projectile, enemy)) addDamage(enemy, projectile.damage);

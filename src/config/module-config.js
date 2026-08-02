@@ -5,8 +5,9 @@ const horizontal2 = footprint([[-1, 0], [0, 0]]);
 const horizontal3 = footprint([[-1, 0], [0, 0], [1, 0]]);
 const vertical2 = footprint([[0, -1], [0, 0]]);
 const vertical3 = footprint([[0, -1], [0, 0], [0, 1]]);
+const square2 = footprint([[-1, -1], [0, -1], [-1, 0], [0, 0]]);
 
-export const ASSEMBLY_BOARD = { columns: 9, rows: 9, corePosition: { x: 4, y: 4 }, maxModules: 60 };
+export const ASSEMBLY_BOARD = { columns: 15, rows: 15, corePosition: { x: 7, y: 7 } };
 
 const zh = {
   core: "\u6052\u661f\u6838\u5fc3",
@@ -21,6 +22,9 @@ const zh = {
   sonic: "\u9707\u98a4\u5f26\u4e50",
   zero: "\u96f6\u5ea6\u9886\u57df",
   aggregator: "\u80fd\u91cf\u805a\u5408\u5668",
+  overclock: "\u8d85\u9891\u6a21\u5f0f",
+  polarity: "\u6781\u6027\u53cd\u8f6c",
+  blackHole: "\u9ed1\u6d1e\u6295\u5c04\u5668",
 };
 
 export const CORE_MODULE = {
@@ -39,6 +43,8 @@ export const MODULE_CONFIG = {
     weapon({ id: "weapon-ball-lightning", shareCode: 4, name: zh.ball, type: "weapon", description: "\u6bcf 4 \u79d2\u53d1\u5c04\u4e00\u9897\u66f4\u5927\u3001\u5feb\u901f\u81a8\u80c0\u7684\u7403\u72b6\u95ea\u7535\u3002", rarity: "epic", icon: "o", behavior: { type: "ballLightning", fireInterval: 4, projectile: { damage: 3, damageEnd: 9, speed: 188.5, growthRate: 8.8, radius: 12, life: 4.5, color: "#b7a1ff" } } }),
     weapon({ id: "weapon-psionic", shareCode: 5, name: zh.psionic, type: "weapon", description: "\u53d1\u5c04\u7206\u70b8\u7075\u80fd\u7c92\u5b50\uff0c\u540c\u7c7b\u6a21\u5757\u8d8a\u591a\u653b\u901f\u8d8a\u5feb\u3002", rarity: "rare", icon: "@", behavior: { type: "psionic", stackKey: "psionic", stackedIntervals: [1.5, 1.3, 1], projectile: { damage: 6, speed: 310, radius: 10, life: 3, explosionRadius: 30, color: "#72f1c0" } } }),
     weapon({ id: "weapon-lightning-generator", shareCode: 11, name: "\u95ea\u7535\u751f\u6210\u5668", type: "weapon", description: "\u7ad6\u5411\u4e24\u683c\u3002\u6bcf 2 \u79d2\u5411\u524d\u65b9\u6700\u8fd1\u654c\u4eba\u91ca\u653e\u95ea\u7535\uff0c\u5728 200px \u8303\u56f4\u5185\u65e0\u9650\u8fde\u9501\u3002", rarity: "epic", icon: "L", footprint: vertical2, behavior: { type: "lightning", fireRate: 0.5, fireInterval: 2, projectile: { damage: 7, speed: 0, radius: 1, chainRadius: 200, chainLife: 0.25, flashDuration: 0.045, color: "#b86cff" } } }),
+    weapon({ id: "weapon-black-hole", shareCode: 15, name: zh.blackHole, type: "weapon", description: "\u6bcf 7 \u79d2\u53d1\u5c04\u4e00\u679a\u7f13\u6162\u79fb\u52a8\u7684\u9ed1\u6d1e\uff0c\u6301\u7eed\u5438\u5f15\u654c\u4eba\u548c\u5f39\u5e55\u5e76\u9020\u6210\u4f24\u5bb3\uff0c\u7ed3\u675f\u65f6\u7206\u70b8\u3002", rarity: "legendary", icon: "B", footprint: square2, behavior: { type: "blackHole", fireInterval: 7, projectile: { damage: 2, speed: 66, radius: 16, life: 5.5, color: "#b57bff", blackHole: { pullRadius: 132, pullStrength: 105, damageInterval: 0.25, explosionRadius: 74, explosionDamage: 10 } } } }),
+    weapon({ id: "special-energy-aggregator", shareCode: 12, name: zh.aggregator, type: "weapon", description: "\u81ea\u52a8\u653b\u51fb\u6a21\u5757\u3002\u5360 1 \u683c\uff0c\u6bcf\u4e2a\u4f7f\u6240\u6709\u81ea\u52a8\u653b\u51fb\u6a21\u5757\u653b\u901f\u63d0\u9ad8 20%\uff0c\u6700\u9ad8 300%\u3002\u4e0d\u5f71\u54cd\u4e3b\u52a8\u6280\u80fd\u51b7\u5374\u3002", rarity: "rare", icon: "A", modifiers: { maxHp: { add: 0, multiply: 1 }, moveSpeed: { add: 0, multiply: 1 }, attackSpeed: { add: 0.2, multiply: 1 } } }),
   ],
   specials: [
     special({ id: "special-optical", shareCode: 6, name: zh.optical, type: "special", description: "\u7ad6\u5411\u4e24\u683c\u3002\u4e3b\u52a8\u6280\u80fd：\u51b7\u5374 20 \u79d2\uff0c\u521b\u9020\u6301\u7eed 5 \u79d2\u3001\u4f24\u5bb3\u4e3a 30% \u7684\u5206\u8eab\u3002", rarity: "epic", icon: "O", footprint: vertical2, skill: { id: "decoy", name: "\u5149\u5b66\u5206\u8eab", cooldown: 20, duration: 5 } }),
@@ -46,9 +52,19 @@ export const MODULE_CONFIG = {
     special({ id: "special-chainsaw", shareCode: 8, name: zh.chainsaw, type: "special", description: "\u6a2a\u5411\u4e24\u683c\u3002\u6280\u80fd\u6301\u7eed 5 \u79d2\uff0c\u5bf9\u4e24\u4fa7\u8fd1\u8ddd\u79bb\u654c\u4eba\u8fdb\u884c\u9ad8\u9891\u5207\u5272\u3002", rarity: "epic", icon: "X", footprint: horizontal2, skill: { id: "ionSaw", name: "\u79bb\u5b50\u94fe\u952f", cooldown: 15, duration: 5 } }),
     special({ id: "special-sonic", shareCode: 9, name: zh.sonic, type: "special", description: "\u6a2a\u5411\u4e09\u683c\u3002\u7acb\u5373\u5728\u73a9\u5bb6\u9ad8\u5ea6\u521b\u5efa\u5f26\u4e50\uff0c\u6bcf 0.15 \u79d2\u5411\u4e0a\u521b\u5efa\u4e00\u6839\uff0c\u5149\u675f\u95f4\u8ddd\u66f4\u5927\uff0c\u6bcf\u6839\u53ea\u5224\u5b9a\u4e00\u6b21\u3002", rarity: "legendary", icon: "S", footprint: horizontal3, skill: { id: "sonicWave", name: "\u9707\u98a4\u5f26\u4e50", cooldown: 8, duration: 6.5 } }),
     special({ id: "special-zero", shareCode: 10, name: zh.zero, type: "special", description: "\u6a2a\u5411\u4e09\u683c\u3002\u51bb\u7ed3\u666e\u901a\u654c\u4eba\u548c\u654c\u65b9\u5f39\u5e55 3.5 \u79d2\u3002", rarity: "legendary", icon: "F", footprint: horizontal3, skill: { id: "freeze", name: "\u96f6\u5ea6\u9886\u57df", cooldown: 15, duration: 3.5 } }),
-    special({ id: "special-energy-aggregator", shareCode: 12, name: zh.aggregator, type: "special", description: "\u5360 1 \u683c\u3002\u6bcf\u4e2a\u4f7f\u6240\u6709\u81ea\u52a8\u653b\u51fb\u6a21\u5757\u653b\u901f\u63d0\u9ad8 20%\uff0c\u6700\u9ad8 300%\u3002\u4e0d\u5f71\u54cd\u4e3b\u52a8\u6280\u80fd\u51b7\u5374\u3002", rarity: "rare", icon: "A", modifiers: { maxHp: { add: 0, multiply: 1 }, moveSpeed: { add: 0, multiply: 1 }, attackSpeed: { add: 0.2, multiply: 1 } } }),
+    special({ id: "special-overclock", shareCode: 13, name: zh.overclock, type: "special", description: "\u5360 2 \u00d7 2 \u683c\u3002\u4e3b\u52a8\u6280\u80fd\u6301\u7eed 5 \u79d2\uff0c\u6240\u6709\u81ea\u52a8\u6b66\u5668\u653b\u901f +80%\uff0c\u53ef\u7a81\u7834 300% \u4e0a\u9650\u4e00\u6b21\uff1b\u7ed3\u675f\u540e\u505c\u706b 1 \u79d2\u3002", rarity: "legendary", icon: "O", footprint: square2, skill: { id: "overclock", name: zh.overclock, cooldown: 15, duration: 5 } }),
+    special({ id: "special-polarity-reverse", shareCode: 14, name: zh.polarity, type: "special", description: "\u5360 2 \u00d7 2 \u683c\u3002\u4e3b\u52a8\u6280\u80fd\u5c06\u5168\u90e8\u654c\u65b9\u5f39\u5e55\u505c\u6ede 0.25 \u79d2\u540e\u8f6c\u5316\u4e3a\u5df1\u65b9\u5f39\u5e55\uff0c\u5411\u4e0a\u5c04\u51fa\u5e76\u4f24\u5bb3\u654c\u4eba\u3002", rarity: "legendary", icon: "P", footprint: square2, skill: { id: "polarityReverse", name: zh.polarity, cooldown: 12, duration: 0.25 } }),
   ],
 };
+
+const blackHoleModule = MODULE_CONFIG.weapons.find((module) => module.id === "weapon-black-hole");
+if (blackHoleModule) {
+  blackHoleModule.description = "\u6bcf 7 \u79d2\u53d1\u5c04\u4e00\u679a\u7f13\u6162\u79fb\u52a8\u7684\u9ed1\u6d1e\uff0c\u6301\u7eed 3 \u79d2\u5438\u5f15\u654c\u4eba\u548c\u5f39\u5e55\u3002\u9ed1\u6d1e\u4f1a\u5c06\u5438\u5165\u7684\u654c\u65b9\u5f39\u5e55\u5e26\u5165\u7206\u70b8\u5e76\u5bf9\u654c\u4eba\u9020\u6210\u4f24\u5bb3\u3002";
+  Object.assign(blackHoleModule.behavior.projectile, { damage: 0, speed: 165, radius: 8, life: 3 });
+  Object.assign(blackHoleModule.behavior.projectile.blackHole, { pullRadius: 66, pullStrength: 210, slowSpeedMultiplier: 0.035, detonationDelay: 1, explosionRadius: 37 });
+}
+const overclockModule = MODULE_CONFIG.specials.find((module) => module.id === "special-overclock");
+if (overclockModule) overclockModule.description = "\u5360 2 \u00d7 2 \u683c\u3002\u4e3b\u52a8\u6280\u80fd\u6301\u7eed 5 \u79d2\uff0c\u6240\u6709\u81ea\u52a8\u6b66\u5668\u653b\u901f +80%\uff0c\u53ef\u8d85\u8fc7 300% \u4e0a\u9650\u81f3 380%\u3002\u6301\u7eed\u671f\u95f4\u91cd\u590d\u4f7f\u7528\u53ea\u5237\u65b0 5 \u79d2\u65f6\u95f4\uff0c\u4e0d\u4f1a\u53e0\u52a0\u653b\u901f\uff1b\u7ed3\u675f\u540e\u505c\u706b 1 \u79d2\u3002";
 
 const RARITY_OVERRIDES = {
   "weapon-electric-whirlwind": "legendary",
@@ -63,6 +79,9 @@ const RARITY_OVERRIDES = {
   "weapon-ricochet": "rare",
   "special-chainsaw": "rare",
   "special-energy-aggregator": "rare",
+  "special-overclock": "legendary",
+  "special-polarity-reverse": "legendary",
+  "weapon-black-hole": "legendary",
 };
 for (const module of [...MODULE_CONFIG.weapons, ...MODULE_CONFIG.specials]) if (RARITY_OVERRIDES[module.id]) module.rarity = RARITY_OVERRIDES[module.id];
 
@@ -79,8 +98,8 @@ function resolveModule(value) { return !value ? null : getModuleById(typeof valu
 const defaultBuild = [];
 export function createLoadout(spec = {}) {
   const rawModules = Array.isArray(spec.modules) ? spec.modules : defaultBuild;
-  const modules = rawModules.map((entry, index) => { const module = resolveModule(entry); if (!module) return null; return { instanceId: entry.instanceId ?? `module-${index}-${module.id}`, moduleId: module.id, module, x: Number(entry.x ?? 4), y: Number(entry.y ?? 3), rotation: Number(entry.rotation ?? 0) }; }).filter(Boolean);
+  const modules = rawModules.map((entry, index) => { const module = resolveModule(entry); if (!module) return null; return { instanceId: entry.instanceId ?? `module-${index}-${module.id}`, moduleId: module.id, module, x: Number(entry.x ?? ASSEMBLY_BOARD.corePosition.x), y: Number(entry.y ?? ASSEMBLY_BOARD.corePosition.y - 1), rotation: Number(entry.rotation ?? 0) }; }).filter(Boolean);
   return { core: CORE_MODULE, corePosition: { ...ASSEMBLY_BOARD.corePosition }, modules };
 }
-export function getInstalledEntries(loadout) { return [{ slotId: "core", instanceId: "core", module: CORE_MODULE, x: 4, y: 4, rotation: 0 }, ...(loadout?.modules ?? []).map((entry) => ({ slotId: entry.instanceId, instanceId: entry.instanceId, module: entry.module ?? getModuleById(entry.moduleId), x: entry.x, y: entry.y, rotation: entry.rotation ?? 0 }))]; }
+export function getInstalledEntries(loadout) { return [{ slotId: "core", instanceId: "core", module: CORE_MODULE, x: ASSEMBLY_BOARD.corePosition.x, y: ASSEMBLY_BOARD.corePosition.y, rotation: 0 }, ...(loadout?.modules ?? []).map((entry) => ({ slotId: entry.instanceId, instanceId: entry.instanceId, module: entry.module ?? getModuleById(entry.moduleId), x: entry.x, y: entry.y, rotation: entry.rotation ?? 0 }))]; }
 export function getInstalledModules(loadout) { return getInstalledEntries(loadout).map(({ module }) => module).filter(Boolean); }

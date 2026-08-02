@@ -1,6 +1,6 @@
 # Neon Skies
 
-Native HTML5 Canvas vertical shooter. There is no build step and no third-party dependency. Build a custom airframe by dragging modules onto the fixed 9x9 core network.
+Native HTML5 Canvas vertical shooter. There is no build step and no third-party dependency. Build a custom airframe by dragging modules onto the fixed 15x15 core network.
 
 ## Run
 
@@ -44,7 +44,7 @@ Do not upload only the changed JavaScript file: upload the complete package so a
 
 ## Assembly
 
-The core stays in the center of a 9x9 board. Drag modules from the vertical four-column module bay. A translucent preview shows the footprint. On release, geometry, overlap, and core connectivity are checked; disconnected modules are removed. Click an installed module for details.
+The core stays in the center of a 15x15 board. Drag modules from the vertical four-column module bay. A translucent preview shows the footprint. On release, geometry, overlap, and core connectivity are checked; disconnected modules are removed. Click an installed module for details.
 
 The **快捷装配** switch is above the core network. When enabled, click a module in the bay to select it, then click valid cells on the network to install it repeatedly without opening the detail panel. Turn it off to restore the normal detail-click behavior.
 
@@ -81,6 +81,6 @@ Enemy definitions live in `src/config/enemy-config.js`. Spawn cadence and diffic
 
 ## Tests and limitations
 
-The test page covers the 9x9 board, multi-cell modules, stat merging, module loading, module fire origins, nest spread delay, electric whirlwind area damage, skill cooldowns, pruning, and circle collisions.
+The test page covers the 15x15 board, multi-cell modules, stat merging, module loading, module fire origins, nest spread delay, electric whirlwind area damage, skill cooldowns, pruning, and circle collisions.
 
 Story, networking, accounts, leaderboards, saves, drops, audio, external art, and in-battle module replacement are not implemented yet. All 25 stages are intentionally unlocked during testing.

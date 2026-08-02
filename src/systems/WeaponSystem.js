@@ -14,7 +14,7 @@ function makePlayerProjectile(player, projectile, angle = 0, options = {}) {
     damage: projectile.damage * damageMultiplier, damageEnd: typeof projectile.damageEnd === "number" ? projectile.damageEnd * damageMultiplier : undefined,
     radius: projectile.radius, color: projectile.color, life: projectile.chainLife ?? projectile.life, team: "player", kind: options.kind ?? "bolt",
     homing: options.homing, homingDelay: projectile.homingDelay, homingTurnRate: projectile.homingTurnRate, target: options.target, pierce: options.pierce ?? projectile.pierce, bounce: options.bounce ?? projectile.bounce,
-    explosionRadius: projectile.explosionRadius, chainRadius: projectile.chainRadius, chainLife: projectile.chainLife, chainFlashDuration: projectile.flashDuration, chainSource: options.chainSource, growthRate: projectile.growthRate, boomerang: options.boomerang, whirlwind: options.whirlwind,
+    explosionRadius: projectile.explosionRadius, chainRadius: projectile.chainRadius, chainLife: projectile.chainLife, chainFlashDuration: projectile.flashDuration, chainSource: options.chainSource, growthRate: projectile.growthRate, boomerang: options.boomerang, whirlwind: options.whirlwind, blackHole: options.blackHole ?? projectile.blackHole,
   });
 }
 
@@ -25,7 +25,8 @@ function moduleOrigin(player, entry) {
 
 function nearestEnemy(enemies, x, y) { return enemies.filter((enemy) => enemy.hp > 0).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0] ?? null; }
 function nearestForwardEnemy(enemies, x, y) { const visible = enemies.filter((enemy) => enemy.hp > 0 && enemy.x >= 0 && enemy.x <= GAME_CONFIG.canvas.width && enemy.y >= 0 && enemy.y <= GAME_CONFIG.canvas.height); const ahead = visible.filter((enemy) => enemy.y < y); return nearestEnemy(ahead.length ? ahead : visible, x, y); }
-function attackSpeedOf(player) { return Math.min(GAME_CONFIG.player.maxAttackSpeed, Math.max(0.01, (player?.stats?.attackSpeed ?? GAME_CONFIG.player.attackSpeed) * (player?.environmentAttackSpeedMultiplier ?? 1))); }
+export function getPlayerAttackSpeed(player) { const base = (player?.stats?.attackSpeed ?? GAME_CONFIG.player.attackSpeed) * (player?.environmentAttackSpeedMultiplier ?? 1); const overclockBonus = player?.overclockTimer > 0 ? 0.8 : 0; const cap = GAME_CONFIG.player.maxAttackSpeed + (player?.overclockTimer > 0 ? 0.8 : 0); return Math.min(cap, Math.max(0.01, base + overclockBonus)); }
+function attackSpeedOf(player) { return getPlayerAttackSpeed(player); }
 
 function angleDistance(a, b) {
   let delta = Math.abs(a - b) % (Math.PI * 2);
@@ -86,11 +87,13 @@ const behaviors = {
     const chainSource = { x: origin.originX, y: origin.originY - 8 };
     return [makePlayerProjectile(player, behavior.projectile, 0, { ...origin, kind: "chainLightning", target, chainSource, pierce: true, damageMultiplier })];
   },
+  blackHole: (player, behavior, enemies, entry, damageMultiplier) => [makePlayerProjectile(player, behavior.projectile, 0, { ...moduleOrigin(player, entry), kind: "blackHole", blackHole: { ...behavior.projectile.blackHole }, damageMultiplier })],
 };
 
 export class WeaponSystem {
   firePlayer(player, enemies, { damageMultiplier = 1 } = {}) {
     const projectiles = [];
+    if ((player?.weaponSilenceTimer ?? 0) > 0) return projectiles;
     const attackSpeed = attackSpeedOf(player);
     const weaponEntries = getInstalledEntries(player.loadout).filter(({ module }) => module?.type === "weapon");
     const psionicCount = weaponEntries.filter(({ module }) => module.behavior?.stackKey === "psionic").length;

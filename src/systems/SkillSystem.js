@@ -22,6 +22,8 @@ export class SkillSystem {
     else if (skill.id === "ionSaw") game.startIonSaw(skill.duration);
     else if (skill.id === "sonicWave") game.startSonicWave(skill.duration);
     else if (skill.id === "freeze") game.freezeTimer = Math.max(game.freezeTimer, skill.duration);
+    else if (skill.id === "overclock") game.startOverclock(skill.duration);
+    else if (skill.id === "polarityReverse") game.startPolarityReverse(skill.duration);
     return true;
   }
 

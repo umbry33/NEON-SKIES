@@ -25,7 +25,7 @@ export function validateGeometry(loadout, { requireConnected = true } = {}) {
     if (!entry.module) return { valid: false, reason: "Invalid module" };
     if (entry.module !== CORE_MODULE && entry.module.connection !== "core") return { valid: false, reason: "Module must connect to core" };
     for (const cell of entryCells(entry)) {
-      if (!isInside(cell.x, cell.y)) return { valid: false, reason: "Module outside 9x9 board" };
+      if (!isInside(cell.x, cell.y)) return { valid: false, reason: `Module outside ${ASSEMBLY_BOARD.columns}x${ASSEMBLY_BOARD.rows} board` };
       const cellKey = key(cell.x, cell.y); if (occupied.has(cellKey)) return { valid: false, reason: "Module overlap" }; occupied.add(cellKey);
     }
   }
@@ -44,7 +44,7 @@ export function pruneDisconnected(loadout) {
 
 export function validateLoadout(loadout) {
   if (!loadout?.core || loadout.core.id !== CORE_MODULE.id) return { valid: false, reason: "Core cannot be replaced" };
-  if (!Array.isArray(loadout.modules) || loadout.modules.length > ASSEMBLY_BOARD.maxModules) return { valid: false, reason: "Too many modules" };
+  if (!Array.isArray(loadout.modules)) return { valid: false, reason: "Invalid modules" };
   if (countSkillModules(loadout) > MAX_SKILL_MODULES) return { valid: false, reason: `主动技能模块最多装配 ${MAX_SKILL_MODULES} 个` };
   const geometry = validateGeometry(loadout); if (!geometry.valid) return geometry;
   for (const { module } of loadout.modules) if (!module || !module.slotTypes?.includes(module.type)) return { valid: false, reason: "Invalid module type" };

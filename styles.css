@@ -158,9 +158,14 @@ select:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(100,231,255
 /* V-03 freeform brick-style builder */
 .assembly-help { margin: -3px 2px 9px; color: var(--muted); font-size: .64rem; line-height: 1.5; }
 .assembly-board { position: relative; width: min(100%, 330px); aspect-ratio: 1 / 1; margin: 0 auto; overflow: hidden; border: 1px solid rgba(100,231,255,.42); border-radius: 13px; background: #061525; box-shadow: inset 0 0 30px rgba(39,169,216,.1), 0 0 24px rgba(20,117,157,.12); touch-action: none; user-select: none; }
-.board-grid-lines { position: absolute; inset: 0; background-image: linear-gradient(rgba(100,231,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(100,231,255,.12) 1px, transparent 1px); background-size: calc(100% / 9) calc(100% / 9); pointer-events: none; }
+.assembly-board-world { position: absolute; inset: 0; z-index: 1; transform-origin: 0 0; will-change: transform; }
+.assembly-view-controls { position: relative; z-index: 2; display: flex; align-items: center; gap: 3px; margin-left: auto; padding: 3px; border: 1px solid rgba(100,231,255,.28); border-radius: 9px; background: rgba(2,12,26,.84); box-shadow: 0 0 12px rgba(32,159,201,.16); pointer-events: auto; }
+.assembly-view-controls button { display: grid; place-items: center; width: 25px; height: 25px; padding: 0; border: 0; border-radius: 6px; color: var(--cyan); background: transparent; font: 700 .95rem/1 ui-monospace, monospace; touch-action: manipulation; }
+.assembly-view-controls button:hover, .assembly-view-controls button:focus-visible { color: #fff; background: rgba(100,231,255,.15); outline: none; }
+.assembly-view-controls span { min-width: 39px; color: var(--muted); font: .52rem/1 ui-monospace, monospace; text-align: center; }
+.board-grid-lines { position: absolute; inset: 0; box-sizing: border-box; border: 1px solid rgba(100,231,255,.18); background-image: linear-gradient(rgba(100,231,255,.12) 1px, transparent 1px), linear-gradient(90deg, rgba(100,231,255,.12) 1px, transparent 1px); background-size: calc(100% / 15) calc(100% / 15); pointer-events: none; }
 .board-grid-lines::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 48%, rgba(100,231,255,.12), transparent 35%); }
-.board-cells { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(9, 1fr); grid-template-rows: repeat(9, 1fr); z-index: 1; }
+.board-cells { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(15, 1fr); grid-template-rows: repeat(15, 1fr); z-index: 1; }
 .board-cell { display: block; border: 1px solid transparent; }
 .board-cell:hover { border-color: rgba(100,231,255,.28); background: rgba(100,231,255,.06); }
 .board-core, .placed-module { position: absolute; display: grid; place-items: center; margin: 0; padding: 2px; border-radius: 5px; transform: scale(.94); z-index: 2; }
@@ -188,7 +193,8 @@ select:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(100,231,255
 html, body { width: 100%; height: 100%; overflow: hidden; overscroll-behavior: none; }
 body { background: #050a14; }
 .app-shell { position: relative; width: 100%; height: 100%; min-height: 100dvh; padding: 0; overflow: hidden; }
-.game-screen { position: absolute; inset: 0; min-height: 100dvh; overflow: hidden; overscroll-behavior: none; }
+.app-ambient-canvas { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; pointer-events: none; }
+.game-screen { position: absolute; inset: 0; z-index: 1; min-height: 100dvh; overflow: hidden; overscroll-behavior: none; }
 .game-screen.is-hidden { display: none !important; }
 
 /* Mode and mission selection stay inside the portrait game viewport. */
@@ -199,6 +205,35 @@ body { background: #050a14; }
 .mode-card strong, .mode-card small { display: block; }
 .mode-card strong { font-size: 20px; letter-spacing: .08em; }
 .mode-card small { margin-top: 8px; color: #8bc8d5; font-size: 10px; letter-spacing: .14em; }
+.tutorial-mode-card { border-color: rgba(194, 146, 255, .48); background: linear-gradient(135deg, rgba(66, 42, 112, .82), rgba(23, 20, 54, .94)); }
+.dodge-mode-card { border-color: rgba(255, 190, 91, .58); background: linear-gradient(135deg, rgba(92, 57, 29, .88), rgba(31, 21, 42, .96)); }
+.dodge-mode-card strong { color: #ffe0a1; }
+.dodge-difficulty-card { border-color: rgba(255, 190, 91, .48); background: linear-gradient(135deg, rgba(73, 47, 29, .88), rgba(21, 20, 43, .96)); }
+.dodge-difficulty-card strong { color: #ffe0a1; }
+.dodge-difficulty-card span { display: block; margin-top: 8px; color: #c9b8a0; font-size: .7rem; line-height: 1.5; }
+.tutorial-screen { display: grid; place-items: center; background: radial-gradient(circle at 50% 34%, rgba(75, 48, 128, .36), transparent 38%), linear-gradient(150deg, #0a1025, #030711 72%); }
+.tutorial-shell { position: relative; width: min(430px, calc(100% - 30px)); padding: 38px 24px 24px; border: 1px solid rgba(194, 146, 255, .34); border-radius: 24px; text-align: center; background: rgba(8, 13, 34, .88); box-shadow: 0 0 70px rgba(133, 85, 220, .18), inset 0 0 28px rgba(194, 146, 255, .04); }
+.tutorial-shell h2 { margin: 8px 0 18px; color: #f1e8ff; font-size: clamp(1.7rem, 7vw, 2.3rem); letter-spacing: .12em; text-shadow: 0 0 18px rgba(194, 146, 255, .4); }
+.tutorial-progress { display: grid; gap: 7px; margin: 0 auto 18px; width: min(280px, 78vw); color: #bda9d8; font: .62rem ui-monospace, monospace; letter-spacing: .12em; }
+.tutorial-progress > div { height: 3px; overflow: hidden; border-radius: 3px; background: rgba(194, 146, 255, .18); }
+.tutorial-progress i { display: block; width: 25%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #9f6cff, #e3c8ff); box-shadow: 0 0 12px #b787ff; transition: width .2s ease; }
+.tutorial-card { min-height: 196px; padding: 23px 20px 20px; border: 1px solid rgba(194, 146, 255, .27); border-radius: 16px; background: linear-gradient(145deg, rgba(29, 26, 66, .95), rgba(11, 17, 39, .96)); box-shadow: inset 0 0 22px rgba(194, 146, 255, .04); }
+.tutorial-step-tag { margin: 0 0 12px; color: #c59bff; font: 700 .62rem ui-monospace, monospace; letter-spacing: .2em; }
+.tutorial-card h3 { margin: 0 0 13px; color: #f7f2ff; font-size: 1.24rem; letter-spacing: .08em; }
+.tutorial-card p:not(.tutorial-step-tag) { margin: 0; color: #c6c3d8; font-size: .84rem; line-height: 1.9; text-align: left; }
+.tutorial-action-button { margin-top: 18px; padding: 11px 14px; font-size: .76rem; }
+.tutorial-dots { display: flex; justify-content: center; gap: 8px; margin: 18px 0 15px; }
+.tutorial-dots i { display: block; width: 6px; height: 6px; border: 1px solid #9b80bd; border-radius: 50%; background: transparent; }
+.tutorial-dots i.is-active { border-color: #e3c8ff; background: #e3c8ff; box-shadow: 0 0 10px #c59bff; }
+.tutorial-actions { display: flex; justify-content: center; gap: 12px; }
+.tutorial-actions button { min-width: 116px; margin-top: 0; }
+.tutorial-actions button:disabled { opacity: .35; cursor: not-allowed; }
+.tutorial-battle-exit { position: absolute; top: 10px; right: 14px; z-index: 5; padding: 6px 9px; border: 1px solid rgba(194,146,255,.72); border-radius: 8px; color: #e7d7ff; background: rgba(24,14,49,.9); box-shadow: 0 0 14px rgba(166,108,255,.25); font: 700 .62rem system-ui, sans-serif; touch-action: manipulation; }
+.tutorial-battle-hint { position: absolute; left: 50%; top: 58px; z-index: 4; width: min(290px, 78vw); transform: translateX(-50%); padding: 9px 12px; border: 1px solid rgba(194,146,255,.62); border-radius: 10px; color: #f2eaff; background: rgba(24,14,49,.88); box-shadow: 0 0 18px rgba(166,108,255,.24); font-size: .68rem; line-height: 1.55; text-align: center; pointer-events: none; animation: tutorial-pulse 1.8s ease-in-out infinite; }
+.tutorial-battle-exit.is-hidden, .tutorial-battle-hint.is-hidden { display: none !important; }
+.tutorial-battle-hint.is-complete { border-color: rgba(100,231,255,.65); color: #dffbff; background: rgba(5,38,55,.9); animation: none; }
+.tutorial-focus { position: relative; z-index: 4; animation: tutorial-pulse 1.5s ease-in-out infinite; }
+@keyframes tutorial-pulse { 0%, 100% { box-shadow: 0 0 10px rgba(194,146,255,.25); } 50% { box-shadow: 0 0 24px rgba(194,146,255,.75); } }
 .level-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 9px; width: min(390px, 88vw); max-height: 58vh; overflow-y: auto; overscroll-behavior: contain; padding: 6px 4px 14px; touch-action: pan-y; }
 .level-card { aspect-ratio: 1; border: 1px solid rgba(112, 206, 255, .35); border-radius: 12px; background: rgba(16, 44, 73, .86); color: #dffaff; display: grid; place-content: center; gap: 3px; cursor: pointer; touch-action: manipulation; }
 .level-card b { font-size: 20px; color: #8feeff; }
@@ -212,20 +247,27 @@ body { background: #050a14; }
 .pause-confirm-card .primary-button, .pause-confirm-card .secondary-button { margin-top: 8px; }
 .menu-settings-button { touch-action: manipulation; }
 .battle-hud { touch-action: none; }
-.menu-screen { isolation: isolate; display: grid; place-items: center; background: radial-gradient(circle at 50% 40%, rgba(18,75,111,.52), transparent 30%), linear-gradient(150deg, #071427, #030711 72%); }
-.menu-stars { position: absolute; inset: 0; opacity: .7; pointer-events: none; background-image: radial-gradient(circle, rgba(188,238,255,.7) 0 1px, transparent 1.5px), radial-gradient(circle, rgba(100,231,255,.55) 0 1px, transparent 1.5px); background-size: 83px 97px, 137px 151px; background-position: 12px 18px, 41px 63px; animation: star-drift 16s linear infinite; }
+.menu-screen { isolation: isolate; display: grid; place-items: center; overflow: hidden; background: radial-gradient(circle at 50% 40%, rgba(18,75,111,.52), transparent 30%), linear-gradient(150deg, #071427, #030711 72%); }
+.menu-ambient-canvas { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; pointer-events: none; }
+.menu-stars { position: absolute; inset: 0; z-index: 1; opacity: .46; pointer-events: none; background-image: radial-gradient(circle, rgba(188,238,255,.7) 0 1px, transparent 1.5px), radial-gradient(circle, rgba(100,231,255,.55) 0 1px, transparent 1.5px); background-size: 83px 97px, 137px 151px; background-position: 12px 18px, 41px 63px; animation: star-drift 16s linear infinite; }
 @keyframes star-drift { to { background-position: 12px 115px, 41px 214px; } }
-.menu-content { position: relative; width: min(480px, calc(100% - 34px)); padding: 38px 28px 28px; border: 1px solid rgba(100,231,255,.28); border-radius: 24px; text-align: center; background: rgba(5,15,31,.78); box-shadow: 0 0 80px rgba(22,154,211,.16), inset 0 0 34px rgba(100,231,255,.04); backdrop-filter: blur(8px); }
+.menu-content { position: relative; z-index: 2; width: min(480px, calc(100% - 34px)); padding: 38px 28px 28px; border: 1px solid rgba(100,231,255,.28); border-radius: 24px; text-align: center; background: rgba(5,15,31,.78); box-shadow: 0 0 80px rgba(22,154,211,.16), inset 0 0 34px rgba(100,231,255,.04); backdrop-filter: blur(8px); }
 .menu-content h1 { margin: 8px 0 4px; color: var(--text); font-size: clamp(2.8rem, 10vw, 5rem); letter-spacing: .18em; text-shadow: 0 0 24px rgba(100,231,255,.4); }
+#main-menu-screen .menu-content::before, #main-menu-screen .menu-content::after { content: ""; position: absolute; top: 82px; width: 28px; height: 1px; background: linear-gradient(90deg, transparent, rgba(100,231,255,.75)); }
+#main-menu-screen .menu-content::before { left: 20px; }
+#main-menu-screen .menu-content::after { right: 20px; transform: scaleX(-1); }
 .menu-settings-button span { font-size: 1rem; font-weight: 800; letter-spacing: .1em; }
 .menu-settings-button small { color: var(--muted); font-size: .58rem; letter-spacing: .15em; }
 .menu-subtitle { margin: 0; color: var(--cyan); font-size: .78rem; letter-spacing: .3em; }
-.menu-aircraft { position: relative; width: 130px; height: 130px; margin: 25px auto; border: 1px solid rgba(100,231,255,.26); border-radius: 50%; box-shadow: 0 0 32px rgba(100,231,255,.15); }
+.menu-aircraft { position: relative; width: 130px; height: 130px; margin: 25px auto; border: 1px solid rgba(100,231,255,.26); border-radius: 50%; box-shadow: 0 0 32px rgba(100,231,255,.15), inset 0 0 22px rgba(68,180,230,.06); }
 .menu-aircraft::before, .menu-aircraft::after { content: ""; position: absolute; left: 50%; top: 50%; width: 1px; height: 120%; background: linear-gradient(transparent, rgba(100,231,255,.42), transparent); transform: translate(-50%,-50%); }
 .menu-aircraft::after { transform: translate(-50%,-50%) rotate(90deg); }
 .menu-aircraft span { position: absolute; left: 50%; top: calc(50% - 1px); z-index: 1; display: grid; width: 1em; height: 1em; place-items: center; color: var(--cyan); font-size: clamp(4.4rem, 17vw, 5.4rem); line-height: 1; transform: translate(-50%, -55%); text-shadow: 0 0 24px var(--cyan); }
 .menu-actions { position: relative; z-index: 2; display: grid; gap: 10px; pointer-events: auto; }
-.menu-button { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 54px; padding: 14px 17px; border: 1px solid rgba(139,202,255,.25); border-radius: 12px; color: var(--text); background: rgba(10,28,51,.72); text-align: left; transition: transform .18s, border-color .18s, background .18s; touch-action: manipulation; pointer-events: auto; }
+.menu-button { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 54px; padding: 14px 17px; overflow: hidden; border: 1px solid rgba(139,202,255,.25); border-radius: 12px; color: var(--text); background: linear-gradient(102deg, rgba(11,34,58,.82), rgba(10,28,51,.62)); text-align: left; transition: transform .18s, border-color .18s, background .18s; touch-action: manipulation; pointer-events: auto; }
+.menu-button::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 2px; background: linear-gradient(transparent, var(--cyan), transparent); box-shadow: 0 0 9px rgba(100,231,255,.8); }
+.menu-button::after { content: ""; position: absolute; right: 14px; top: 50%; width: 7px; height: 7px; border-top: 1px solid rgba(160,236,255,.65); border-right: 1px solid rgba(160,236,255,.65); transform: translateY(-50%) rotate(45deg); opacity: .64; }
+.menu-button small { padding-right: 18px; }
 .menu-button:hover { transform: translateY(-2px); border-color: var(--cyan); background: rgba(18,69,93,.78); }
 .menu-button span { font-size: 1rem; font-weight: 800; letter-spacing: .1em; }
 .menu-button small { color: var(--muted); font-size: .58rem; letter-spacing: .15em; }
@@ -238,7 +280,6 @@ body { background: #050a14; }
 .settings-toggle { display: flex; align-items: center; gap: 10px; padding: 11px 10px; border: 1px solid rgba(139,202,255,.18); border-radius: 9px; color: var(--text); background: rgba(10,28,51,.72); font-size: .78rem; cursor: pointer; }
 .settings-toggle + .settings-toggle { margin-top: 9px; }
 .settings-toggle input { width: 17px; height: 17px; accent-color: var(--cyan); }
-.settings-changelog-button { margin-top: 12px; }
 .changelog-modal { position: absolute; inset: 0; z-index: 45; display: grid; grid-template-rows: minmax(0, 1fr); place-items: center; overflow: hidden; padding: 16px; background: rgba(2,7,16,.82); backdrop-filter: blur(6px); }
 .changelog-modal.is-hidden { display: none; }
 .changelog-card { position: relative; display: flex; flex-direction: column; width: min(520px, calc(100% - 12px)); height: min(720px, calc(100% - 24px)); min-height: 0; max-height: calc(100% - 24px); overflow: hidden; padding: 25px 18px 18px; border: 1px solid rgba(100,231,255,.42); border-radius: 15px; color: var(--text); background: rgba(8,22,41,.98); box-shadow: 0 0 35px rgba(45,181,226,.23); }
@@ -260,7 +301,8 @@ body { background: #050a14; }
 .quick-assembly-toggle small { color: var(--muted); font-size: .5rem; }
 .quick-assembly-toggle.is-active { border-color: var(--cyan); color: var(--cyan); background: rgba(26,92,119,.5); box-shadow: 0 0 13px rgba(100,231,255,.22); }
 .quick-assembly-toggle.is-active small { color: #d8fbff; }
-.builder-board-title .text-button { margin-left: auto; }
+.builder-board-title .text-button { display: inline-flex; align-items: center; flex: 0 0 auto; margin-left: auto; padding: 5px 7px; border: 1px solid rgba(251,114,220,.42); border-radius: 7px; color: var(--pink); background: rgba(45,12,48,.42); font-size: .58rem; letter-spacing: .04em; cursor: pointer; touch-action: manipulation; }
+.builder-board-title .text-button:hover, .builder-board-title .text-button:focus-visible { border-color: var(--pink); color: var(--text); background: rgba(86,26,78,.56); outline: none; box-shadow: 0 0 13px rgba(251,114,220,.18); }
 .builder-board-title .loadout-code-button { margin-left: auto; }
 .builder-board-title .loadout-code-button + .text-button { margin-left: 0; }
 .builder-status-row { display: flex; justify-content: center; align-items: center; width: min(100%, 360px); margin-top: 7px; color: var(--pink); font-size: .68rem; text-align: center; }
@@ -285,7 +327,23 @@ body { background: #050a14; }
 .battle-hud .hud-stat span { display: block; color: var(--muted); font-size: .61rem; letter-spacing: .12em; }
 .battle-hud .hud-stat strong { display: block; margin-top: 3px; color: var(--text); font-size: 1rem; font-variant-numeric: tabular-nums; }
 .battle-hud .hud-score { text-align: center; }
-.battle-hud .hud-time { text-align: right; }
+.battle-hud .hud-time { text-align: left; }
+.battle-hud .hud-attack-speed { text-align: center; }
+.battle-hud .hud-level { text-align: right; }
+.environment-button { position: absolute; top: 74px; left: 50%; z-index: 12; display: inline-flex; align-items: center; gap: 8px; max-width: 190px; padding: 5px 9px; border: 1px solid currentColor; border-radius: 8px; color: #78f7db; background: rgba(5,18,31,.86); box-shadow: 0 0 14px currentColor; font: inherit; transform: translateX(-50%); touch-action: manipulation; }
+.environment-button.is-hidden { display: none; }
+.environment-button span { overflow: hidden; font-size: .65rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+.environment-button small { color: var(--text); font: .56rem ui-monospace, monospace; white-space: nowrap; }
+.environment-button:hover, .environment-button:focus-visible { color: #fff; outline: none; }
+.environment-detail-modal { position: absolute; inset: 0; z-index: 40; display: grid; place-items: center; padding: 18px; background: rgba(2,7,16,.72); backdrop-filter: blur(5px); }
+.environment-detail-modal.is-hidden { display: none; }
+.environment-detail-card { position: relative; width: min(320px, calc(100% - 20px)); padding: 26px 20px 20px; border: 1px solid rgba(120,247,219,.55); border-radius: 15px; background: rgba(7,24,39,.96); box-shadow: 0 0 30px rgba(120,247,219,.2); text-align: center; }
+.environment-detail-card h2 { margin: 6px 0 10px; color: var(--text); font-size: 1.22rem; }
+.environment-detail-card .intro-copy { margin: 0; color: var(--muted); font-size: .72rem; line-height: 1.6; }
+.environment-detail-effects { display: grid; gap: 6px; margin-top: 14px; text-align: left; }
+.environment-detail-effects div { display: flex; justify-content: space-between; gap: 12px; padding: 7px 9px; border: 1px solid rgba(120,247,219,.15); border-radius: 7px; background: rgba(6,31,42,.62); font-size: .66rem; }
+.environment-detail-effects span { color: var(--muted); }
+.environment-detail-effects strong { color: #bfffee; }
 .battle-canvas-wrap { position: relative; height: calc(100dvh - 83px); max-height: 900px; overflow: hidden; border: 1px solid rgba(100,231,255,.34); border-radius: 14px; background: #06101f; box-shadow: 0 0 30px rgba(29,143,190,.12); }
 .battle-canvas-wrap canvas { display: block; width: auto; height: 100%; max-width: 92vw; aspect-ratio: 480 / 854; touch-action: none; }
 .skill-panel { position: absolute; left: 9px; bottom: 11px; z-index: 8; display: flex; flex-direction: column; gap: 7px; align-items: flex-start; pointer-events: auto; }
@@ -319,6 +377,33 @@ body { background: #050a14; }
 
 /* Portrait game shell and compact module palette */
 body { background: #02050c; }
+.menu-screen { background: radial-gradient(circle at 50% 36%, rgba(255, 48, 196, .18), transparent 28%), radial-gradient(circle at 50% 61%, rgba(84, 63, 255, .26), transparent 48%), linear-gradient(160deg, #13062d 0%, #071640 57%, #040817 100%); }
+#main-menu-screen .menu-stars { opacity: .58; background-image: radial-gradient(circle, rgba(255, 147, 232, .8) 0 1px, transparent 1.5px), radial-gradient(circle, rgba(102, 186, 255, .78) 0 1px, transparent 1.5px); }
+#main-menu-screen .menu-content::before, #main-menu-screen .menu-content::after { background: linear-gradient(90deg, transparent, rgba(255, 104, 217, .95)); box-shadow: 0 0 11px rgba(255, 67, 199, .56); }
+#main-menu-screen .menu-aircraft { border-color: rgba(222, 87, 255, .62); box-shadow: 0 0 35px rgba(255, 59, 196, .32), inset 0 0 24px rgba(93, 75, 255, .18); }
+#main-menu-screen .menu-aircraft::before, #main-menu-screen .menu-aircraft::after { background: linear-gradient(transparent, rgba(255, 92, 211, .72), transparent); }
+#main-menu-screen .menu-aircraft span { color: #ff83df; text-shadow: 0 0 11px #ff57c7, 0 0 26px #7464ff; }
+#main-menu-screen .menu-aircraft { border: 0; box-shadow: none; }
+#main-menu-screen .menu-aircraft::before, #main-menu-screen .menu-aircraft::after, #main-menu-screen .menu-aircraft span { display: none; }
+#main-menu-screen .menu-button { border-color: rgba(166, 94, 255, .6); background: linear-gradient(105deg, rgba(47, 20, 103, .88), rgba(26, 43, 119, .72) 58%, rgba(69, 19, 102, .76)); box-shadow: inset 0 0 18px rgba(103, 67, 255, .16); }
+#main-menu-screen .menu-button::before { background: linear-gradient(transparent, #ff55cc, #6b93ff, transparent); box-shadow: 0 0 10px rgba(255, 74, 203, .88); }
+#main-menu-screen .menu-button::after { border-color: #eaa0ff; opacity: .9; }
+#main-menu-screen .menu-button:hover { border-color: #ff69d3; background: linear-gradient(105deg, rgba(86, 22, 143, .94), rgba(38, 54, 149, .84)); }
+
+/* Global vaporwave interface layer: translucent CRT glass without blocking input. */
+.game-screen::after { content: ""; position: absolute; inset: 0; z-index: 80; pointer-events: none; opacity: .3; background: repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0 1px, transparent 1px 4px), radial-gradient(ellipse at center, transparent 52%, rgba(8, 2, 31, .22) 100%); mix-blend-mode: screen; }
+.sub-menu-screen, .tutorial-screen, .encyclopedia-screen { background: rgba(16, 8, 53, .34); }
+.builder-screen { background: radial-gradient(circle at 50% 27%, rgba(246, 69, 205, .13), transparent 30%), rgba(8, 8, 35, .48); }
+.battle-screen { background: linear-gradient(180deg, rgba(13, 5, 45, .46), rgba(7, 4, 31, .16)); }
+.builder-topbar, .battle-hud { position: relative; z-index: 2; text-shadow: 1px 0 rgba(255, 78, 205, .25), -1px 0 rgba(64, 223, 255, .22); }
+.builder-topbar h2, .encyclopedia-shell h2, .tutorial-shell h2, .sub-menu-screen h2 { text-shadow: 2px 0 rgba(255, 78, 205, .28), -2px 0 rgba(66, 224, 255, .25), 0 0 18px rgba(195, 95, 255, .42); }
+.mode-card, .settings-card, .changelog-card, .encyclopedia-shell, .tutorial-shell, .module-detail-card, .pause-card, .pause-confirm-card { border-color: rgba(181, 100, 255, .48); background: linear-gradient(135deg, rgba(49, 19, 99, .78), rgba(17, 37, 90, .66)); box-shadow: 0 0 28px rgba(230, 75, 210, .15), inset 0 0 26px rgba(62, 205, 255, .06); }
+.mode-card::before, .settings-card::before, .encyclopedia-shell::before, .tutorial-shell::before { content: "SYSTEM / 199X / 夢"; position: absolute; right: 15px; top: 12px; color: rgba(146, 247, 255, .28); font-size: .45rem; letter-spacing: .14em; pointer-events: none; }
+.mode-card { position: relative; overflow: hidden; }
+.mode-card::before { top: 9px; right: 11px; }
+.primary-button, .secondary-button { border-color: rgba(255, 97, 214, .82); color: #fff5ff; background: linear-gradient(100deg, #b63cf0, #4b7cff 55%, #ff5eba); box-shadow: 0 0 20px rgba(255, 61, 195, .3); }
+.round-button, .text-button { text-shadow: 0 0 10px rgba(255, 94, 211, .6); }
+@media (prefers-reduced-motion: reduce) { .app-ambient-canvas { display: none; } .game-screen::after { opacity: .18; } }
 .game-screen { top: 0; bottom: 0; left: 50%; right: auto; width: min(100%, 480px); transform: translateX(-50%); border-left: 1px solid rgba(100,231,255,.1); border-right: 1px solid rgba(100,231,255,.1); }
 .menu-content { border: 0; background: transparent; box-shadow: none; backdrop-filter: none; }
 .builder-screen { overflow: hidden; }
@@ -355,6 +440,30 @@ body { background: #02050c; }
 .loadout-code-message { min-height: 1.3em; margin: 8px 0 0; color: var(--pink); font-size: .65rem; line-height: 1.4; }
 .loadout-code-card > .secondary-button { margin-top: 8px; }
 .detail-stats div:last-child { border-bottom: 0; }
+
+/* Internal controls use the same restrained frosted-glass language as the main menu. */
+.mode-card, .primary-button, .secondary-button, .top-action-button {
+  border: 1px solid rgba(137, 213, 255, .34);
+  color: var(--text);
+  background: rgba(9, 22, 47, .58);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .16), inset 0 1px 0 rgba(232, 250, 255, .08), inset 0 0 22px rgba(84, 135, 255, .06);
+  -webkit-backdrop-filter: blur(14px) saturate(115%);
+  backdrop-filter: blur(14px) saturate(115%);
+}
+.mode-card:hover, .mode-card:focus-visible, .primary-button:hover, .primary-button:focus-visible, .secondary-button:hover, .secondary-button:focus-visible, .top-action-button:hover, .top-action-button:focus-visible {
+  border-color: rgba(100, 231, 255, .72);
+  background: rgba(15, 37, 67, .68);
+  box-shadow: 0 0 22px rgba(100, 231, 255, .14), inset 0 1px 0 rgba(232, 250, 255, .12), inset 0 0 24px rgba(84, 135, 255, .1);
+}
+.dodge-mode-card { border-color: rgba(255, 126, 211, .44); background: rgba(38, 20, 63, .54); }
+.dodge-mode-card:hover, .dodge-mode-card:focus-visible { border-color: rgba(255, 126, 211, .76); background: rgba(55, 24, 73, .64); }
+.tutorial-mode-card { border-color: rgba(192, 155, 255, .44); background: rgba(27, 22, 61, .54); }
+.primary-button, .top-action-button { color: #eafaff; }
+.settings-card, .changelog-card, .module-detail-card, .pause-card, .pause-confirm-card {
+  background: rgba(8, 19, 41, .7);
+  -webkit-backdrop-filter: blur(18px) saturate(110%);
+  backdrop-filter: blur(18px) saturate(110%);
+}
 .detail-stats span { color: var(--muted); }
 .detail-stats strong { color: var(--text); font-weight: 600; text-align: right; }
 
@@ -423,3 +532,674 @@ body { background: #02050c; }
 .encyclopedia-entry p { margin: 6px 0; color: var(--muted); font-size: .65rem; line-height: 1.55; }
 .encyclopedia-copy > span { color: var(--cyan); font-size: .57rem; }
 .encyclopedia-enemy-canvas { display: block; width: 64px; height: 64px; filter: drop-shadow(0 0 7px rgba(100, 231, 255, .22)); }
+
+/* VAPORWAVE GLOBAL OVERRIDES — kept at the end so every game screen shares the same art direction. */
+.sub-menu-screen, .tutorial-screen, .encyclopedia-screen { background: rgba(15, 7, 50, .38); }
+.builder-screen { background: radial-gradient(circle at 50% 28%, rgba(249, 60, 201, .18), transparent 31%), linear-gradient(160deg, rgba(22, 9, 61, .67), rgba(3, 9, 36, .42)); }
+.battle-screen { background: linear-gradient(180deg, rgba(18, 6, 54, .54), rgba(5, 8, 37, .2)); }
+.mode-card { position: relative; overflow: hidden; border-color: rgba(172, 91, 255, .65); background: linear-gradient(112deg, rgba(71, 19, 123, .86), rgba(30, 53, 132, .72), rgba(106, 22, 123, .78)); box-shadow: 0 0 28px rgba(239, 66, 206, .18), inset 0 0 20px rgba(69, 232, 246, .07); }
+.mode-card::before { content: "SYSTEM / 199X / 夢"; position: absolute; top: 8px; right: 11px; color: rgba(161, 255, 238, .3); font-size: .42rem; letter-spacing: .13em; pointer-events: none; }
+.dodge-mode-card { border-color: rgba(255, 125, 202, .72); background: linear-gradient(112deg, rgba(135, 23, 115, .87), rgba(65, 44, 149, .76)); }
+.settings-card, .changelog-card, .encyclopedia-shell, .tutorial-shell, .module-detail-card, .pause-card, .pause-confirm-card { border-color: rgba(185, 104, 255, .62); background: linear-gradient(135deg, rgba(65, 22, 117, .86), rgba(19, 43, 108, .76)); box-shadow: 0 0 34px rgba(239, 70, 209, .2), inset 0 0 28px rgba(69, 231, 246, .08); }
+.encyclopedia-screen { background: radial-gradient(circle at 50% 24%, rgba(255, 65, 203, .17), transparent 32%), rgba(14, 7, 52, .38); }
+.encyclopedia-entry, .module-palette { border-color: rgba(107, 221, 245, .32); background: linear-gradient(135deg, rgba(28, 19, 86, .7), rgba(9, 36, 84, .58)); }
+.builder-topbar, .battle-hud { text-shadow: 1px 0 rgba(255, 71, 205, .3), -1px 0 rgba(65, 230, 255, .28); }
+.builder-topbar h2, .encyclopedia-shell h2, .tutorial-shell h2, .sub-menu-screen h2 { text-shadow: 2px 0 rgba(255, 78, 205, .3), -2px 0 rgba(66, 224, 255, .28), 0 0 20px rgba(195, 95, 255, .46); }
+.primary-button, .secondary-button, .top-action-button { border-color: rgba(255, 125, 220, .88); color: #fff5ff; background: linear-gradient(100deg, #b63cf0, #4b7cff 55%, #ff5eba); box-shadow: 0 0 22px rgba(255, 61, 195, .32); }
+.round-button { border-color: rgba(161, 111, 255, .64); color: #ff9ce5; background: rgba(51, 15, 91, .68); box-shadow: 0 0 16px rgba(252, 73, 205, .14); }
+.game-screen::after { content: ""; position: absolute; inset: 0; z-index: 80; pointer-events: none; opacity: .26; background: repeating-linear-gradient(0deg, rgba(255,255,255,.036) 0 1px, transparent 1px 4px), radial-gradient(ellipse at center, transparent 50%, rgba(7, 1, 25, .26) 100%); mix-blend-mode: screen; }
+@media (prefers-reduced-motion: reduce) { .app-ambient-canvas { display: none; } .game-screen::after { opacity: .14; } }
+
+/* Final glass treatment for interior action controls. */
+.mode-card, .primary-button, .secondary-button, .top-action-button {
+  border-color: rgba(137, 213, 255, .38) !important;
+  color: var(--text) !important;
+  background-color: rgba(9, 22, 47, .58) !important;
+  background-image: none !important;
+  box-shadow: 0 10px 26px rgba(0, 0, 0, .16), inset 0 1px 0 rgba(232, 250, 255, .08), inset 0 0 22px rgba(84, 135, 255, .06) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(115%);
+  backdrop-filter: blur(14px) saturate(115%);
+}
+.mode-card:hover, .mode-card:focus-visible, .primary-button:hover, .primary-button:focus-visible, .secondary-button:hover, .secondary-button:focus-visible, .top-action-button:hover, .top-action-button:focus-visible {
+  border-color: rgba(100, 231, 255, .72) !important;
+  background-color: rgba(15, 37, 67, .68) !important;
+  background-image: none !important;
+  box-shadow: 0 0 22px rgba(100, 231, 255, .14), inset 0 1px 0 rgba(232, 250, 255, .12), inset 0 0 24px rgba(84, 135, 255, .1) !important;
+}
+.dodge-mode-card { border-color: rgba(255, 126, 211, .5) !important; background-color: rgba(38, 20, 63, .54) !important; background-image: none !important; }
+.dodge-mode-card:hover, .dodge-mode-card:focus-visible { border-color: rgba(255, 126, 211, .8) !important; background-color: rgba(55, 24, 73, .64) !important; }
+.tutorial-mode-card { border-color: rgba(192, 155, 255, .5) !important; background-color: rgba(27, 22, 61, .54) !important; background-image: none !important; }
+.primary-button, .top-action-button { color: #eafaff !important; }
+.settings-card, .changelog-card, .module-detail-card, .pause-card, .pause-confirm-card { background-color: rgba(8, 19, 41, .7) !important; background-image: none !important; -webkit-backdrop-filter: blur(18px) saturate(110%); backdrop-filter: blur(18px) saturate(110%); }
+
+/* One shared light vapor-glass language for every interactive surface. */
+.menu-button, .mode-card, .primary-button, .secondary-button, .top-action-button {
+  border: 1px solid rgba(157, 231, 255, .56) !important;
+  background: linear-gradient(112deg, rgba(74, 191, 255, .28), rgba(117, 103, 255, .25) 52%, rgba(255, 116, 211, .2)) !important;
+  box-shadow: 0 10px 28px rgba(22, 63, 131, .18), inset 0 1px 0 rgba(239, 255, 255, .22), inset 0 0 24px rgba(91, 229, 255, .08) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+  backdrop-filter: blur(16px) saturate(125%);
+}
+.menu-button:hover, .menu-button:focus-visible, .mode-card:hover, .mode-card:focus-visible, .primary-button:hover, .primary-button:focus-visible, .secondary-button:hover, .secondary-button:focus-visible, .top-action-button:hover, .top-action-button:focus-visible {
+  border-color: rgba(196, 247, 255, .86) !important;
+  background: linear-gradient(112deg, rgba(92, 211, 255, .38), rgba(141, 122, 255, .34) 52%, rgba(255, 133, 218, .28)) !important;
+  box-shadow: 0 0 25px rgba(89, 207, 255, .2), inset 0 1px 0 rgba(255, 255, 255, .28), inset 0 0 26px rgba(109, 226, 255, .12) !important;
+}
+.dodge-mode-card { border-color: rgba(255, 159, 224, .7) !important; background: linear-gradient(112deg, rgba(90, 199, 255, .25), rgba(132, 98, 255, .26) 52%, rgba(255, 116, 211, .3)) !important; }
+.tutorial-mode-card { border-color: rgba(186, 224, 255, .62) !important; }
+.settings-card, .changelog-card, .module-detail-card, .pause-card, .pause-confirm-card, .encyclopedia-shell, .tutorial-shell {
+  border-color: rgba(157, 231, 255, .52) !important;
+  background: linear-gradient(125deg, rgba(57, 138, 206, .27), rgba(103, 86, 194, .25) 55%, rgba(224, 95, 183, .18)) !important;
+  box-shadow: 0 18px 44px rgba(17, 42, 108, .2), inset 0 1px 0 rgba(239, 255, 255, .18), inset 0 0 30px rgba(89, 219, 255, .07) !important;
+}
+#main-menu-screen .menu-button {
+  border-color: rgba(166, 231, 255, .58) !important;
+  background: linear-gradient(110deg, rgba(72, 190, 255, .14), rgba(105, 103, 255, .12) 54%, rgba(255, 113, 211, .1)) !important;
+  box-shadow: 0 8px 24px rgba(14, 44, 105, .18), inset 0 1px 0 rgba(239, 255, 255, .2), inset 0 0 20px rgba(92, 220, 255, .06) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(125%);
+  backdrop-filter: blur(16px) saturate(125%);
+}
+#main-menu-screen .menu-button:hover, #main-menu-screen .menu-button:focus-visible {
+  border-color: rgba(205, 247, 255, .82) !important;
+  background: linear-gradient(110deg, rgba(82, 207, 255, .2), rgba(125, 120, 255, .17) 54%, rgba(255, 125, 218, .14)) !important;
+  box-shadow: 0 0 24px rgba(77, 211, 255, .18), inset 0 1px 0 rgba(255, 255, 255, .26), inset 0 0 22px rgba(92, 220, 255, .1) !important;
+}
+#main-menu-screen .menu-button {
+  border-color: rgba(199, 91, 255, .62) !important;
+  background-color: rgba(45, 31, 115, .34) !important;
+  background-image: linear-gradient(110deg, rgba(67, 42, 151, .34), rgba(42, 58, 154, .3) 54%, rgba(83, 37, 137, .32)) !important;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+#main-menu-screen .menu-button:hover, #main-menu-screen .menu-button:focus-visible {
+  border-color: rgba(220, 125, 255, .82) !important;
+  background-color: rgba(62, 45, 145, .42) !important;
+  background-image: linear-gradient(110deg, rgba(86, 58, 178, .42), rgba(57, 77, 181, .38) 54%, rgba(105, 45, 163, .4)) !important;
+}
+#main-menu-screen .menu-content h1 {
+  display: block;
+  width: 100%;
+  margin-inline: auto;
+  text-align: center;
+  transform: none;
+  text-indent: 0;
+  color: #f2fbff;
+  text-shadow: 0 0 2px rgba(255, 255, 255, .95), 0 0 9px rgba(86, 218, 255, .34), 2px 0 rgba(255, 103, 216, .12), -2px 0 rgba(84, 146, 255, .14);
+  animation: logo-neon-breathe 5.5s ease-in-out infinite;
+}
+#main-menu-screen .menu-logo-line { display: block; transform: translateX(.12em); }
+@keyframes logo-neon-breathe {
+  0%, 100% { text-shadow: 0 0 2px rgba(255, 255, 255, .95), 0 0 9px rgba(86, 218, 255, .34), 2px 0 rgba(255, 103, 216, .12), -2px 0 rgba(84, 146, 255, .14); }
+  50% { text-shadow: 0 0 3px rgba(255, 255, 255, 1), 0 0 13px rgba(86, 218, 255, .46), 2px 0 rgba(255, 103, 216, .16), -2px 0 rgba(84, 146, 255, .18); }
+}
+
+/* Main-menu composition: the aircraft occupies the breathing space between
+   the two primary actions and the lower utility actions. */
+#main-menu-screen .menu-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+#main-menu-screen .menu-primary-actions {
+  position: absolute;
+  right: clamp(16px, 4vw, 28px);
+  bottom: max(31px, calc(env(safe-area-inset-bottom) + 15px));
+  left: clamp(16px, 4vw, 28px);
+  z-index: 6;
+  display: grid;
+  width: auto;
+  gap: 10px;
+}
+#main-menu-screen .menu-aircraft {
+  position: absolute;
+  left: 50%;
+  width: 132px;
+  height: 84px;
+  margin: 0;
+  bottom: calc(max(31px, calc(env(safe-area-inset-bottom) + 15px)) + 139px);
+  transform: translateX(-50%);
+}
+#main-menu-screen .menu-content {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  pointer-events: none;
+}
+#main-menu-screen .menu-content::before,
+#main-menu-screen .menu-content::after { display: none; }
+#main-menu-screen .menu-logo-lockup {
+  position: absolute;
+  top: 38px;
+  right: 17px;
+  left: 17px;
+  text-align: center;
+}
+#main-menu-screen .menu-logo-lockup::before,
+#main-menu-screen .menu-logo-lockup::after {
+  content: "";
+  position: absolute;
+  top: 44px;
+  width: 28px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 104, 217, .95));
+  box-shadow: 0 0 11px rgba(255, 67, 199, .56);
+}
+#main-menu-screen .menu-logo-lockup::before { left: 0; }
+#main-menu-screen .menu-logo-lockup::after { right: 0; transform: scaleX(-1); }
+#main-menu-screen .menu-more-button {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 8;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid rgba(166, 231, 255, .58);
+  border-radius: 9px;
+  color: var(--text);
+  background: rgba(31, 37, 112, .28);
+  box-shadow: inset 0 1px 0 rgba(239, 255, 255, .18), 0 0 16px rgba(85, 148, 255, .14);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+#main-menu-screen .menu-more-button span { font-size: .72rem; font-weight: 800; letter-spacing: .08em; }
+#main-menu-screen .menu-more-button small { color: rgba(205, 237, 255, .72); font-size: .5rem; letter-spacing: .12em; }
+#main-menu-screen .menu-more-button:hover,
+#main-menu-screen .menu-more-button:focus-visible,
+#main-menu-screen .menu-more-button[aria-expanded="true"] {
+  border-color: rgba(238, 183, 255, .86);
+  background: rgba(72, 48, 151, .42);
+  box-shadow: 0 0 20px rgba(176, 92, 255, .2), inset 0 1px 0 rgba(255, 255, 255, .24);
+  outline: none;
+}
+#main-menu-screen .more-menu-panel {
+  position: absolute;
+  top: 62px;
+  right: 18px;
+  z-index: 9;
+  display: grid;
+  gap: 10px;
+  width: min(270px, calc(100% - 36px));
+  padding: 14px;
+  border: 1px solid rgba(166, 231, 255, .55);
+  border-radius: 15px;
+  border-color: rgba(199, 91, 255, .62);
+  background-color: rgba(45, 31, 115, .34);
+  background-image: linear-gradient(110deg, rgba(67, 42, 151, .34), rgba(42, 58, 154, .3) 54%, rgba(83, 37, 137, .32));
+  box-shadow: 0 16px 34px rgba(4, 8, 40, .35), inset 0 1px 0 rgba(239, 255, 255, .2), inset 0 0 20px rgba(92, 220, 255, .06);
+  -webkit-backdrop-filter: blur(14px) saturate(125%);
+  backdrop-filter: blur(14px) saturate(125%);
+}
+#main-menu-screen .more-menu-panel.is-hidden { display: none; }
+#main-menu-screen .more-menu-panel > .eyebrow { margin: 0 2px 0; color: rgba(194, 237, 255, .68); font-size: .5rem; text-align: left; }
+#main-menu-screen .more-menu-panel .menu-actions { display: grid; gap: 8px; pointer-events: auto; }
+#main-menu-screen .more-menu-panel .menu-button { min-height: 48px; padding: 11px 13px; }
+#main-menu-screen .menu-button::before { display: none; }
+
+/* Final builder/mode polish: keep the controls in the same compact neon language. */
+#mode-screen .mode-card::before {
+  display: none !important;
+  content: none !important;
+}
+
+#builder-screen .assembly-board {
+  border-color: rgba(119, 224, 255, .72);
+  background:
+    radial-gradient(circle at 50% 46%, rgba(255, 92, 211, .3), transparent 34%),
+    linear-gradient(135deg, rgba(34, 83, 190, .94), rgba(93, 33, 164, .92) 54%, rgba(214, 42, 166, .78));
+  box-shadow: inset 0 0 34px rgba(72, 222, 255, .22), 0 0 27px rgba(194, 67, 255, .3);
+}
+
+#builder-screen .quick-assembly-toggle,
+#builder-screen .builder-board-title .text-button,
+#builder-screen .assembly-view-controls,
+#builder-screen .assembly-view-controls button {
+  border: 1px solid rgba(255, 160, 232, .82);
+  color: #fff4ff;
+  background: linear-gradient(135deg, #b937ed, #7d5aff 52%, #ed58b8);
+  box-shadow: 0 0 15px rgba(239, 78, 211, .28), inset 0 1px 0 rgba(255, 255, 255, .2);
+  text-shadow: 0 0 8px rgba(255, 210, 250, .34);
+}
+
+#builder-screen .quick-assembly-toggle:hover,
+#builder-screen .quick-assembly-toggle:focus-visible,
+#builder-screen .builder-board-title .text-button:hover,
+#builder-screen .builder-board-title .text-button:focus-visible,
+#builder-screen .assembly-view-controls button:hover,
+#builder-screen .assembly-view-controls button:focus-visible {
+  border-color: #ffd2f5;
+  background: linear-gradient(135deg, #ca4ff2, #8a6bff 52%, #f56ac4);
+  box-shadow: 0 0 20px rgba(255, 102, 222, .48), inset 0 1px 0 rgba(255, 255, 255, .28);
+  outline: none;
+}
+
+#builder-screen .quick-assembly-toggle.is-active {
+  border-color: #ffe0f8;
+  color: #fff;
+  background: linear-gradient(135deg, #d64cf1, #865eff 52%, #f45cbd);
+  box-shadow: 0 0 21px rgba(255, 102, 222, .52), inset 0 1px 0 rgba(255, 255, 255, .25);
+}
+
+#builder-screen .assembly-view-controls {
+  gap: 3px;
+  padding: 3px;
+  border-radius: 9px;
+}
+
+#builder-screen .assembly-view-controls button {
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, .08);
+}
+
+#builder-screen .assembly-view-controls span {
+  color: #ffe6fa;
+}
+
+/* Give the two code actions a real vertical gap instead of touching borders. */
+#loadout-code-card > #loadout-code-export,
+#loadout-code-card > #loadout-code-import,
+.loadout-code-card > #loadout-code-export,
+.loadout-code-card > #loadout-code-import {
+  display: block;
+  clear: both;
+  width: 100%;
+  margin: 10px 0 0;
+}
+
+.loadout-code-card > #loadout-code-export,
+#loadout-code-card > #loadout-code-export {
+  margin-top: 13px;
+}
+
+/* Builder controls use the same restrained single-color button as “清空模块”. */
+#builder-screen .quick-assembly-toggle,
+#builder-screen .builder-board-title .text-button,
+#builder-screen .assembly-view-controls button {
+  border: 1px solid rgba(219, 93, 255, .78) !important;
+  border-radius: 8px;
+  color: #ff9be9 !important;
+  background: rgba(43, 13, 59, .84) !important;
+  background-image: none !important;
+  box-shadow: 0 0 10px rgba(213, 67, 255, .16), inset 0 0 8px rgba(255, 91, 214, .06) !important;
+  text-shadow: 0 0 7px rgba(255, 89, 213, .45);
+}
+
+#builder-screen .quick-assembly-toggle:hover,
+#builder-screen .quick-assembly-toggle:focus-visible,
+#builder-screen .builder-board-title .text-button:hover,
+#builder-screen .builder-board-title .text-button:focus-visible,
+#builder-screen .assembly-view-controls button:hover,
+#builder-screen .assembly-view-controls button:focus-visible,
+#builder-screen .quick-assembly-toggle.is-active {
+  border-color: rgba(242, 144, 255, .98) !important;
+  color: #ffc1f1 !important;
+  background: rgba(59, 17, 78, .9) !important;
+  background-image: none !important;
+  box-shadow: 0 0 15px rgba(231, 85, 255, .28), inset 0 0 10px rgba(255, 91, 214, .1) !important;
+  outline: none;
+}
+
+#builder-screen .assembly-view-controls {
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+#builder-screen .assembly-view-controls button {
+  width: 25px;
+  height: 25px;
+  padding: 0;
+  border-radius: 7px;
+}
+
+#builder-screen .assembly-view-controls span {
+  color: rgba(255, 174, 235, .82);
+}
+
+/* Keep the assembly board restrained: the colour gradient belongs to the grid lines, not the panel fill. */
+#builder-screen .assembly-board {
+  border-color: rgba(100, 231, 255, .42);
+  background: #061525;
+  box-shadow: inset 0 0 30px rgba(39, 169, 216, .1), 0 0 24px rgba(20, 117, 157, .12);
+}
+
+#builder-screen .board-grid-lines {
+  border-color: rgba(100, 231, 255, .18);
+  background: none;
+}
+
+#builder-screen .board-grid-lines::before,
+#builder-screen .board-grid-lines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: .72;
+  mix-blend-mode: screen;
+}
+
+#builder-screen .board-grid-lines::before {
+  background: linear-gradient(180deg, rgba(65, 204, 255, .68), rgba(255, 87, 207, .7) 52%, rgba(148, 111, 255, .68));
+  -webkit-mask-image: repeating-linear-gradient(0deg, #000 0 1px, transparent 1px calc(100% / 15));
+  mask-image: repeating-linear-gradient(0deg, #000 0 1px, transparent 1px calc(100% / 15));
+}
+
+#builder-screen .board-grid-lines::after {
+  background: linear-gradient(90deg, rgba(65, 204, 255, .6), rgba(255, 87, 207, .66) 52%, rgba(148, 111, 255, .62));
+  -webkit-mask-image: repeating-linear-gradient(90deg, #000 0 1px, transparent 1px calc(100% / 15));
+  mask-image: repeating-linear-gradient(90deg, #000 0 1px, transparent 1px calc(100% / 15));
+}
+
+/* Transparent board surface with the original restrained blue grid. */
+#builder-screen .assembly-board {
+  background: transparent !important;
+  box-shadow: 0 0 24px rgba(20, 117, 157, .12);
+}
+
+#builder-screen .board-grid-lines {
+  border-color: rgba(100, 231, 255, .3);
+  background-image:
+    linear-gradient(rgba(100, 231, 255, .21) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(100, 231, 255, .21) 1px, transparent 1px);
+  background-size: calc(100% / 15) calc(100% / 15);
+  box-shadow: inset 0 0 12px rgba(100, 231, 255, .08);
+}
+
+#builder-screen .board-grid-lines::before,
+#builder-screen .board-grid-lines::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Main-menu logo: match the builder heading's clean chromatic-offset lettering. */
+#main-menu-screen .menu-logo-lockup {
+  top: 66px;
+  left: 0;
+  right: 0;
+}
+
+#main-menu-screen .menu-content h1 {
+  font-size: clamp(3.36rem, 12vw, 6rem);
+  color: #f2fbff;
+  font-weight: 800;
+  text-shadow: 2px 0 rgba(255, 78, 205, .3), -2px 0 rgba(66, 224, 255, .28), 0 0 20px rgba(195, 95, 255, .46);
+  animation: none;
+}
+
+#main-menu-screen .menu-logo-lockup::before,
+#main-menu-screen .menu-logo-lockup::after {
+  display: none;
+}
+
+/* The “更多” surface uses the same real translucent glass as mode cards. */
+#main-menu-screen .more-menu-panel {
+  border-color: rgba(157, 231, 255, .52) !important;
+  background-color: transparent !important;
+  background-image: linear-gradient(112deg, rgba(74, 191, 255, .22), rgba(117, 103, 255, .2) 52%, rgba(255, 116, 211, .16)) !important;
+  box-shadow: 0 18px 44px rgba(17, 42, 108, .2), inset 0 1px 0 rgba(239, 255, 255, .18), inset 0 0 30px rgba(89, 219, 255, .07) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(125%) !important;
+  backdrop-filter: blur(16px) saturate(125%) !important;
+}
+
+#main-menu-screen .more-menu-panel .menu-button {
+  border-color: rgba(157, 231, 255, .56) !important;
+  background: linear-gradient(112deg, rgba(74, 191, 255, .28), rgba(117, 103, 255, .25) 52%, rgba(255, 116, 211, .2)) !important;
+  box-shadow: 0 10px 28px rgba(22, 63, 131, .18), inset 0 1px 0 rgba(239, 255, 255, .22), inset 0 0 24px rgba(91, 229, 255, .08) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(125%) !important;
+  backdrop-filter: blur(16px) saturate(125%) !important;
+}
+
+/* Match the reference menu cards: transparent surrounding area and restrained blue-violet glass buttons. */
+#main-menu-screen .more-menu-panel {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+#main-menu-screen .more-menu-panel > .eyebrow {
+  margin: 0 2px 0;
+}
+
+#main-menu-screen .more-menu-panel .menu-button {
+  border-color: rgba(199, 91, 255, .62) !important;
+  background-color: rgba(45, 31, 115, .34) !important;
+  background-image: linear-gradient(110deg, rgba(67, 42, 151, .34), rgba(42, 58, 154, .3) 54%, rgba(83, 37, 137, .32)) !important;
+  box-shadow: 0 8px 24px rgba(14, 44, 105, .18), inset 0 1px 0 rgba(239, 255, 255, .2), inset 0 0 20px rgba(92, 220, 255, .06) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+#main-menu-screen .more-menu-panel .menu-button:hover,
+#main-menu-screen .more-menu-panel .menu-button:focus-visible {
+  border-color: rgba(220, 125, 255, .82) !important;
+  background-color: rgba(62, 45, 145, .42) !important;
+  background-image: linear-gradient(110deg, rgba(86, 58, 178, .42), rgba(57, 77, 181, .38) 54%, rgba(105, 45, 163, .4)) !important;
+}
+
+/* Restore the original overall popup surface; only its buttons stay transparent. */
+#main-menu-screen .more-menu-panel {
+  padding: 14px !important;
+  border: 1px solid rgba(166, 231, 255, .55) !important;
+  border-radius: 15px;
+  border-color: rgba(199, 91, 255, .62) !important;
+  background-color: rgba(45, 31, 115, .34) !important;
+  background-image: linear-gradient(110deg, rgba(67, 42, 151, .34), rgba(42, 58, 154, .3) 54%, rgba(83, 37, 137, .32)) !important;
+  box-shadow: 0 16px 34px rgba(4, 8, 40, .35), inset 0 1px 0 rgba(239, 255, 255, .2), inset 0 0 20px rgba(92, 220, 255, .06) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(125%) !important;
+  backdrop-filter: blur(14px) saturate(125%) !important;
+}
+
+/* Lightweight popup motion: short, calm transitions that preserve touch input. */
+.settings-modal,
+.changelog-modal,
+.module-detail-modal,
+.environment-detail-modal,
+.screen-overlay {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity .22s ease, visibility 0s linear 0s;
+}
+
+.settings-modal.is-hidden,
+.changelog-modal.is-hidden,
+.module-detail-modal.is-hidden,
+.environment-detail-modal.is-hidden,
+.screen-overlay.is-hidden {
+  display: grid;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease, visibility 0s linear .18s;
+}
+
+.settings-card,
+.changelog-card,
+.module-detail-card,
+.environment-detail-card,
+.overlay-card {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  transition: opacity .22s ease, transform .22s cubic-bezier(.2, .8, .2, 1);
+  will-change: opacity, transform;
+}
+
+.settings-modal.is-hidden .settings-card,
+.changelog-modal.is-hidden .changelog-card,
+.module-detail-modal.is-hidden .module-detail-card,
+.environment-detail-modal.is-hidden .environment-detail-card,
+.screen-overlay.is-hidden .overlay-card {
+  opacity: 0;
+  transform: translate3d(0, 10px, 0) scale(.97);
+}
+
+#main-menu-screen .more-menu-panel {
+  visibility: visible;
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition: opacity .22s ease, transform .24s cubic-bezier(.2, .8, .2, 1), visibility 0s linear 0s;
+  will-change: opacity, transform;
+}
+
+#main-menu-screen .more-menu-panel.is-hidden {
+  display: grid;
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(34px, 0, 0);
+  transition: opacity .18s ease, transform .18s ease, visibility 0s linear .18s;
+}
+
+@keyframes popup-backdrop-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes popup-backdrop-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes popup-card-in {
+  from { opacity: 0; transform: translate3d(0, 10px, 0) scale(.97); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+@keyframes popup-card-out {
+  from { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+  to { opacity: 0; transform: translate3d(0, 10px, 0) scale(.97); }
+}
+
+@keyframes more-panel-in {
+  from { opacity: 0; transform: translate3d(34px, 0, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes more-panel-out {
+  from { opacity: 1; transform: translate3d(0, 0, 0); }
+  to { opacity: 0; transform: translate3d(34px, 0, 0); }
+}
+
+.settings-modal:not(.is-hidden),
+.changelog-modal:not(.is-hidden),
+.module-detail-modal:not(.is-hidden),
+.environment-detail-modal:not(.is-hidden),
+.screen-overlay:not(.is-hidden) {
+  animation: popup-backdrop-in .22s ease both;
+}
+
+.settings-modal.is-hidden,
+.changelog-modal.is-hidden,
+.module-detail-modal.is-hidden,
+.environment-detail-modal.is-hidden,
+.screen-overlay.is-hidden {
+  animation: popup-backdrop-out .18s ease both;
+}
+
+.settings-modal:not(.is-hidden) .settings-card,
+.changelog-modal:not(.is-hidden) .changelog-card,
+.module-detail-modal:not(.is-hidden) .module-detail-card,
+.environment-detail-modal:not(.is-hidden) .environment-detail-card,
+.screen-overlay:not(.is-hidden) .overlay-card {
+  animation: popup-card-in .22s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+.settings-modal.is-hidden .settings-card,
+.changelog-modal.is-hidden .changelog-card,
+.module-detail-modal.is-hidden .module-detail-card,
+.environment-detail-modal.is-hidden .environment-detail-card,
+.screen-overlay.is-hidden .overlay-card {
+  animation: popup-card-out .18s ease both;
+}
+
+#main-menu-screen .more-menu-panel:not(.is-hidden) {
+  animation: more-panel-in .24s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+#main-menu-screen .more-menu-panel.is-hidden {
+  animation: more-panel-out .18s ease both;
+}
+
+/* Full-screen pages use the same calm, readable slide instead of stacking opaque panels. */
+@keyframes screen-enter-forward {
+  from { opacity: 0; transform: translate3d(calc(-50% + 26px), 0, 0) scale(.995); }
+  to { opacity: 1; transform: translate3d(-50%, 0, 0) scale(1); }
+}
+
+@keyframes screen-exit-forward {
+  from { opacity: 1; transform: translate3d(-50%, 0, 0) scale(1); }
+  to { opacity: 0; transform: translate3d(calc(-50% - 18px), 0, 0) scale(.995); }
+}
+
+@keyframes screen-enter-back {
+  from { opacity: 0; transform: translate3d(calc(-50% - 26px), 0, 0) scale(.995); }
+  to { opacity: 1; transform: translate3d(-50%, 0, 0) scale(1); }
+}
+
+@keyframes screen-exit-back {
+  from { opacity: 1; transform: translate3d(-50%, 0, 0) scale(1); }
+  to { opacity: 0; transform: translate3d(calc(-50% + 18px), 0, 0) scale(.995); }
+}
+
+.game-screen.screen-transitioning-in,
+.game-screen.screen-transitioning-out {
+  will-change: opacity, transform;
+}
+
+.game-screen.screen-transitioning-in {
+  z-index: 4;
+  pointer-events: auto;
+}
+
+.game-screen.screen-transitioning-out {
+  z-index: 3;
+  pointer-events: none;
+}
+
+.game-screen.screen-transitioning-in.screen-direction-forward { animation: screen-enter-forward .28s cubic-bezier(.2, .8, .2, 1) both; }
+.game-screen.screen-transitioning-out.screen-direction-forward { animation: screen-exit-forward .28s cubic-bezier(.2, .8, .2, 1) both; }
+.game-screen.screen-transitioning-in.screen-direction-back { animation: screen-enter-back .28s cubic-bezier(.2, .8, .2, 1) both; }
+.game-screen.screen-transitioning-out.screen-direction-back { animation: screen-exit-back .28s cubic-bezier(.2, .8, .2, 1) both; }
+
+/* A centered, non-interactive countdown gives the player a clean launch moment. */
+.battle-countdown {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 4px;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(12, 25, 66, .16), transparent 34%);
+  text-align: center;
+}
+
+.battle-countdown.is-hidden { display: none; }
+.battle-countdown-value { color: #f4fbff; font-size: clamp(4rem, 18vw, 7rem); font-weight: 900; line-height: .9; letter-spacing: .06em; text-shadow: 0 0 10px rgba(108, 239, 255, .95), 3px 0 rgba(255, 92, 217, .42), -3px 0 rgba(100, 121, 255, .48); }
+.battle-countdown small { color: rgba(176, 242, 255, .9); font-size: .65rem; letter-spacing: .32em; text-transform: uppercase; }
+@keyframes countdown-pulse { 0% { opacity: 0; transform: scale(1.18); } 25% { opacity: 1; transform: scale(1); } 100% { opacity: .9; transform: scale(.96); } }
+.battle-countdown.countdown-pulse .battle-countdown-value { animation: countdown-pulse .34s cubic-bezier(.2, .8, .2, 1) both; }
+
+/* The setting removes only the outer bloom; module fills, outlines and colours stay unchanged. */
+.module-glow-off .board-core,
+.module-glow-off .placed-module,
+.module-glow-off .drag-ghost,
+.module-glow-off .detail-icon,
+.module-glow-off .library-module.is-quick-selected {
+  box-shadow: none !important;
+}

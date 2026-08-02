@@ -99,7 +99,7 @@ export class Enemy {
     } else if (type === "bulwark") {
       ctx.rect(-22, -20, 44, 40);
     } else if (type === "rammer") {
-      ctx.moveTo(0, -26); ctx.lineTo(18, 18); ctx.lineTo(0, 12); ctx.lineTo(-18, 18);
+      ctx.moveTo(0, 26); ctx.lineTo(18, -18); ctx.lineTo(0, -12); ctx.lineTo(-18, -18);
     } else {
       ctx.moveTo(0, 21); ctx.lineTo(16, -8); ctx.lineTo(6, -5); ctx.lineTo(0, -18); ctx.lineTo(-6, -5); ctx.lineTo(-16, -8);
     }

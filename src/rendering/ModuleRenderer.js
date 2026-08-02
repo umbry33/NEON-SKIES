@@ -1,4 +1,15 @@
 const colors = { core: "#64e7ff", weapon: "#ffd27a", special: "#72f1c0" };
+let moduleGlowEnabled = true;
+
+function setModuleGlow(ctx, color, blur) {
+  ctx.shadowColor = color;
+  ctx.shadowBlur = moduleGlowEnabled ? blur : 0;
+}
+
+export function setModuleGlowEnabled(enabled) {
+  moduleGlowEnabled = Boolean(enabled);
+  if (typeof document !== "undefined") document.documentElement.classList.toggle("module-glow-off", !moduleGlowEnabled);
+}
 
 function polygon(ctx, points) {
   ctx.beginPath();
@@ -51,16 +62,16 @@ function drawNestPod(ctx, x) {
 }
 
 function drawWeapon(ctx, module) {
-  const type = module?.behavior?.type; const accent = type === "nest" ? "#ff294d" : type === "ballLightning" ? "#b7a1ff" : type === "lightning" ? "#b86cff" : "#ffd27a";
+  const type = module?.behavior?.type; const accent = type === "nest" ? "#ff294d" : type === "ballLightning" ? "#b7a1ff" : type === "lightning" ? "#b86cff" : type === "blackHole" ? "#b57bff" : "#ffd27a";
   drawFrame(ctx, module, accent, type === "nest" ? "#090b13" : "#142d46");
-  ctx.shadowColor = accent; ctx.shadowBlur = 5;
+  setModuleGlow(ctx, accent, 5);
   if (type === "single") drawBarrel(ctx, 0);
   else if (type === "twin") { drawBarrel(ctx, -5); drawBarrel(ctx, 5); }
   else if (type === "spread") { drawBarrel(ctx, -6, -0.27); drawBarrel(ctx, 0); drawBarrel(ctx, 6, 0.27); }
   else if (type === "missile") { polygon(ctx, [[-4, 7], [0, 11], [4, 7], [3, 1], [-3, 1]]); ctx.fillStyle = "#ff8d6d"; ctx.fill(); ctx.strokeStyle = "#ffe0bd"; ctx.stroke(); ctx.fillStyle = "#fff0c2"; ctx.fillRect(-1, -8, 2, 7); }
   else if (type === "electricWhirlwind") { ctx.strokeStyle = "#a8f5ff"; ctx.lineWidth = 2; for (const offset of [0, Math.PI * 2 / 3, Math.PI * 4 / 3]) { ctx.beginPath(); ctx.arc(0, 0, 10, offset, offset + 1.8); ctx.stroke(); } drawLightningBolt(ctx, "#f2ffff"); }
   else if (type === "nest") {
-    ctx.save(); ctx.shadowColor = "#ff294d"; ctx.shadowBlur = 8;
+    ctx.save(); setModuleGlow(ctx, "#ff294d", 8);
     [-8, 0, 8].forEach((x) => drawNestPod(ctx, x));
     ctx.fillStyle = "#090b13"; ctx.strokeStyle = "#ff294d"; ctx.lineWidth = 1.1;
     ctx.beginPath(); ctx.arc(0, 1.5, 4.5, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
@@ -72,17 +83,20 @@ function drawWeapon(ctx, module) {
   else if (type === "ballLightning") { ctx.fillStyle = "#b7a1ff"; ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#f5edff"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, 0, 9, 0, Math.PI * 2); ctx.stroke(); for (let i = 0; i < 4; i += 1) { const a = i * Math.PI / 2 + .3; ctx.beginPath(); ctx.moveTo(Math.cos(a) * 6, Math.sin(a) * 6); ctx.lineTo(Math.cos(a) * 11, Math.sin(a) * 11); ctx.stroke(); } }
   else if (type === "psionic") { ctx.fillStyle = "#72f1c0"; ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#e1fff4"; ctx.lineWidth = 1; for (const radius of [8, 11]) { ctx.beginPath(); ctx.arc(0, 0, radius, -.7, .7); ctx.stroke(); } drawBarrel(ctx, 0, 0, "#72f1c0"); }
   else if (type === "lightning") drawLightningBolt(ctx, "#b86cff");
+  else if (type === "blackHole") { ctx.fillStyle = "#080414"; ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#d0b0ff"; ctx.lineWidth = 1.6; for (const [radius, start] of [[9, .2], [12, 2.3]]) { ctx.beginPath(); ctx.arc(0, 0, radius, start, start + 4.3); ctx.stroke(); } ctx.fillStyle = "#fff0ff"; ctx.beginPath(); ctx.arc(-2, -2, 1.5, 0, Math.PI * 2); ctx.fill(); }
   else drawBarrel(ctx, 0);
 }
 
 function drawSpecial(ctx, module) {
-  const accent = "#72f1c0"; drawFrame(ctx, module, accent, "#123d3e"); ctx.shadowColor = accent; ctx.shadowBlur = 5;
+  const accent = "#72f1c0"; drawFrame(ctx, module, accent, "#123d3e"); setModuleGlow(ctx, accent, 5);
   if (module?.id === "special-optical") { ctx.strokeStyle = "#b8ffe7"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.ellipse(0, 0, 10, 6, 0, 0, Math.PI * 2); ctx.stroke(); ctx.fillStyle = accent; ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill(); ctx.beginPath(); ctx.moveTo(-8, 9); ctx.lineTo(8, -9); ctx.stroke(); }
   else if (module?.id === "special-wingman") { polygon(ctx, [[0, -11], [11, 7], [2, 4], [0, 10], [-2, 4], [-11, 7]]); ctx.fillStyle = "#1b685d"; ctx.fill(); ctx.strokeStyle = "#b8ffe7"; ctx.stroke(); ctx.fillStyle = accent; ctx.fillRect(-12, 8, 5, 2); ctx.fillRect(7, 8, 5, 2); }
   else if (module?.id === "special-chainsaw") { ctx.strokeStyle = "#b8ffe7"; ctx.lineWidth = 1.7; ctx.beginPath(); ctx.moveTo(-10, -7); ctx.lineTo(-4, 0); ctx.lineTo(-10, 7); ctx.moveTo(10, -7); ctx.lineTo(4, 0); ctx.lineTo(10, 7); ctx.stroke(); ctx.lineWidth = 2.4; for (const side of [-1, 1]) for (let i = 0; i < 4; i += 1) { const y = -8 + i * 5; ctx.beginPath(); ctx.moveTo(side * 5, y); ctx.lineTo(side * 10, y + 2); ctx.stroke(); } }
   else if (module?.id === "special-sonic") { ctx.strokeStyle = "#b8ffe7"; ctx.lineWidth = 1.4; for (let y = -8; y <= 8; y += 8) { ctx.beginPath(); ctx.moveTo(-12, y); ctx.lineTo(12, y); ctx.stroke(); } ctx.strokeStyle = accent; ctx.beginPath(); ctx.moveTo(-10, 0); ctx.lineTo(-5, -6); ctx.lineTo(0, 0); ctx.lineTo(5, 6); ctx.lineTo(10, 0); ctx.stroke(); }
   else if (module?.id === "special-zero") { ctx.fillStyle = "#225e69"; polygon(ctx, [[0, -12], [5, -5], [11, -4], [6, 2], [7, 10], [0, 6], [-7, 10], [-6, 2], [-11, -4], [-5, -5]]); ctx.fill(); ctx.strokeStyle = "#b8ffe7"; ctx.stroke(); ctx.strokeStyle = "#d9ffff"; ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(0, 8); ctx.moveTo(-7, 0); ctx.lineTo(7, 0); ctx.stroke(); }
   else if (module?.id === "special-energy-aggregator") { ctx.strokeStyle = "#d9fff2"; ctx.lineWidth = 1.2; for (let i = 0; i < 3; i += 1) { const angle = -Math.PI / 2 + i * Math.PI * 2 / 3; ctx.beginPath(); ctx.moveTo(Math.cos(angle) * 10, Math.sin(angle) * 10); ctx.lineTo(Math.cos(angle + .44) * 4.5, Math.sin(angle + .44) * 4.5); ctx.stroke(); ctx.fillStyle = "#7effce"; ctx.beginPath(); ctx.arc(Math.cos(angle) * 10, Math.sin(angle) * 10, 2, 0, Math.PI * 2); ctx.fill(); } ctx.fillStyle = "#72f1c0"; ctx.beginPath(); ctx.arc(0, 0, 4.2, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#f1fffb"; ctx.beginPath(); ctx.arc(-1, -1.2, 1.5, 0, Math.PI * 2); ctx.fill(); }
+  else if (module?.id === "special-overclock") { ctx.strokeStyle = "#ffbd66"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-10, -7); ctx.lineTo(-4, 0); ctx.lineTo(-9, 8); ctx.moveTo(10, -7); ctx.lineTo(4, 0); ctx.lineTo(9, 8); ctx.stroke(); ctx.fillStyle = "#ff8c4a"; ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#fff3bf"; ctx.fillRect(-1, -7, 2, 14); }
+  else if (module?.id === "special-polarity-reverse") { ctx.strokeStyle = "#d1b8ff"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.arc(0, 0, 9, .25, Math.PI * 1.15); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, 9, Math.PI + .25, Math.PI * 2.15); ctx.stroke(); ctx.fillStyle = "#9d7bff"; ctx.beginPath(); ctx.moveTo(-3, -11); ctx.lineTo(3, -11); ctx.lineTo(0, -6); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(-3, 11); ctx.lineTo(3, 11); ctx.lineTo(0, 6); ctx.closePath(); ctx.fill(); }
   else { ctx.strokeStyle = accent; ctx.strokeRect(-8, -8, 16, 16); }
 }
 
@@ -95,7 +109,7 @@ function drawCore(ctx) {
 
 // Canvas-only icons. The frame is always a module silhouette; CSS stretches it to the module footprint in the builder.
 export function drawModuleIcon(ctx, module, size = 26, alpha = 1) {
-  ctx.save(); ctx.globalAlpha = alpha; ctx.scale(size / 28, size / 28); ctx.shadowBlur = 8; ctx.shadowColor = colors[module?.type] ?? colors.core;
+  ctx.save(); ctx.globalAlpha = alpha; ctx.scale(size / 28, size / 28); setModuleGlow(ctx, colors[module?.type] ?? colors.core, 8);
   if (module?.type === "core") drawCore(ctx); else if (module?.type === "weapon") drawWeapon(ctx, module); else if (module?.type === "special") drawSpecial(ctx, module);
   ctx.restore();
 }

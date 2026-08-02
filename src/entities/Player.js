@@ -15,6 +15,8 @@ export class Player {
     this.whirlwindCooldowns = new Map();
     this.hitFlash = 0;
     this.invulnerabilityTimer = 0;
+    this.overclockTimer = 0;
+    this.weaponSilenceTimer = 0;
   }
 
   update(dt, input, bounds, movementMultiplier = 1) {
@@ -36,6 +38,8 @@ export class Player {
     }
     this.invulnerabilityTimer = Math.max(0, this.invulnerabilityTimer - dt);
     this.hitFlash = Math.max(0, this.hitFlash - dt);
+    this.overclockTimer = Math.max(0, this.overclockTimer - dt);
+    this.weaponSilenceTimer = Math.max(0, this.weaponSilenceTimer - dt);
   }
 
   canFireWeapon(slotId) { return (this.weaponTimers.get(slotId) ?? 0) <= 0; }
