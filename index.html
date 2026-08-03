@@ -8,6 +8,15 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
+<div id="boot-loader" class="boot-loader" role="status" aria-live="polite" aria-label="正在加载游戏" aria-busy="true">
+  <div class="boot-loader-card">
+    <p class="eyebrow">NEON SKIES / SYSTEM BOOT</p>
+    <h2>正在进入霓虹天空</h2>
+    <p id="boot-loader-status" class="boot-loader-status">正在加载核心系统…</p>
+    <div class="boot-progress" role="progressbar" aria-label="游戏加载进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="6"><i id="boot-progress-fill"></i></div>
+    <div class="boot-progress-meta"><span>LOADING</span><strong id="boot-progress-value">06%</strong></div>
+  </div>
+</div>
 <div class="app-shell">
   <canvas id="app-ambient-canvas" class="app-ambient-canvas" aria-hidden="true"></canvas>
   <section id="main-menu-screen" class="game-screen menu-screen" aria-label="&#20027;&#33756;&#21333;">
@@ -24,7 +33,7 @@
     </div>
     <div class="menu-content">
       <div class="menu-logo-lockup">
-        <p class="eyebrow">v0.4.1 / Made by umbry33</p>
+        <p class="eyebrow">v0.5.0 / Made by umbry33</p>
         <h1><span class="menu-logo-line">NEON</span> <span class="menu-logo-line">SKIES</span></h1>
       </div>
       <div class="menu-aircraft" aria-hidden="true"><span>&#10022;</span></div>
@@ -33,12 +42,15 @@
       <button id="menu-battle-button" class="menu-button" type="button"><span>&#36873;&#25321;&#27169;&#24335;</span><small>SELECT MODE</small></button>
       <button id="open-builder-button" class="menu-button" type="button"><span>&#25913;&#35013;&#26426;&#20307;</span><small>ASSEMBLY BAY</small></button>
     </div>
-    <div id="settings-modal" class="settings-modal is-hidden" role="dialog" aria-modal="true" aria-label="&#35774;&#32622;"><div class="settings-card"><button id="settings-close" class="detail-close" type="button" aria-label="&#20851;&#38381;">X</button><p class="eyebrow">SYSTEM SETTINGS</p><h2>&#35774;&#32622;</h2><label class="settings-toggle"><input id="damage-number-toggle" type="checkbox" checked /><span>&#26174;&#31034;&#20260;&#23475;&#36339;&#23383;</span></label><label class="settings-toggle"><input id="vibration-toggle" type="checkbox" checked /><span>&#24320;&#21551;&#38663;&#21160;&#21453;&#39304;</span></label><label class="settings-toggle"><input id="sound-toggle" type="checkbox" checked /><span>&#38899;&#25928;&#19982;&#32972;&#26223;&#38899;&#20048;</span></label></div></div>
+    <div id="settings-modal" class="settings-modal is-hidden" role="dialog" aria-modal="true" aria-label="&#35774;&#32622;"><div class="settings-card"><button id="settings-close" class="detail-close" type="button" aria-label="&#20851;&#38381;">X</button><p class="eyebrow">SYSTEM SETTINGS</p><h2>&#35774;&#32622;</h2><label class="settings-toggle"><input id="damage-number-toggle" type="checkbox" checked /><span>&#26174;&#31034;&#20260;&#23475;&#36339;&#23383;</span></label><label class="settings-toggle"><input id="vibration-toggle" type="checkbox" checked /><span>&#24320;&#21551;&#38663;&#21160;&#21453;&#39304;</span></label><label class="settings-range"><span>&#32972;&#26223;&#38899;&#20048;<output id="music-volume-value" for="music-volume">100%</output></span><input id="music-volume" type="range" min="0" max="300" step="1" value="100" /></label><label class="settings-range"><span>&#38899;&#25928;<output id="sound-volume-value" for="sound-volume">100%</output></span><input id="sound-volume" type="range" min="0" max="300" step="1" value="100" /></label></div></div>
     <div id="changelog-modal" class="changelog-modal is-hidden" role="dialog" aria-modal="true" aria-label="&#26356;&#26032;&#26085;&#24535;"><div class="changelog-card"><button id="changelog-close" class="detail-close" type="button" aria-label="&#20851;&#38381;">X</button><p class="eyebrow">CHANGELOG</p><h2>&#26356;&#26032;&#26085;&#24535;</h2><pre id="changelog-content">&#27491;&#22312;&#21152;&#36733;&#26356;&#26032;&#26085;&#24535;&#8230;</pre></div></div>
   </section>
 
   <section id="encyclopedia-screen" class="game-screen encyclopedia-screen is-hidden" aria-label="&#28216;&#25103;&#30334;&#31185;">
     <div class="encyclopedia-shell"><button id="encyclopedia-back-button" class="round-button screen-back-button" type="button" aria-label="&#36820;&#22238;">&lt;</button><p class="eyebrow">NEON ARCHIVE</p><h2>&#28216;&#25103;&#30334;&#31185;</h2><p class="encyclopedia-intro">&#25112;&#26426;&#27169;&#22359;&#12289;&#25932;&#26426;&#12289;&#39318;&#39046;&#19982;&#25112;&#22330;&#29615;&#22659;&#30340;&#23454;&#26102;&#26723;&#26696;&#12290;</p><div id="encyclopedia-content" class="encyclopedia-content"></div></div>
+  </section>
+  <section id="encyclopedia-events-screen" class="game-screen encyclopedia-screen is-hidden" aria-label="&#20809;&#38181;&#20043;&#22806;&#20107;&#20214;&#26723;&#26696;">
+    <div class="encyclopedia-shell encyclopedia-events-shell"><button id="encyclopedia-events-back-button" class="round-button screen-back-button" type="button" aria-label="&#36820;&#22238;&#28216;&#25103;&#30334;&#31185;">&lt;</button><p class="eyebrow">BEYOND LIGHT CONE / EVENT ARCHIVE</p><h2>&#28145;&#31354;&#20107;&#20214;</h2><p class="encyclopedia-intro">&#20809;&#38181;&#20043;&#22806;&#27169;&#24335;&#30340; 30 &#20010;&#29420;&#31435;&#36973;&#36935;&#12290;&#20107;&#20214;&#20869;&#23481;&#20250;&#22312;&#26412;&#23616;&#20013;&#23613;&#37327;&#36991;&#20813;&#37325;&#22797;&#12290;</p><div id="encyclopedia-events-content" class="encyclopedia-content"></div></div>
   </section>
 
   <section id="mode-screen" class="game-screen menu-screen sub-menu-screen is-hidden" aria-label="&#27169;&#24335;&#36873;&#25321;">
@@ -63,9 +75,9 @@
     <div class="builder-content">
       <div class="builder-board-area">
         <div class="builder-board-title"><button id="quick-assembly-toggle" class="quick-assembly-toggle" type="button" aria-pressed="false"><span>&#24555;&#25463;&#35013;&#37197;</span><small>OFF</small></button><button id="builder-undo-button" class="quick-assembly-toggle" type="button">&#25764;&#38144;</button><button id="loadout-code-button" class="quick-assembly-toggle loadout-code-button" type="button">&#37197;&#32622;&#30721;</button><button id="clear-loadout" class="text-button" type="button">&#28165;&#31354;&#27169;&#22359;</button></div>
-        <div id="assembly-board" class="assembly-board" aria-label="&#39134;&#26426;&#33258;&#30001;&#35013;&#37197;&#32593;&#26684;"></div>
+        <div class="assembly-board-frame"><button id="synergy-config-button" class="synergy-config-button" type="button"><span>&#36830;&#25658;&#37197;&#32622;</span><small>SYNERGY LINK</small></button><button id="module-synthesis-button" class="synergy-config-button module-synthesis-button" type="button" aria-label="&#27169;&#22359;&#21512;&#25104;&#65288;&#39044;&#30041;&#21151;&#33021;&#65289;"><span>&#27169;&#22359;&#21512;&#25104;</span><small>MODULE FUSION</small></button><div id="assembly-board" class="assembly-board" aria-label="&#39134;&#26426;&#33258;&#30001;&#35013;&#37197;&#32593;&#26684;"></div></div>
         <div class="builder-status-row"><span id="loadout-status">&#35013;&#37197;&#23601;&#32490;</span></div>
-        <div class="builder-stats"><span>&#25915;&#36895; <button id="preview-attack-speed" class="attack-speed-button" type="button" aria-label="&#26597;&#30475;&#25915;&#36895;&#35268;&#21017;">100%</button></span><div id="assembly-view-controls" class="assembly-view-controls" aria-label="&#32593;&#26684;&#35270;&#22270;&#25511;&#21046;"><button id="assembly-zoom-out" type="button" data-board-view="zoom-out" aria-label="&#32553;&#23567;">-</button><span id="assembly-view-label" data-board-view-label>100%</span><button id="assembly-zoom-in" type="button" data-board-view="zoom-in" aria-label="&#25918;&#22823;">+</button><button id="assembly-view-reset" type="button" data-board-view="reset" aria-label="&#37325;&#32622;&#35270;&#22270;">R</button></div></div>
+        <div class="builder-stats"><button id="preview-attack-speed" class="attack-speed-button" type="button" aria-label="&#26597;&#30475;&#25915;&#36895;&#35268;&#21017;"><span>&#25915;&#36895;</span><strong id="preview-attack-speed-value">100%</strong></button><div id="assembly-view-controls" class="assembly-view-controls" aria-label="&#32593;&#26684;&#35270;&#22270;&#25511;&#21046;"><button id="assembly-zoom-out" type="button" data-board-view="zoom-out" aria-label="&#32553;&#23567;">-</button><span id="assembly-view-label" data-board-view-label>100%</span><button id="assembly-zoom-in" type="button" data-board-view="zoom-in" aria-label="&#25918;&#22823;">+</button><button id="assembly-view-reset" type="button" data-board-view="reset" aria-label="&#37325;&#32622;&#35270;&#22270;">R</button></div></div>
       </div>
       <aside class="module-palette" aria-label="&#27169;&#22359;&#20179;&#24211;">
         <div class="palette-heading"><div><p class="eyebrow">MODULE BAY</p><h3>&#27169;&#22359;&#20179;&#24211;</h3></div><span>&#25302;&#21040;&#32593;&#26684;</span></div>
@@ -80,6 +92,9 @@
     </div>
     <div id="loadout-code-modal" class="module-detail-modal is-hidden" role="dialog" aria-modal="true" aria-label="&#26426;&#20307;&#37197;&#32622;&#30721;">
       <div class="module-detail-card loadout-code-card"><button id="loadout-code-close" class="detail-close" type="button" aria-label="&#20851;&#38381;">X</button><p class="eyebrow">BUILD CODE</p><h3>&#26426;&#20307;&#37197;&#32622;&#30721;</h3><p class="detail-description">&#37197;&#32622;&#30721;&#19981;&#21547;&#27169;&#22359;&#21517;&#31216;&#65292;&#21487;&#22797;&#21046;&#20998;&#20139;&#12290;&#23548;&#20837;&#20250;&#23436;&#25972;&#26367;&#25442;&#24403;&#21069;&#26426;&#20307;&#12290;</p><textarea id="loadout-code-input" class="loadout-code-input" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" aria-label="&#26426;&#20307;&#37197;&#32622;&#30721;"></textarea><p id="loadout-code-message" class="loadout-code-message"></p><button id="loadout-code-export" class="secondary-button" type="button">&#22797;&#21046;&#37197;&#32622;&#30721;</button><button id="loadout-code-import" class="primary-button" type="button">&#23548;&#20837;&#26426;&#20307;</button></div>
+    </div>
+    <div id="synergy-config-modal" class="module-detail-modal is-hidden" role="dialog" aria-modal="true" aria-label="&#36830;&#25658;&#33021;&#21147;&#37197;&#32622;">
+      <div class="module-detail-card synergy-config-card"><button id="synergy-config-close" class="detail-close" type="button" aria-label="&#20851;&#38381;">X</button><p class="eyebrow">SYNERGY LINK</p><h3>&#36830;&#25658;&#33021;&#21147;</h3><p class="detail-description">&#28608;&#27963;&#30340;&#36830;&#25658;&#20250;&#21344;&#29992;&#21442;&#19982;&#30340;&#27169;&#22359;&#12290;&#24050;&#34987;&#21344;&#29992;&#30340;&#27169;&#22359;&#19981;&#33021;&#20877;&#21442;&#19982;&#20854;&#20182;&#36830;&#25658;&#12290;</p><div id="synergy-config-list" class="synergy-config-list"></div></div>
     </div>
     <div id="attack-speed-modal" class="module-detail-modal is-hidden" role="dialog" aria-modal="true" aria-label="&#25915;&#36895;&#35268;&#21017;">
       <div class="module-detail-card"><button id="attack-speed-close" class="detail-close" type="button" aria-label="&#20851;&#38381;">X</button><p class="eyebrow">ATTACK SPEED</p><h3>&#25915;&#36895;&#35268;&#21017;</h3><p class="detail-description">&#22522;&#30784;&#25915;&#36895;&#20026; 100%&#12290;&#25152;&#26377;&#33258;&#21160;&#25915;&#20987;&#27169;&#22359;&#30340;&#24320;&#28779;&#38388;&#38548;&#20250;&#25353;&#26368;&#32456;&#25915;&#36895;&#32553;&#30701;&#12290;</p><div class="detail-stats"><div><span>&#33021;&#37327;&#805a;&#21512;&#22120;</span><strong>&#27599;&#20010; +20%</strong></div><div><span>&#25915;&#36895;&#19978;&#38480;</span><strong>300%</strong></div><div><span>&#36229;&#20986;&#19978;&#38480;</span><strong>&#19981;&#29983;&#25928;</strong></div><div><span>&#20027;&#21160;&#25216;&#33021;&#20919;&#21364;</span><strong>&#19981;&#21463;&#24433;&#21709;</strong></div></div></div>
@@ -96,6 +111,70 @@
   </section>
 </div>
 <script>
+  // The boot layer is the only loading UI. It is removed after app startup and
+  // never participates in later menu, builder or combat screen changes.
+  (() => {
+    const loader = document.getElementById("boot-loader");
+    const fill = document.getElementById("boot-progress-fill");
+    const value = document.getElementById("boot-progress-value");
+    const status = document.getElementById("boot-loader-status");
+    const progressbar = loader?.querySelector('[role="progressbar"]');
+    const sessionKey = "neon-skies-boot-ready";
+    let frame = null;
+    let finished = false;
+    let current = 6;
+    let target = 88;
+    const startedAt = performance.now();
+    const hasLoadedBefore = (() => { try { return sessionStorage.getItem(sessionKey) === "1"; } catch { return false; } })();
+
+    const setProgress = (next, message = null) => {
+      if (!loader || finished) return;
+      target = Math.max(current, Math.min(96, Number(next) || 0));
+      if (message) status.textContent = message;
+    };
+    const drawProgress = (next) => {
+      current = Math.max(0, Math.min(100, next));
+      const rounded = Math.round(current);
+      fill.style.width = `${current}%`;
+      value.textContent = `${String(rounded).padStart(2, "0")}%`;
+      progressbar?.setAttribute("aria-valuenow", String(rounded));
+    };
+    const animate = () => {
+      if (finished) return;
+      current += (target - current) * 0.075;
+      if (target - current < 0.08) current = target;
+      drawProgress(current);
+      frame = requestAnimationFrame(animate);
+    };
+    const finish = () => {
+      if (!loader || finished) return;
+      finished = true;
+      if (frame !== null) cancelAnimationFrame(frame);
+      const minimumDisplay = 320;
+      const wait = Math.max(0, minimumDisplay - (performance.now() - startedAt));
+      window.setTimeout(() => {
+        drawProgress(100);
+        status.textContent = "系统已就绪";
+        loader.classList.add("is-complete");
+        loader.setAttribute("aria-busy", "false");
+        window.setTimeout(() => {
+          try { sessionStorage.setItem(sessionKey, "1"); } catch { /* storage may be unavailable */ }
+          loader.remove();
+        }, 260);
+      }, wait);
+    };
+
+    if (hasLoadedBefore) {
+      loader?.remove();
+      window.__neonBoot = { setProgress: () => {}, finish: () => {} };
+    } else {
+      window.__neonBoot = { setProgress, finish };
+      drawProgress(current);
+      frame = requestAnimationFrame(animate);
+    }
+    window.__neonFinishBoot = () => window.__neonBoot?.finish?.();
+  })();
+
   // If a finger taps while ES modules are still loading, replay that release
   // after the game has finished binding its controls instead of losing it.
   window.__neonUiReady = false;

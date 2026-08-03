@@ -16,8 +16,8 @@ function drawJaggedBolt(ctx, from, to, seed = 0) {
 }
 
 export class Projectile {
-  constructor({ x, y, vx = 0, vy = 0, damage, damageEnd, radius, color, life, chainLife = null, chainFlashDuration = 0.045, team, homing = false, homingDelay = 0, homingTurnRate = 2.4, target = null, chainSource = null, kind = "bolt", pierce = false, bounce = false, explosionRadius = 0, chainRadius = 0, growthRate = 2.2, boomerang = null, whirlwind = null, blackHole = null, polarityDelay = 0, dodgeMotion = null }) {
-    Object.assign(this, { x, y, vx, vy, damage, damageEnd, radius, color, life, chainLife, chainFlashDuration, team, homing, homingDelay, homingTurnRate, target, chainSource, kind, pierce, bounce, explosionRadius, chainRadius, growthRate, boomerang, whirlwind, blackHole, polarityDelay, dodgeMotion });
+  constructor({ x, y, vx = 0, vy = 0, damage, damageEnd, radius, color, life, chainLife = null, chainFlashDuration = 0.045, team, homing = false, homingDelay = 0, homingTurnRate = 2.4, target = null, playerTarget = null, homingPlayer = false, chainSource = null, kind = "bolt", pierce = false, bounce = false, explosionRadius = 0, explosionDamage = null, chainRadius = 0, growthRate = 2.2, boomerang = null, whirlwind = null, blackHole = null, polarityDelay = 0, dodgeMotion = null, whiteHoleHealState = null, element = "neutral", burn = null }) {
+    Object.assign(this, { x, y, vx, vy, damage, damageEnd, radius, color, life, chainLife, chainFlashDuration, team, homing, homingDelay, homingTurnRate, target, playerTarget, homingPlayer, chainSource, kind, pierce, bounce, explosionRadius, explosionDamage, chainRadius, growthRate, boomerang, whirlwind, blackHole, polarityDelay, dodgeMotion, whiteHoleHealState, element, burn });
     this.age = 0;
     this.origin = { x, y };
     this.phase = 0;
@@ -63,7 +63,17 @@ export class Projectile {
       return;
     }
     if (this.blackHole) this.blackHole.damageTimer = Math.max(0, (this.blackHole.damageTimer ?? 0) - dt);
-    if (this.homing && this.age >= this.homingDelay) {
+    if (this.homingPlayer && this.playerTarget) {
+      const desired = Math.atan2(this.playerTarget.x - this.x, -(this.playerTarget.y - this.y));
+      const current = Math.atan2(this.vx, -this.vy);
+      let delta = desired - current;
+      while (delta > Math.PI) delta -= Math.PI * 2;
+      while (delta < -Math.PI) delta += Math.PI * 2;
+      const angle = current + Math.max(-this.homingTurnRate * dt, Math.min(this.homingTurnRate * dt, delta));
+      const speed = Math.max(220, Math.hypot(this.vx, this.vy));
+      this.vx = Math.sin(angle) * speed;
+      this.vy = -Math.cos(angle) * speed;
+    } else if (this.homing && this.age >= this.homingDelay) {
       const target = this.target?.hp > 0 ? this.target : enemies.filter((enemy) => enemy.hp > 0).sort((a, b) => Math.hypot(a.x - this.x, a.y - this.y) - Math.hypot(b.x - this.x, b.y - this.y))[0];
       if (target) {
         this.target = target;
@@ -123,6 +133,28 @@ export class Projectile {
       const previous = Math.sin((this.age - dt) * frequency + phase);
       const current = Math.sin(this.age * frequency + phase);
       this.x += (current - previous) * (this.dodgeMotion.amplitude ?? 0);
+    } else if (this.dodgeMotion?.type === "curve") {
+      const motion = this.dodgeMotion;
+      const frequency = motion.frequency ?? 1;
+      const steer = motion.steer ?? 42;
+      this.vx += Math.sin(this.age * frequency + (motion.phase ?? 0)) * steer * dt;
+      const maxSpeed = motion.maxSpeed ?? Math.max(220, Math.hypot(this.vx, this.vy) * 1.35);
+      const speed = Math.hypot(this.vx, this.vy) || 1;
+      if (speed > maxSpeed) { this.vx *= maxSpeed / speed; this.vy *= maxSpeed / speed; }
+    } else if (this.dodgeMotion?.type === "spiral") {
+      const turn = (this.dodgeMotion.turnRate ?? 0.7) * dt;
+      const cos = Math.cos(turn); const sin = Math.sin(turn);
+      const nextVx = this.vx * cos - this.vy * sin;
+      this.vy = this.vx * sin + this.vy * cos;
+      this.vx = nextVx;
+    } else if (this.dodgeMotion?.type === "orbit") {
+      const motion = this.dodgeMotion;
+      motion.angle = (motion.angle ?? 0) + (motion.angularSpeed ?? 1.4) * dt;
+      const centerX = motion.centerX ?? this.origin.x;
+      const centerY = motion.centerY ?? this.origin.y;
+      const radius = motion.radius ?? 80;
+      this.x = centerX + Math.cos(motion.angle) * radius;
+      this.y = centerY + Math.sin(motion.angle) * radius;
     }
     if (this.bounce && bounds) {
       if (this.x <= this.radius || this.x >= bounds.width - this.radius) { this.vx *= -1; this.x = Math.max(this.radius, Math.min(bounds.width - this.radius, this.x)); }
@@ -170,8 +202,13 @@ export class Projectile {
         const missileWidth = Math.max(4, this.radius * 0.8); const missileLength = Math.max(18, this.radius * 3);
         ctx.fillRect(-missileWidth / 2, -missileLength / 2, missileWidth, missileLength); ctx.fillStyle = "#fff0c2"; ctx.fillRect(-missileWidth * 0.25, missileLength / 2 - 1, missileWidth * 0.5, missileWidth);
       }
+    } else if (this.kind === "whiteHoleBolt") {
+      const pulse = 1 + Math.sin(this.age * 9) * .1;
+      ctx.globalCompositeOperation = "lighter"; ctx.shadowColor = "#e7b9ff"; ctx.shadowBlur = 26;
+      ctx.strokeStyle = "#ffefff"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.arc(0, 0, (this.radius + 5) * pulse, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(0, 0, this.radius * 1.25, 0, Math.PI * 2); ctx.fill();
     } else if (this.kind === "blackHole") {
-      const fieldRadius = this.blackHole?.pullRadius ?? this.radius;
+      const fieldRadius = (this.blackHole?.pullRadius ?? this.radius) * (this.blackHole?.enemyCaptured ? 1.75 : 1);
       const pulse = 1 + Math.sin(this.age * 7) * 0.025;
       ctx.globalCompositeOperation = "lighter"; ctx.shadowColor = "#9d63ff"; ctx.shadowBlur = 30;
       ctx.globalAlpha = 0.08; ctx.fillStyle = "#8e50e8"; ctx.beginPath(); ctx.arc(0, 0, fieldRadius * pulse, 0, Math.PI * 2); ctx.fill();
@@ -191,10 +228,37 @@ export class Projectile {
       ctx.rotate(this.age * 3); ctx.globalCompositeOperation = "lighter"; ctx.strokeStyle = this.color; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, 0, this.radius * 1.8, 0, Math.PI * 1.35); ctx.stroke(); ctx.strokeStyle = "#fff5cf"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, 0, this.radius * 0.8, Math.PI, Math.PI * 2.35); ctx.stroke();
     } else if (this.kind === "dodgeWave") {
       ctx.rotate(Math.atan2(this.vy, this.vx) + Math.PI / 2); ctx.fillStyle = this.color; ctx.beginPath(); ctx.moveTo(0, -this.radius * 1.8); ctx.lineTo(this.radius * 1.4, this.radius * 1.3); ctx.lineTo(0, this.radius * 0.7); ctx.lineTo(-this.radius * 1.4, this.radius * 1.3); ctx.closePath(); ctx.fill();
+    } else if (this.kind === "dodgeMine") {
+      const pulse = 1 + Math.sin(this.age * 5.5) * 0.12;
+      ctx.globalCompositeOperation = "lighter"; ctx.fillStyle = this.color; ctx.strokeStyle = "#eaffff"; ctx.lineWidth = 1.2;
+      ctx.rotate(Math.PI / 4); ctx.fillRect(-this.radius * pulse * 0.72, -this.radius * pulse * 0.72, this.radius * pulse * 1.44, this.radius * pulse * 1.44); ctx.strokeRect(-this.radius * 0.72, -this.radius * 0.72, this.radius * 1.44, this.radius * 1.44);
+      ctx.globalAlpha = 0.45; ctx.beginPath(); ctx.arc(0, 0, this.radius * 1.8 * pulse, 0, Math.PI * 2); ctx.stroke();
+    } else if (this.kind === "dodgeSpiral") {
+      ctx.globalCompositeOperation = "lighter"; ctx.strokeStyle = this.color; ctx.lineWidth = 2.2; ctx.rotate(this.age * 2.2);
+      ctx.beginPath(); ctx.arc(0, 0, this.radius * 1.7, 0.25, Math.PI * 1.6); ctx.stroke(); ctx.strokeStyle = "#f8eaff"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, 0, this.radius * .72, Math.PI * 1.2, Math.PI * 2.5); ctx.stroke();
+    } else if (this.kind === "dodgeSplit") {
+      const pulse = 1 + Math.sin(this.age * 7) * 0.1;
+      ctx.globalCompositeOperation = "lighter"; ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(0, 0, this.radius * pulse, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#fff0fb"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-this.radius * .8, -this.radius * .25); ctx.lineTo(0, this.radius * .25); ctx.lineTo(this.radius * .8, -this.radius * .45); ctx.stroke();
+    } else if (this.kind === "dodgeCross") {
+      ctx.globalCompositeOperation = "lighter"; ctx.rotate(Math.atan2(this.vy, this.vx)); ctx.strokeStyle = this.color; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(-this.radius * 2.4, -this.radius * .9); ctx.lineTo(this.radius * 2.4, this.radius * .9); ctx.moveTo(-this.radius * 2.4, this.radius * .9); ctx.lineTo(this.radius * 2.4, -this.radius * .9); ctx.stroke();
+    } else if (this.kind === "dodgeWall") {
+      ctx.globalCompositeOperation = "lighter"; ctx.rotate(Math.atan2(this.vy, this.vx)); ctx.fillStyle = this.color; ctx.fillRect(-this.radius * 1.1, -this.radius * .42, this.radius * 2.2, this.radius * .84); ctx.globalAlpha = .35; ctx.fillRect(-this.radius * 2.2, -this.radius * .18, this.radius * 4.4, this.radius * .36);
     } else if (this.kind === "bossBolt") {
       ctx.rotate(Math.atan2(this.vy, this.vx)); ctx.fillStyle = "#160914"; ctx.strokeStyle = "#ff557c"; ctx.lineWidth = 2; ctx.shadowBlur = 25;
       ctx.beginPath(); ctx.moveTo(-11, 0); ctx.lineTo(0, -5); ctx.lineTo(11, 0); ctx.lineTo(0, 5); ctx.closePath(); ctx.fill(); ctx.stroke();
       ctx.fillStyle = "#ffb0bd"; ctx.beginPath(); ctx.arc(0, 0, 2.2, 0, Math.PI * 2); ctx.fill();
+    } else if (this.kind === "flameArrow") {
+      ctx.rotate(Math.atan2(this.vy, this.vx) + Math.PI / 2);
+      ctx.globalCompositeOperation = "lighter"; ctx.shadowColor = "#ff3344"; ctx.shadowBlur = 18;
+      ctx.fillStyle = "#ff3344"; ctx.beginPath(); ctx.moveTo(0, -this.radius * 2.8); ctx.lineTo(this.radius * .8, this.radius * 1.6); ctx.lineTo(0, this.radius * .8); ctx.lineTo(-this.radius * .8, this.radius * 1.6); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = "#ffd36a"; ctx.beginPath(); ctx.moveTo(0, -this.radius * 2.1); ctx.lineTo(this.radius * .28, this.radius * .9); ctx.lineTo(0, this.radius * .35); ctx.lineTo(-this.radius * .28, this.radius * .9); ctx.closePath(); ctx.fill();
+    } else if (this.kind === "waterShot") {
+      const pulse = 1 + Math.sin(this.age * 14) * .1;
+      const waterFire = this.element === "fire";
+      const tint = this.color ?? (waterFire ? "#ff3344" : "#176dff");
+      ctx.globalCompositeOperation = "lighter"; ctx.shadowColor = tint; ctx.shadowBlur = 18; ctx.fillStyle = tint;
+      ctx.beginPath(); ctx.arc(0, 0, this.radius * pulse, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = waterFire ? "#ffd0d8" : "#9de7ff"; ctx.globalAlpha = .82; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(0, 0, this.radius * 1.55, 0, Math.PI * 2); ctx.stroke();
     } else if (this.kind === "ball") {
       const size = this.radius + Math.min(20, this.age * this.growthRate);
       ctx.beginPath(); ctx.arc(0, 0, size, 0, Math.PI * 2); ctx.fill();

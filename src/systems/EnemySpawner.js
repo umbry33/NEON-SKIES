@@ -30,6 +30,7 @@ export class EnemySpawner {
     return new Enemy(definition, x, {
       speedMultiplier: this.config.fixed ? (this.config.speedMultiplier ?? 1) : 1 + stage * this.config.speedMultiplierStep,
       hpMultiplier: this.config.fixed ? (this.config.hpMultiplier ?? 1) : 1 + stage * this.config.hpMultiplierStep,
+      damageMultiplier: this.config.fixed ? (this.config.damageMultiplier ?? 1) : 1 + stage * (this.config.damageMultiplierStep ?? 0),
     });
   }
 }

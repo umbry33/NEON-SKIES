@@ -1,5 +1,5 @@
 const colors = { core: "#64e7ff", weapon: "#ffd27a", special: "#72f1c0" };
-let moduleGlowEnabled = true;
+let moduleGlowEnabled = false;
 
 function setModuleGlow(ctx, color, blur) {
   ctx.shadowColor = color;
@@ -62,8 +62,10 @@ function drawNestPod(ctx, x) {
 }
 
 function drawWeapon(ctx, module) {
-  const type = module?.behavior?.type; const accent = type === "nest" ? "#ff294d" : type === "ballLightning" ? "#b7a1ff" : type === "lightning" ? "#b86cff" : type === "blackHole" ? "#b57bff" : "#ffd27a";
-  drawFrame(ctx, module, accent, type === "nest" ? "#090b13" : "#142d46");
+  const type = module?.behavior?.type; const id = module?.id;
+  const accent = id === "special-energy-aggregator" ? "#5fe8ff" : type === "nest" ? "#ff294d" : type === "flameCrossbow" ? "#ff3b32" : type === "waterShot" ? "#2468ff" : type === "ballLightning" ? "#b7a1ff" : type === "lightning" ? "#b86cff" : type === "blackHole" ? "#b57bff" : "#ffd27a";
+  const fill = id === "special-energy-aggregator" ? "#092d3d" : type === "nest" || type === "flameCrossbow" ? "#090b13" : type === "waterShot" ? "#071b3c" : "#142d46";
+  drawFrame(ctx, module, accent, fill);
   setModuleGlow(ctx, accent, 5);
   if (type === "single") drawBarrel(ctx, 0);
   else if (type === "twin") { drawBarrel(ctx, -5); drawBarrel(ctx, 5); }
@@ -84,6 +86,26 @@ function drawWeapon(ctx, module) {
   else if (type === "psionic") { ctx.fillStyle = "#72f1c0"; ctx.beginPath(); ctx.arc(0, 0, 5, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#e1fff4"; ctx.lineWidth = 1; for (const radius of [8, 11]) { ctx.beginPath(); ctx.arc(0, 0, radius, -.7, .7); ctx.stroke(); } drawBarrel(ctx, 0, 0, "#72f1c0"); }
   else if (type === "lightning") drawLightningBolt(ctx, "#b86cff");
   else if (type === "blackHole") { ctx.fillStyle = "#080414"; ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#d0b0ff"; ctx.lineWidth = 1.6; for (const [radius, start] of [[9, .2], [12, 2.3]]) { ctx.beginPath(); ctx.arc(0, 0, radius, start, start + 4.3); ctx.stroke(); } ctx.fillStyle = "#fff0ff"; ctx.beginPath(); ctx.arc(-2, -2, 1.5, 0, Math.PI * 2); ctx.fill(); }
+  else if (type === "flameCrossbow") {
+    ctx.save(); setModuleGlow(ctx, "#ff3b32", 8); ctx.strokeStyle = "#ff6a3d"; ctx.lineWidth = 1.8; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(-11, -3); ctx.quadraticCurveTo(0, 4, 11, -3); ctx.stroke();
+    ctx.strokeStyle = "#ffb34d"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-10, -4); ctx.lineTo(0, 3); ctx.lineTo(10, -4); ctx.stroke();
+    for (const x of [-5, 0, 5]) { ctx.strokeStyle = "#ff3b32"; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(x, 7); ctx.lineTo(x, -7); ctx.stroke(); ctx.fillStyle = "#fff0bd"; polygon(ctx, [[x, -11], [x - 1.8, -7], [x + 1.8, -7]]); ctx.fill(); ctx.fillStyle = "#ff6a2e"; ctx.beginPath(); ctx.moveTo(x - 2, 7); ctx.quadraticCurveTo(x, 3, x + 2, 7); ctx.quadraticCurveTo(x, 11, x - 2, 7); ctx.fill(); }
+    ctx.restore();
+  }
+  else if (type === "waterShot") {
+    ctx.save(); setModuleGlow(ctx, "#2468ff", 8); ctx.fillStyle = "#176dff"; ctx.strokeStyle = "#b7e9ff"; ctx.lineWidth = 1.1;
+    ctx.beginPath(); ctx.moveTo(0, -11); ctx.bezierCurveTo(6, -4, 8, 0, 7, 4); ctx.bezierCurveTo(6, 10, -6, 10, -7, 4); ctx.bezierCurveTo(-8, 0, -6, -4, 0, -11); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#e8fbff"; ctx.beginPath(); ctx.arc(-2, -3, 2, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#56a8ff"; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(0, 5, 10, .15, Math.PI - .15); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 6, 6, .2, Math.PI - .2); ctx.stroke();
+    for (const [x, y, r] of [[-10, -3, 1.2], [10, 0, 1.5], [8, 9, 1]]) { ctx.fillStyle = "#6ddfff"; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore();
+  }
+  else if (id === "special-energy-aggregator") {
+    ctx.save(); setModuleGlow(ctx, "#5fe8ff", 8); ctx.strokeStyle = "#75f2ff"; ctx.lineWidth = 1.2;
+    for (let i = 0; i < 3; i += 1) { const angle = -Math.PI / 2 + i * Math.PI * 2 / 3; const x = Math.cos(angle) * 10; const y = Math.sin(angle) * 10; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(Math.cos(angle + .42) * 4.5, Math.sin(angle + .42) * 4.5); ctx.stroke(); ctx.fillStyle = i === 1 ? "#ff74d8" : "#7effce"; ctx.beginPath(); ctx.arc(x, y, 2.2, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = "#4bcfff"; ctx.beginPath(); ctx.arc(0, 0, 5.2, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#efffff"; ctx.lineWidth = 1; ctx.stroke(); ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(-1.4, -1.5, 1.5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
   else drawBarrel(ctx, 0);
 }
 

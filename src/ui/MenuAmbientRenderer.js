@@ -2,6 +2,8 @@
 import { ASSEMBLY_BOARD, getFootprintBounds, getInstalledEntries } from "../config/module-config.js";
 import { drawModuleIcon } from "../rendering/ModuleRenderer.js";
 
+const PLAYER_DRAW_SCALE = 0.85;
+
 export class MenuAmbientRenderer {
   constructor(canvas, host, target, loadoutGetter) {
     this.canvas = canvas;
@@ -77,6 +79,7 @@ export class MenuAmbientRenderer {
 
   drawLoadout(ctx, x, y, width, height, time) {
     ctx.save(); ctx.translate(x, y + Math.sin(time * .7) * .7); ctx.rotate(Math.sin(time * .55) * .008);
+    ctx.scale(PLAYER_DRAW_SCALE, PLAYER_DRAW_SCALE);
     const entries = getInstalledEntries(this.loadoutGetter?.() ?? {});
     const core = ASSEMBLY_BOARD.corePosition;
     const footprints = entries.map((entry) => {

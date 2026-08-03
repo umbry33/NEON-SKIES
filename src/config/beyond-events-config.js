@@ -1,0 +1,43 @@
+// 光锥之外事件完全由数据驱动。新增事件只需增加一条配置和已有的效果类型组合。
+const choice = (id, label, hint, effects, requirements = {}) => ({ id, label, hint, effects, requirements });
+const gold = (amount) => ({ type: "gold", amount });
+const hp = (amount) => ({ type: "hp", amount });
+const module = (count = 1, rarity = "any") => ({ type: "module", count, rarity });
+const battle = (elite = false) => ({ type: "battle", elite });
+const duplicate = () => ({ type: "duplicate" });
+const random = (...outcomes) => ({ type: "random", outcomes });
+
+export const BEYOND_EVENTS = [
+  { id: "stardust-bottle", title: "星尘漂流瓶", tag: "漂流信号", description: "一只折射着粉紫色微光的玻璃瓶从航线旁掠过，内部有一段尚未读完的求救讯号。", choices: [choice("decode", "解码讯号", "获得 36 金币", [gold(36)]), choice("seal", "封存星尘", "恢复 12 生命", [hp(12)])] },
+  { id: "warped-vending", title: "失真售货机", tag: "故障零售", description: "一台老旧售货机把商品列表投影到星空中，投币口正在以不合常理的速度旋转。", choices: [choice("insert", "投入硬币", "消耗 20 金币，获得模块", [gold(-20), module()], { gold: 20 }), choice("kick", "踢开底座", "随机获得金币或恢复生命", [random({ label: "掉出一把零钱", effects: [gold(42)] }, { label: "喷出冷却雾", effects: [hp(16)] })])] },
+  { id: "observer-echo", title: "观测者的回声", tag: "深空回响", description: "空无一人的观测站仍在重复播放你的飞行数据，仿佛有人比你更早抵达过这里。", choices: [choice("sync", "与回声同步", "失去 8 生命，获得稀有模块", [hp(-8), module(1, "rare")]), choice("rest", "关闭监听", "恢复 18 生命", [hp(18)])] },
+  { id: "counterflow-supply", title: "逆流补给艇", tag: "逆行货船", description: "一艘补给艇逆着航线滑行，驾驶舱里只有一台自动报价终端。", choices: [choice("trade", "交换备用燃料", "消耗 28 金币，获得高品质模块", [gold(-28), module(1, "high")], { gold: 28 }), choice("raid", "追踪它的尾迹", "触发精英战斗", [battle(true)])] },
+  { id: "blurred-coordinate", title: "失焦坐标", tag: "坐标异常", description: "导航仪给出两个重叠的坐标点，其中一个通往补给仓，另一个似乎穿过一颗正在坍塌的卫星。", choices: [choice("jump", "短距跃迁", "随机获得 58 金币或失去 7 生命并获得模块", [random({ label: "跃迁落在补给仓", effects: [gold(58)] }, { label: "擦过坍塌边缘", effects: [hp(-7), module()] })]), choice("hold", "保持航线", "获得 14 金币", [gold(14)])] },
+  { id: "zero-maintenance", title: "零号维修舱", tag: "无人维护", description: "漂浮维修舱的机械臂仍在待命，只等待一架愿意靠近的机体。", choices: [choice("repair", "进行全面检修", "恢复 26 生命", [hp(26)]), choice("salvage", "拆走零件", "获得模块", [module()])] },
+  { id: "broken-beacon", title: "断链信标", tag: "加密链路", description: "一枚断裂的信标不断呼叫失联舰队。它的能量签名像是被某种东西从另一端回应。", choices: [choice("answer", "回应呼叫", "触发精英战斗", [battle(true)]), choice("hack", "截取密钥", "失去 7 生命，获得稀有模块", [hp(-7), module(1, "rare")])] },
+  { id: "starlight-table", title: "星海赌桌", tag: "概率桌面", description: "三枚悬浮骰子在宇宙尘埃中旋转，桌旁的全息荷官向你伸出一只像素化的手。", choices: [choice("roll", "掷一次骰子", "随机获得金币、模块或受到轻微损伤", [random({ label: "幸运连线", effects: [gold(70)] }, { label: "中奖图纸", effects: [module()] }, { label: "静电反噬", effects: [hp(-6), gold(18)] })]), choice("walk", "礼貌离席", "恢复 8 生命", [hp(8)])] },
+  { id: "orphan-wingman", title: "无主僚机", tag: "失控单位", description: "一架小型僚机在原地绕圈，广播里反复播放：『寻找能听见我的旗舰。』", choices: [choice("adopt", "接入控制链", "获得模块", [module()]), choice("escort", "护送它离开", "获得 34 金币", [gold(34)])] },
+  { id: "mirror-warehouse", title: "镜像仓库", tag: "复制仓", description: "仓库内的每一件货物都有一个轻微延迟的倒影，连你的模块库存也出现在货架上。", choices: [choice("copy", "复制一件库存模块", "随机复制本局拥有的模块", [duplicate()]), choice("sell-reflection", "出售倒影", "获得 40 金币", [gold(40)])] },
+  { id: "decay-corridor", title: "衰减通道", tag: "老化航带", description: "这里的星光比外界慢半拍。飞过通道时，你能看见机体五分钟前留下的残影。", choices: [choice("slow", "降低功率穿越", "恢复 16 生命", [hp(16)]), choice("rush", "全速冲刺", "失去 5 生命，获得稀有模块", [hp(-5), module(1, "rare")])] },
+  { id: "silent-courtyard", title: "静默庭院", tag: "无声花园", description: "一座由卫星残骸围成的庭院没有任何通讯噪声，连警报灯都在安静地呼吸。", choices: [choice("meditate", "停泊片刻", "恢复 22 生命", [hp(22)]), choice("probe", "唤醒庭院", "触发精英战斗", [battle(true)])] },
+  { id: "ablative-orbit", title: "烧蚀轨道", tag: "高速近路", description: "一条贴近恒星碎片带的近路能节省大量燃料，但外壳会承受灼烧。", choices: [choice("cut", "切入近路", "失去 9 生命，获得 68 金币", [hp(-9), gold(68)]), choice("detour", "选择远路", "获得 10 金币", [gold(10)])] },
+  { id: "atmospheric-recycler", title: "大气回收站", tag: "气体工厂", description: "回收站还保留着一团可供机体吸收的蓝绿色云团，旁边堆着未登记的货箱。", choices: [choice("breathe", "吸收冷却云", "恢复 18 生命", [hp(18)]), choice("open", "打开货箱", "获得模块与 12 金币", [module(), gold(12)])] },
+  { id: "rainbow-noise", title: "彩虹噪声台", tag: "失真电台", description: "一座电台在七个频段同时播放同一首歌，每一个频段都许诺一个不同的未来。", choices: [choice("tune", "调到最亮的频段", "随机获得高品质模块或 78 金币", [random({ label: "收到失传蓝图", effects: [module(1, "high")] }, { label: "收到赞助转账", effects: [gold(78)] })]), choice("mute", "关闭电台", "恢复 10 生命", [hp(10)])] },
+  { id: "dream-navigator", title: "梦境导航仪", tag: "睡眠航图", description: "导航仪要求你输入一个从未去过的地点。屏幕上正闪烁着你的出生坐标。", choices: [choice("remember", "输入旧坐标", "获得稀有模块", [module(1, "rare")]), choice("forget", "抹去记录", "获得 32 金币并恢复 8 生命", [gold(32), hp(8)])] },
+  { id: "lunar-auction", title: "月背拍卖会", tag: "匿名竞价", description: "月球背面的加密频道正在拍卖一件被标为『不可逆』的装置。", choices: [choice("bid", "匿名竞价", "消耗 40 金币，获得史诗或传说模块", [gold(-40), module(1, "high")], { gold: 40 }), choice("observe", "旁观竞拍", "获得 18 金币", [gold(18)])] },
+  { id: "frozen-garden", title: "冻结花园", tag: "晶体植物", description: "冰晶植物在真空中舒展叶片，每一片叶子都像一段被暂停的闪电。", choices: [choice("harvest", "采集晶体", "失去 4 生命，获得模块", [hp(-4), module()]), choice("rest", "停留观赏", "恢复 20 生命", [hp(20)])] },
+  { id: "pulse-customs", title: "脉冲海关", tag: "自动审查", description: "海关的红色扫描线要求检查你的货舱，但扫描程序明显运行在过时版本上。", choices: [choice("bribe", "缴纳通行费", "消耗 16 金币，获得稀有模块", [gold(-16), module(1, "rare")], { gold: 16 }), choice("break", "强行穿过", "触发普通战斗", [battle(false)])] },
+  { id: "abandoned-tower", title: "荒废广播塔", tag: "远古语音", description: "广播塔把宇宙微波背景噪声翻译成一句句陌生诗歌，最后一句提到了你的呼号。", choices: [choice("translate", "下载译码器", "获得稀有模块", [module(1, "rare")]), choice("broadcast", "回应诗歌", "获得 44 金币", [gold(44)])] },
+  { id: "shard-sanctuary", title: "碎片圣所", tag: "纪念碎片", description: "无数战机残片围绕一颗微光核心旋转。它似乎愿意交换某种代价。", choices: [choice("offer", "献出能量", "失去 12 生命，获得高品质模块", [hp(-12), module(1, "high")]), choice("pray", "留下信标", "恢复 14 生命", [hp(14)])] },
+  { id: "gravity-post", title: "引力邮局", tag: "延迟投递", description: "一封寄给『未来的你』的包裹卡在引力井边缘，标签显示寄件人也是你。", choices: [choice("receive", "签收包裹", "获得模块", [module()]), choice("return", "退回寄件人", "获得 52 金币", [gold(52)])] },
+  { id: "floating-theater", title: "漂浮剧院", tag: "全息演出", description: "旧时代剧院正在重演一场无人观看的空战，演员们邀请你登台改变结局。", choices: [choice("perform", "登台演出", "随机获得模块或恢复 24 生命", [random({ label: "观众送来模块", effects: [module()] }, { label: "谢幕时修复了装甲", effects: [hp(24)] })]), choice("applaud", "留下一段掌声", "获得 24 金币", [gold(24)])] },
+  { id: "glass-rain", title: "玻璃雨", tag: "透明流星", description: "透明流星像雨一样落下，撞击后会开出短暂的全息花朵。", choices: [choice("collect", "收集花瓣", "获得 28 金币并恢复 10 生命", [gold(28), hp(10)]), choice("chase", "追踪最大一颗", "失去 6 生命，获得稀有模块", [hp(-6), module(1, "rare")])] },
+  { id: "comet-lighthouse", title: "彗星灯塔", tag: "航标遗迹", description: "一座建在彗星尾迹上的灯塔向所有过路者免费发送导航脉冲。", choices: [choice("map", "下载航图", "获得 36 金币", [gold(36)]), choice("climb", "登上灯塔", "触发精英战斗", [battle(true)])] },
+  { id: "overload-greenhouse", title: "超载温室", tag: "失控培育", description: "温室里的能量作物已经蔓延到外壳。它们的根系正在敲击舱门。", choices: [choice("harvest", "切割能量藤", "失去 8 生命，获得高品质模块", [hp(-8), module(1, "high")]), choice("vent", "释放温室压力", "恢复 18 生命", [hp(18)])] },
+  { id: "sleep-protocol", title: "休眠协议", tag: "旧舰协议", description: "一艘沉睡母舰请求你共享少量运算资源，并承诺会在醒来后回赠礼物。", choices: [choice("sleep", "进入短暂休眠", "恢复 30 生命", [hp(30)]), choice("wake", "强制唤醒母舰", "获得模块与 30 金币", [module(), gold(30)])] },
+  { id: "blank-contract", title: "空白契约", tag: "未知签名", description: "一份空白合约漂浮在舷窗外。签名栏已经提前写好了你的名字。", choices: [choice("sign", "签下名字", "随机获得高品质模块、金币或触发战斗", [random({ label: "契约兑现为蓝图", effects: [module(1, "high")] }, { label: "契约兑现为资金", effects: [gold(96)] }, { label: "契约召来债主", effects: [battle(true)] })]), choice("burn", "烧毁合约", "获得 16 金币", [gold(16)])] },
+  { id: "lost-and-found", title: "失物招领处", tag: "遗失物目录", description: "终端列出了几十件『属于你但尚未丢失』的物品，其中包含一件当前库存的复制品。", choices: [choice("claim", "认领复制品", "随机复制本局拥有的模块", [duplicate()]), choice("fee", "收取保管费", "获得 46 金币", [gold(46)])] },
+  { id: "dawn-radio", title: "黎明收音机", tag: "温暖频段", description: "收音机在无人星云中播放一段温暖的合成器旋律，周围的导航灯随之慢慢亮起。", choices: [choice("listen", "听完这首歌", "恢复 18 生命并获得 18 金币", [hp(18), gold(18)]), choice("sample", "采样这段旋律", "获得模块", [module()])] },
+];
+
+export const getBeyondEventById = (id) => BEYOND_EVENTS.find((event) => event.id === id) ?? null;

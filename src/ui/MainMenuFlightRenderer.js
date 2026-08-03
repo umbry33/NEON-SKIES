@@ -1,6 +1,8 @@
 import { ASSEMBLY_BOARD, getFootprintBounds, getInstalledEntries } from "../config/module-config.js";
 import { drawModuleIcon } from "../rendering/ModuleRenderer.js";
 
+const PLAYER_DRAW_SCALE = 0.85;
+
 // A dedicated flight scene for the main menu. The airframe stays fixed while the world moves.
 export class MainMenuFlightRenderer {
   constructor(canvas, host, target, loadoutGetter) {
@@ -80,6 +82,7 @@ export class MainMenuFlightRenderer {
     const cellSize = Math.min(17, width * .82 / spanX, height * .82 / spanY);
     const sceneCenterX = (minX + maxX) / 2; const sceneCenterY = (minY + maxY) / 2;
     ctx.save(); ctx.translate(x, y + Math.sin(time * .7) * .7); ctx.rotate(Math.sin(time * .55) * .008);
+    ctx.scale(PLAYER_DRAW_SCALE, PLAYER_DRAW_SCALE);
     ctx.shadowBlur = 12; ctx.shadowColor = "rgba(72, 225, 255, .54)";
 
     for (const { entry, bounds } of items) {

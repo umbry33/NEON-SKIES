@@ -25,6 +25,8 @@ const zh = {
   overclock: "\u8d85\u9891\u6a21\u5f0f",
   polarity: "\u6781\u6027\u53cd\u8f6c",
   blackHole: "\u9ed1\u6d1e\u6295\u5c04\u5668",
+  flameCrossbow: "\u70c8\u7130\u5f29",
+  waterShot: "\u6c34\u5f39",
 };
 
 export const CORE_MODULE = {
@@ -45,6 +47,8 @@ export const MODULE_CONFIG = {
     weapon({ id: "weapon-lightning-generator", shareCode: 11, name: "\u95ea\u7535\u751f\u6210\u5668", type: "weapon", description: "\u7ad6\u5411\u4e24\u683c\u3002\u6bcf 2 \u79d2\u5411\u524d\u65b9\u6700\u8fd1\u654c\u4eba\u91ca\u653e\u95ea\u7535\uff0c\u5728 200px \u8303\u56f4\u5185\u65e0\u9650\u8fde\u9501\u3002", rarity: "epic", icon: "L", footprint: vertical2, behavior: { type: "lightning", fireRate: 0.5, fireInterval: 2, projectile: { damage: 7, speed: 0, radius: 1, chainRadius: 200, chainLife: 0.25, flashDuration: 0.045, color: "#b86cff" } } }),
     weapon({ id: "weapon-black-hole", shareCode: 15, name: zh.blackHole, type: "weapon", description: "\u6bcf 7 \u79d2\u53d1\u5c04\u4e00\u679a\u7f13\u6162\u79fb\u52a8\u7684\u9ed1\u6d1e\uff0c\u6301\u7eed\u5438\u5f15\u654c\u4eba\u548c\u5f39\u5e55\u5e76\u9020\u6210\u4f24\u5bb3\uff0c\u7ed3\u675f\u65f6\u7206\u70b8\u3002", rarity: "legendary", icon: "B", footprint: square2, behavior: { type: "blackHole", fireInterval: 7, projectile: { damage: 2, speed: 66, radius: 16, life: 5.5, color: "#b57bff", blackHole: { pullRadius: 132, pullStrength: 105, damageInterval: 0.25, explosionRadius: 74, explosionDamage: 10 } } } }),
     weapon({ id: "special-energy-aggregator", shareCode: 12, name: zh.aggregator, type: "weapon", description: "\u81ea\u52a8\u653b\u51fb\u6a21\u5757\u3002\u5360 1 \u683c\uff0c\u6bcf\u4e2a\u4f7f\u6240\u6709\u81ea\u52a8\u653b\u51fb\u6a21\u5757\u653b\u901f\u63d0\u9ad8 20%\uff0c\u6700\u9ad8 300%\u3002\u4e0d\u5f71\u54cd\u4e3b\u52a8\u6280\u80fd\u51b7\u5374\u3002", rarity: "rare", icon: "A", modifiers: { maxHp: { add: 0, multiply: 1 }, moveSpeed: { add: 0, multiply: 1 }, attackSpeed: { add: 0.2, multiply: 1 } } }),
+    weapon({ id: "weapon-flame-crossbow", shareCode: 16, name: zh.flameCrossbow, type: "weapon", description: "\u6bcf 1.5 \u79d2\u5411\u524d\u65b9\u6247\u5f62\u53d1\u5c04 3 \u652f\u70c8\u7130\u7bad\uff0c\u547d\u4e2d\u9020\u6210 5 \u70b9\u706b\u7130\u4f24\u5bb3\u5e76\u65bd\u52a0 3 \u79d2\u707c\u70e7\u3002\u707c\u70e7\u6bcf\u79d2\u53d1\u751f 3 \u6b21\uff0c\u6bcf\u6b21\u9020\u6210 1 \u70b9\u4f24\u5bb3\uff0c\u5171 9 \u6b21\uff0c\u91cd\u590d\u547d\u4e2d\u4f1a\u5237\u65b0\u6301\u7eed\u65f6\u95f4\u3002", rarity: "epic", icon: "F", element: "fire", behavior: { type: "flameCrossbow", fireInterval: 1.5, angles: [-0.12, 0, 0.12], projectile: { damage: 5, speed: 430, radius: 6, life: 3.2, color: "#ff3344", burn: { duration: 3, tickInterval: 1 / 3, damage: 1, ticks: 9 } } } }),
+    weapon({ id: "weapon-water-shot", shareCode: 17, name: zh.waterShot, type: "weapon", description: "\u6bcf\u79d2\u53d1\u5c04 5 \u53d1\u6c34\u5f39\u3002\u6c34\u5f39\u547d\u4e2d\u540e\u6d88\u5931\u5e76\u4ea7\u751f\u5c0f\u8303\u56f4\u6c34\u82b1\u7206\u70b8\uff0c\u5bf9\u8303\u56f4\u5185\u5176\u4ed6\u654c\u4eba\u9020\u6210 2 \u70b9\u4f24\u5bb3\u3002", rarity: "epic", icon: "W", element: "water", behavior: { type: "waterShot", fireRate: 5, fireInterval: 0.2, projectile: { damage: 3, speed: 520, radius: 5, life: 2.6, explosionRadius: 28, explosionDamage: 2, color: "#176dff" } } }),
   ],
   specials: [
     special({ id: "special-optical", shareCode: 6, name: zh.optical, type: "special", description: "\u7ad6\u5411\u4e24\u683c\u3002\u4e3b\u52a8\u6280\u80fd：\u51b7\u5374 20 \u79d2\uff0c\u521b\u9020\u6301\u7eed 5 \u79d2\u3001\u4f24\u5bb3\u4e3a 30% \u7684\u5206\u8eab\u3002", rarity: "epic", icon: "O", footprint: vertical2, skill: { id: "decoy", name: "\u5149\u5b66\u5206\u8eab", cooldown: 20, duration: 5 } }),
@@ -59,8 +63,8 @@ export const MODULE_CONFIG = {
 
 const blackHoleModule = MODULE_CONFIG.weapons.find((module) => module.id === "weapon-black-hole");
 if (blackHoleModule) {
-  blackHoleModule.description = "\u6bcf 7 \u79d2\u53d1\u5c04\u4e00\u679a\u7f13\u6162\u79fb\u52a8\u7684\u9ed1\u6d1e\uff0c\u6301\u7eed 3 \u79d2\u5438\u5f15\u654c\u4eba\u548c\u5f39\u5e55\u3002\u9ed1\u6d1e\u4f1a\u5c06\u5438\u5165\u7684\u654c\u65b9\u5f39\u5e55\u5e26\u5165\u7206\u70b8\u5e76\u5bf9\u654c\u4eba\u9020\u6210\u4f24\u5bb3\u3002";
-  Object.assign(blackHoleModule.behavior.projectile, { damage: 0, speed: 165, radius: 8, life: 3 });
+  blackHoleModule.description = "\u6bcf 7 \u79d2\u53d1\u5c04\u4e00\u679a\u7f13\u6162\u79fb\u52a8\u7684\u9ed1\u6d1e\uff0c\u6700\u591a\u5b58\u5728 5 \u79d2\u3002\u7b2c\u4e00\u6b21\u5438\u5230\u654c\u4eba\u540e 1 \u79d2\u7206\u70b8\uff0c\u5012\u8ba1\u65f6\u5185\u8303\u56f4\u6269\u5927 75\uff05\u3002";
+  Object.assign(blackHoleModule.behavior.projectile, { damage: 0, speed: 165, radius: 8, life: 5 });
   Object.assign(blackHoleModule.behavior.projectile.blackHole, { pullRadius: 66, pullStrength: 210, slowSpeedMultiplier: 0.035, detonationDelay: 1, explosionRadius: 37 });
 }
 const overclockModule = MODULE_CONFIG.specials.find((module) => module.id === "special-overclock");
@@ -69,25 +73,33 @@ if (overclockModule) overclockModule.description = "\u5360 2 \u00d7 2 \u683c\u30
 const RARITY_OVERRIDES = {
   "weapon-electric-whirlwind": "legendary",
   "weapon-nest": "legendary",
-  "weapon-lightning-generator": "legendary",
+  "weapon-lightning-generator": "epic",
   "special-optical": "legendary",
-  "special-sonic": "legendary",
+  "special-sonic": "epic",
   "special-zero": "legendary",
-  "weapon-ball-lightning": "epic",
-  "weapon-psionic": "epic",
+  "weapon-ball-lightning": "rare",
+  "weapon-psionic": "rare",
   "special-wingman": "epic",
   "weapon-ricochet": "rare",
   "special-chainsaw": "rare",
   "special-energy-aggregator": "rare",
-  "special-overclock": "legendary",
-  "special-polarity-reverse": "legendary",
-  "weapon-black-hole": "legendary",
+  "special-overclock": "epic",
+  "special-polarity-reverse": "epic",
+  "weapon-black-hole": "epic",
+  "weapon-flame-crossbow": "epic",
+  "weapon-water-shot": "epic",
 };
 for (const module of [...MODULE_CONFIG.weapons, ...MODULE_CONFIG.specials]) if (RARITY_OVERRIDES[module.id]) module.rarity = RARITY_OVERRIDES[module.id];
 
 export const ALL_MODULES = [CORE_MODULE, ...MODULE_CONFIG.weapons, ...MODULE_CONFIG.specials];
 export function getModuleById(id) { return ALL_MODULES.find((module) => module.id === id) ?? null; }
 export function getModuleByShareCode(shareCode) { return ALL_MODULES.find((module) => module.shareCode === shareCode) ?? null; }
+export const MODULE_ELEMENT_CONFIG = {
+  "weapon-ricochet": "neutral", "special-energy-aggregator": "neutral", "special-chainsaw": "neutral", "special-wingman": "neutral", "special-overclock": "neutral",
+  "weapon-ball-lightning": "electric", "weapon-lightning-generator": "electric", "special-sonic": "electric", "special-polarity-reverse": "electric", "weapon-electric-whirlwind": "electric",
+  "weapon-psionic": "light", "special-optical": "light", "weapon-black-hole": "dark", "weapon-nest": "dark", "special-zero": "ice", "weapon-water-shot": "water", "weapon-flame-crossbow": "fire",
+};
+export function getModuleElement(moduleOrId) { const id = typeof moduleOrId === "string" ? moduleOrId : moduleOrId?.id; return moduleOrId?.element ?? MODULE_ELEMENT_CONFIG[id] ?? "neutral"; }
 export function getFootprintCells(module, anchorX, anchorY) { return (module?.footprint?.cells ?? [[0, 0]]).map(([x, y]) => ({ x: anchorX + x, y: anchorY + y })); }
 export function getFootprintBounds(module) {
   const cells = module?.footprint?.cells ?? [[0, 0]]; const xs = cells.map(([x]) => x); const ys = cells.map(([, y]) => y);
@@ -99,7 +111,9 @@ const defaultBuild = [];
 export function createLoadout(spec = {}) {
   const rawModules = Array.isArray(spec.modules) ? spec.modules : defaultBuild;
   const modules = rawModules.map((entry, index) => { const module = resolveModule(entry); if (!module) return null; return { instanceId: entry.instanceId ?? `module-${index}-${module.id}`, moduleId: module.id, module, x: Number(entry.x ?? ASSEMBLY_BOARD.corePosition.x), y: Number(entry.y ?? ASSEMBLY_BOARD.corePosition.y - 1), rotation: Number(entry.rotation ?? 0) }; }).filter(Boolean);
-  return { core: CORE_MODULE, corePosition: { ...ASSEMBLY_BOARD.corePosition }, modules };
+  const loadout = { core: CORE_MODULE, corePosition: { ...ASSEMBLY_BOARD.corePosition }, modules };
+  return { ...loadout, synergies: normalizeSynergies(loadout, spec.synergies) };
 }
 export function getInstalledEntries(loadout) { return [{ slotId: "core", instanceId: "core", module: CORE_MODULE, x: ASSEMBLY_BOARD.corePosition.x, y: ASSEMBLY_BOARD.corePosition.y, rotation: 0 }, ...(loadout?.modules ?? []).map((entry) => ({ slotId: entry.instanceId, instanceId: entry.instanceId, module: entry.module ?? getModuleById(entry.moduleId), x: entry.x, y: entry.y, rotation: entry.rotation ?? 0 }))]; }
 export function getInstalledModules(loadout) { return getInstalledEntries(loadout).map(({ module }) => module).filter(Boolean); }
+import { normalizeSynergies } from "./synergy-config.js";

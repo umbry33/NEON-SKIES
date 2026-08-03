@@ -4,9 +4,11 @@ export function circleIntersects(a, b) { return Math.hypot(a.x - b.x, a.y - b.y)
 export function circleRectIntersects(circle, rect) { const closestX = Math.max(rect.x, Math.min(circle.x, rect.x + rect.width)); const closestY = Math.max(rect.y, Math.min(circle.y, rect.y + rect.height)); return Math.hypot(circle.x - closestX, circle.y - closestY) <= circle.radius; }
 
 export class CollisionSystem {
-  resolve({ player, enemies, projectiles, wingman = null, lasers = [], freezeActive = false, ionSaw = null }) {
-    const removedProjectiles = new Set(); const destroyedEnemies = new Set(); const damageEvents = []; const explosionEvents = []; let score = 0; let playerDamage = 0;
-    const addDamage = (enemy, amount) => { if (!enemy || destroyedEnemies.has(enemy)) return; damageEvents.push({ x: enemy.x, y: enemy.y, amount }); if (enemy.takeDamage(amount)) { destroyedEnemies.add(enemy); score += enemy.definition.score; } };
+  resolve({ player, enemies, projectiles, wingman = null, lasers = [], freezeActive = false, ionSaw = null, statusDamageEvents = [] }) {
+    const removedProjectiles = new Set(); const destroyedEnemies = new Set(); const damageEvents = []; const explosionEvents = []; let score = 0; let playerDamage = 0; let playerHealing = 0;
+    const playerParts = typeof player?.getCollisionParts === "function" ? player.getCollisionParts() : [player];
+    const intersectsPlayer = (entity) => playerParts.some((part) => circleIntersects(entity, part));
+    const addDamage = (enemy, amount, element = "neutral") => { if (!enemy || destroyedEnemies.has(enemy)) return; damageEvents.push({ x: enemy.x, y: enemy.y, amount, element }); if (enemy.takeDamage(amount)) { destroyedEnemies.add(enemy); score += enemy.definition.score; } };
     const pointOf = (entity) => ({ x: entity.x, y: entity.y });
     const isVisibleEnemy = (enemy) => enemy?.x >= 0 && enemy.x <= GAME_CONFIG.canvas.width && enemy.y >= 0 && enemy.y <= GAME_CONFIG.canvas.height;
     const chainFrom = (projectile, first, sourceEntity) => {
@@ -17,7 +19,7 @@ export class CollisionSystem {
         const { enemy, fromEntity } = queue.shift();
         if (projectile.chainVisited.has(enemy.id) || enemy.hp <= 0) continue;
         projectile.chainVisited.add(enemy.id);
-        addDamage(enemy, projectile.currentDamage);
+        addDamage(enemy, projectile.currentDamage, projectile.element);
         projectile.chainLinks.push({ fromEntity, toEntity: enemy, from: pointOf(fromEntity), to: pointOf(enemy) });
         for (const nearby of enemies) {
           if (nearby !== enemy && isVisibleEnemy(nearby) && nearby.hp > 0 && !projectile.chainVisited.has(nearby.id) && Math.hypot(nearby.x - enemy.x, nearby.y - enemy.y) <= projectile.chainRadius) {
@@ -26,6 +28,7 @@ export class CollisionSystem {
         }
       }
     };
+    for (const statusEvent of statusDamageEvents) addDamage(statusEvent.enemy, statusEvent.amount, statusEvent.element ?? "fire");
 
     for (const projectile of projectiles) {
       if (projectile.blackHoleCapturedBy) continue;
@@ -39,7 +42,7 @@ export class CollisionSystem {
             for (const capturedProjectile of captured) {
               removedProjectiles.add(capturedProjectile);
               const damage = Math.max(0, capturedProjectile.damage ?? 0);
-              for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && !enemy.isPhased && Math.hypot(enemy.x - projectile.x, enemy.y - projectile.y) <= radius) addDamage(enemy, damage);
+              for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && !enemy.isPhased && Math.hypot(enemy.x - projectile.x, enemy.y - projectile.y) <= radius) addDamage(enemy, damage, capturedProjectile.element ?? "neutral");
             }
             removedProjectiles.add(projectile);
           }
@@ -47,7 +50,7 @@ export class CollisionSystem {
         }
         if (projectile.kind === "electricWhirlwind") {
           if (projectile.active !== false && (projectile.whirlwind?.damageTimer ?? 0) <= 0) {
-            for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && !enemy.isPhased && circleIntersects(projectile, enemy)) addDamage(enemy, projectile.damage);
+            for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && !enemy.isPhased && circleIntersects(projectile, enemy)) addDamage(enemy, projectile.damage, projectile.element);
             projectile.whirlwind.damageTimer = projectile.whirlwind.damageInterval ?? 0.1;
           }
           continue;
@@ -62,25 +65,38 @@ export class CollisionSystem {
         }
         for (const enemy of enemies) {
           if (destroyedEnemies.has(enemy) || enemy.isPhased || removedProjectiles.has(projectile) || !projectile.canHit(enemy) || !circleIntersects(projectile, enemy)) continue;
-          projectile.registerHit(enemy); addDamage(enemy, projectile.currentDamage);
+          projectile.registerHit(enemy); addDamage(enemy, projectile.currentDamage, projectile.element);
+          if (projectile.burn) enemy.applyBurn(projectile.burn);
           if (projectile.explosionRadius) {
             explosionEvents.push({ x: enemy.x, y: enemy.y, radius: projectile.explosionRadius, color: projectile.color, kind: projectile.kind, life: 0.38, maxLife: 0.38 });
-            for (const nearby of enemies) if (nearby !== enemy && !destroyedEnemies.has(nearby) && Math.hypot(nearby.x - enemy.x, nearby.y - enemy.y) <= projectile.explosionRadius) addDamage(nearby, projectile.currentDamage);
+            const explosionDamage = projectile.explosionDamage ?? projectile.currentDamage;
+            for (const nearby of enemies) if (nearby !== enemy && !destroyedEnemies.has(nearby) && Math.hypot(nearby.x - enemy.x, nearby.y - enemy.y) <= projectile.explosionRadius) addDamage(nearby, explosionDamage, projectile.element);
           }
           if (projectile.chainRadius) chainFrom(projectile, enemy, player);
           if (projectile.kind === "ball") enemy.silence(1.5);
           if (projectile.bounce) { projectile.vx *= -1; projectile.vy *= 0.96; }
           if (!projectile.pierce && !projectile.bounce && !projectile.boomerang) removedProjectiles.add(projectile);
         }
+        if (projectile.whiteHoleHealState && intersectsPlayer(projectile)) {
+          removedProjectiles.add(projectile);
+          const heal = Math.min(Math.max(0, projectile.damage ?? 0), Math.max(0, projectile.whiteHoleHealState.remaining ?? 0));
+          projectile.whiteHoleHealState.remaining = Math.max(0, (projectile.whiteHoleHealState.remaining ?? 0) - heal); playerHealing += heal;
+        }
       } else if (!freezeActive) {
         if (wingman?.active && circleIntersects(projectile, wingman)) { wingman.damage(projectile.damage); removedProjectiles.add(projectile); }
-        else if (circleIntersects(projectile, player)) { removedProjectiles.add(projectile); playerDamage += projectile.damage; }
+        else if (intersectsPlayer(projectile)) {
+          removedProjectiles.add(projectile);
+          if (projectile.whiteHoleHealState) {
+            const heal = Math.min(Math.max(0, projectile.damage ?? 0), Math.max(0, projectile.whiteHoleHealState.remaining ?? 0));
+            projectile.whiteHoleHealState.remaining = Math.max(0, (projectile.whiteHoleHealState.remaining ?? 0) - heal); playerHealing += heal;
+          } else playerDamage += projectile.damage;
+        }
       }
     }
-    for (const laser of lasers) if (laser.life > 0) for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && !enemy.isPhased && !laser.hitIds.has(enemy.id) && Math.abs(enemy.y - laser.y) <= enemy.radius + laser.thickness) { laser.hitIds.add(enemy.id); addDamage(enemy, laser.damage); }
+    for (const laser of lasers) if (laser.life > 0) for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && !enemy.isPhased && !laser.hitIds.has(enemy.id) && Math.abs(enemy.y - laser.y) <= enemy.radius + laser.thickness) { laser.hitIds.add(enemy.id); addDamage(enemy, laser.damage, laser.element ?? "electric"); }
     if (ionSaw?.active && ionSaw.damageTimer <= 0) for (const enemy of enemies) { const nearBlade = Math.hypot(enemy.x - (player.x - 34), enemy.y - player.y) <= enemy.radius + 15 || Math.hypot(enemy.x - (player.x + 34), enemy.y - player.y) <= enemy.radius + 15; if (nearBlade) addDamage(enemy, ionSaw.damage); }
     // 机体碰撞只造成接触伤害，敌机仍然留在场上；只有玩家武器造成的伤害才能销毁敌机。
-    if (!freezeActive) for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && circleIntersects(enemy, player)) playerDamage += GAME_CONFIG.projectile.enemyContactDamage;
-    return { removedProjectiles, destroyedEnemies, score, playerDamage, damageEvents, explosionEvents, sawTriggered: Boolean(ionSaw?.active && ionSaw.damageTimer <= 0) };
+    if (!freezeActive) for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && intersectsPlayer(enemy)) playerDamage += GAME_CONFIG.projectile.enemyContactDamage;
+    return { removedProjectiles, destroyedEnemies, score, playerDamage, playerHealing, damageEvents, explosionEvents, sawTriggered: Boolean(ionSaw?.active && ionSaw.damageTimer <= 0) };
   }
 }

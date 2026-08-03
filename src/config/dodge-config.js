@@ -11,6 +11,8 @@ export const DODGE_DIFFICULTIES = [
     damage: 5,
     scorePerSecond: 10,
     scorePerBullet: 2,
+    patternPool: [0, 2, 4, 5, 7, 10, 11],
+    splitChance: 0.12,
   },
   {
     id: "hard",
@@ -23,6 +25,8 @@ export const DODGE_DIFFICULTIES = [
     damage: 6,
     scorePerSecond: 18,
     scorePerBullet: 3,
+    patternPool: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    splitChance: 0.24,
   },
   {
     id: "nightmare",
@@ -35,6 +39,8 @@ export const DODGE_DIFFICULTIES = [
     damage: 7,
     scorePerSecond: 28,
     scorePerBullet: 5,
+    patternPool: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+    splitChance: 0.36,
   },
 ];
 

@@ -14,6 +14,11 @@ import { Decoy } from "../entities/Decoy.js";
 import { Enemy } from "../entities/Enemy.js";
 import { Projectile } from "../entities/Projectile.js";
 import { getDodgeDifficulty } from "../config/dodge-config.js";
+import { hasActiveSynergy } from "../config/synergy-config.js";
+import { BeyondLightConeSystem } from "../systems/BeyondLightConeSystem.js";
+import { BEYOND_LIGHT_CONE_CONFIG } from "../config/beyond-light-cone-config.js";
+
+const ELEMENT_DAMAGE_COLORS = { neutral: "#f4fbff", electric: "#fff34d", light: "#fff8cf", dark: "#9d2639", ice: "#a6eaff", water: "#2468ff", fire: "#ff3b32" };
 
 export class Game {
   constructor({ canvas, input, ui }) {
@@ -26,6 +31,14 @@ export class Game {
     this.weaponSystem = new WeaponSystem();
     this.collisionSystem = new CollisionSystem();
     this.sound = new SoundSystem();
+    this.beyondSystem = new BeyondLightConeSystem();
+    this.beyondRun = null;
+    this.beyondPendingResult = null;
+    this.beyondBattleNode = null;
+    this.beyondBattleCheckpoint = null;
+    this.beyondEventCheckpoint = null;
+    this.beyondPendingChapterTransition = false;
+    this.audioInteractionArmed = false;
     this.animationFrame = null;
     this.state = "menu";
     this.elapsed = 0;
@@ -38,6 +51,8 @@ export class Game {
     this.wingman = null;
     this.freezeTimer = 0;
     this.polarityWindow = 0;
+    this.whiteHoleActive = false;
+    this.whiteHoleHealing = null;
     this.ionSaw = { active: false, damage: 1, damageTimer: 0 };
     this.sonicWaves = [];
     this.damageNumbers = [];
@@ -51,19 +66,266 @@ export class Game {
       size: 0.6 + Math.random() * 1.8, speed: GAME_CONFIG.stars.speedMin + Math.random() * (GAME_CONFIG.stars.speedMax - GAME_CONFIG.stars.speedMin),
       alpha: 0.25 + Math.random() * 0.65,
     }));
-    this.ui.bind({ onStart: (spec) => this.start(spec), onMenu: () => this.toMenu(), onPause: () => this.pause(), onResume: () => this.resume(), onSkill: (index) => this.activateSkill(index), onDamageNumbersChanged: (enabled) => { this.damageNumbersEnabled = enabled; if (!enabled) this.damageNumbers = []; }, onVibrationChanged: (enabled) => { this.vibrationEnabled = enabled; }, onSoundChanged: (enabled) => this.sound.setEnabled(enabled), onNextLevel: () => this.start({ ...this.ui.getSelectedIds(), mode: "levels", level: Math.min(50, this.levelNumber + 1) }), onLevelSelect: () => this.toLevelSelect(), onModeSelect: () => this.toModeSelect(), onTutorialBattleExit: () => this.exitTutorialBattle(), onEnvironmentPause: () => this.pauseForEnvironment(), onEnvironmentResume: () => this.resumeFromEnvironment() });
+    this.ui.bind({ onStart: (spec) => this.start(spec), onMenu: () => this.toMenu(), onPause: () => this.pause(), onResume: () => this.resume(), onSkill: (index) => this.activateSkill(index), onDamageNumbersChanged: (enabled) => { this.damageNumbersEnabled = enabled; if (!enabled) this.damageNumbers = []; }, onVibrationChanged: (enabled) => { this.vibrationEnabled = enabled; }, onMusicVolumeChanged: (value) => this.sound.setMusicVolume(value), onSoundVolumeChanged: (value) => this.sound.setSoundVolume(value), onNextLevel: () => this.start({ ...this.ui.getSelectedIds(), mode: "levels", level: Math.min(50, this.levelNumber + 1) }), onBeyondStageContinue: () => this.continueBeyondStage(), onLevelSelect: () => this.toLevelSelect(), onModeSelect: () => this.toModeSelect(), onTutorialBattleExit: () => this.exitTutorialBattle(), onEnvironmentPause: () => this.pauseForEnvironment(), onEnvironmentResume: () => this.resumeFromEnvironment() });
+    this.bindBeyondLightConeEvents();
+    this.ui.onBeyondPauseReturn = () => {
+      if (this.mode !== "beyond") return false;
+      this.ui.hidePause();
+      this.restoreBeyondBattleCheckpoint();
+      this.toBeyondMap();
+      return true;
+    };
+    this.armAudioInteraction();
     this.input.setSkillHandler((index) => this.activateSkill(index));
     this.render();
   }
 
+  bindBeyondLightConeEvents() {
+    const screen = this.ui.beyondScreen;
+    if (!screen) return;
+    screen.addEventListener("beyond:open", () => this.openBeyondLightCone());
+    screen.addEventListener("beyond:new", (event) => this.createBeyondRun(event.detail.difficulty));
+    screen.addEventListener("beyond:load", (event) => this.loadBeyondRun(event.detail.code));
+    screen.addEventListener("beyond:node", (event) => this.enterBeyondNodeWithResult(event.detail.id));
+    screen.addEventListener("beyond:event-choice", (event) => this.chooseBeyondEvent(event.detail));
+    screen.addEventListener("beyond:build", () => this.openBeyondBuilder());
+    screen.addEventListener("beyond:build-save", (event) => this.saveBeyondBuild(event.detail.loadout));
+    screen.addEventListener("beyond:save", () => this.exportBeyondRun());
+    screen.addEventListener("beyond:shop-buy", (event) => this.buyBeyondShopOffer(event.detail.index));
+    screen.addEventListener("beyond:shop-close", () => this.toBeyondMap());
+    screen.addEventListener("beyond:result-continue", (event) => this.continueBeyondResult(event.detail.action));
+    screen.addEventListener("beyond:complete-exit", () => {
+      this.beyondRun = null;
+      this.beyondBattleNode = null;
+      this.ui.hideBeyondComplete?.();
+      this.toMenu();
+    });
+    screen.addEventListener("beyond:exit", () => { this.beyondRun = null; this.toMenu(); });
+    const pauseSave = document.createElement("button");
+    pauseSave.type = "button"; pauseSave.className = "secondary-button is-hidden"; pauseSave.textContent = "复制航程存档码";
+    this.ui.pauseOverlay?.querySelector(".pause-card")?.insertBefore(pauseSave, this.ui.pauseReturnButton);
+    pauseSave.addEventListener("click", async () => { const code = this.getBeyondSaveCode(); if (!code) return; try { await navigator.clipboard.writeText(code); pauseSave.textContent = "存档码已复制"; } catch { pauseSave.textContent = "请从路线图复制存档码"; } });
+    this.beyondPauseSaveButton = pauseSave;
+  }
+  openBeyondLightCone() { this.stopLoop(); this.state = "menu"; this.ui.showBeyondStart(); }
+  createBeyondRun(difficulty) { this.beyondRun = this.beyondSystem.createRun(difficulty); this.beyondPendingResult = null; this.beyondBattleCheckpoint = null; this.beyondEventCheckpoint = null; this.beyondPendingChapterTransition = false; this.toBeyondMap(); }
+  loadBeyondRun(code) { try { this.beyondRun = this.beyondSystem.decode(code); this.beyondPendingResult = null; this.beyondBattleCheckpoint = null; this.beyondEventCheckpoint = null; this.beyondPendingChapterTransition = false; this.ui.closeBeyondSave?.(); this.toBeyondMap(); } catch (error) { this.ui.setBeyondSaveCode?.("", error instanceof Error ? error.message : "存档码无效", "import"); } }
+  toBeyondMap() {
+    this.stopLoop(); this.state = "menu";
+    if (!this.beyondRun) { this.ui.showBeyondStart(); return; }
+    this.ui.showBeyondRun(this.beyondRun, this.beyondSystem.getAvailableNodes(this.beyondRun));
+    if (this.beyondRun.activeEvent) {
+      const node = this.beyondSystem.findNode(this.beyondRun, this.beyondRun.activeEvent.nodeId);
+      if (node) this.ui.showBeyondEvent?.(this.beyondSystem.createEventEncounter(this.beyondRun, node));
+    }
+  }
+  openBeyondBuilder() { if (this.beyondRun) this.ui.showBeyondBuilder(this.beyondRun); }
+  saveBeyondBuild(spec) { if (!this.beyondRun) return; this.beyondRun.loadout = this.moduleSystem.install(spec); this.toBeyondMap(); }
+  exportBeyondRun() { const code = this.getBeyondSaveCode(); if (code) this.ui.setBeyondSaveCode?.(code); }
+  getBeyondSaveCode() { if (!this.beyondRun) return null; if (this.mode === "beyond" && this.player) { this.beyondRun.hp = Math.max(0, this.player.hp); this.beyondRun.currentBattle = { score: this.score, elapsed: this.elapsed, nodeId: this.beyondBattleNode?.id ?? null }; } return this.beyondSystem.encode(this.beyondRun); }
+  enterBeyondNode(id) { if (!this.beyondRun) return; try { const node = this.beyondSystem.enterNode(this.beyondRun, id); this.beyondBattleNode = node; if (["combat", "elite", "boss"].includes(node.type)) { this.startBeyondBattle(node); return; } if (node.type === "shop") { this.beyondShopOffers = this.beyondSystem.getShopOffers(this.beyondRun); this.ui.showBeyondShop?.(this.beyondRun, this.beyondShopOffers); return; } const result = this.beyondSystem.resolvePeacefulNode(this.beyondRun, node); if (result.battle) { this.startBeyondBattle({ ...node, type: "combat" }); return; } this.beyondRun.log.push(result.message); this.toBeyondMap(); } catch (error) { console.warn("无法进入光锥节点", error); } }
+  buyBeyondShopOffer(index) { const offer = this.beyondShopOffers?.[index]; if (!offer || !this.beyondRun || this.beyondRun.gold < offer.cost) return; this.beyondRun.gold -= offer.cost; this.beyondRun.inventory[offer.id] = (this.beyondRun.inventory[offer.id] ?? 0) + 1; this.beyondRun.log.push(`商店购入 ${offer.id}`); this.beyondShopOffers.splice(index, 1); this.ui.showBeyondShop?.(this.beyondRun, this.beyondShopOffers); }
+  ensureBeyondStats() {
+    if (!this.beyondRun) return null;
+    this.beyondRun.stats ??= {};
+    this.beyondRun.stats.nodes ??= {};
+    return this.beyondRun.stats;
+  }
+
+  recordBeyondNodeVisit(node) {
+    const stats = this.ensureBeyondStats();
+    if (!stats || !node) return;
+    stats.nodes[node.type] = (stats.nodes[node.type] ?? 0) + 1;
+  }
+
+  recordBeyondBattleStart(node) {
+    const stats = this.ensureBeyondStats();
+    if (!stats || !node) return;
+    stats.battles = (stats.battles ?? 0) + 1;
+  }
+
+  buildBeyondCompletionSummary(rewards, goldReward) {
+    const run = this.beyondRun;
+    const stats = run?.stats ?? {};
+    const nodes = stats.nodes ?? {};
+    return {
+      score: this.score,
+      elapsed: this.elapsed,
+      difficulty: run?.difficulty ?? 1,
+      routeLength: run?.visited?.length ?? 0,
+      battles: stats.battles ?? 0,
+      events: nodes.event ?? 0,
+      shops: nodes.shop ?? 0,
+      rests: nodes.rest ?? 0,
+      modulesGained: stats.modulesGained ?? rewards.length,
+      goldGained: stats.goldGained ?? goldReward,
+      goldSpent: stats.goldSpent ?? 0,
+      finalGold: run?.gold ?? goldReward,
+      healing: stats.healing ?? 0,
+      rewardIds: rewards,
+    };
+  }
+
+  startBeyondBattle(node) { const config = this.beyondSystem.getBattleConfig(this.beyondRun, node); this.start({ modules: this.beyondRun.loadout.modules.map(({ instanceId, moduleId, x, y, rotation }) => ({ instanceId, moduleId, x, y, rotation })), synergies: this.beyondRun.loadout.synergies, mode: "beyond", beyondConfig: config, beyondNode: node }); }
+  finishBeyondBattle(victory) { const node = this.beyondBattleNode; if (!this.beyondRun || !node) { this.toBeyondMap(); return; } this.beyondRun.hp = Math.max(0, this.player?.hp ?? this.beyondRun.hp); if (!victory) { this.beyondRun = null; this.ui.showGameOver({ score: this.score, elapsed: this.elapsed, victory: false, mode: "beyond" }); return; } const elite = node.type === "elite"; const boss = node.type === "boss"; const rewards = this.beyondSystem.rewardModules(this.beyondRun, boss || elite ? 2 : 1, { elite, boss }); this.beyondRun.gold += boss ? 100 : elite ? 55 : 24; this.beyondRun.log.push(`${node.type} 胜利：${rewards.length} 个模块`); if (boss) { this.beyondRun.completed = true; this.beyondRun = null; this.ui.showGameOver({ score: this.score, elapsed: this.elapsed, victory: true, level: null, mode: "beyond" }); return; } this.ui.showBeyondStageComplete?.({ score: this.score, elapsed: this.elapsed, node, rewards }); }
+
+  handleCombatError(error, phase = "战斗") {
+    console.error(`${phase}异常`, error);
+    this.stopLoop();
+    this.state = "menu";
+    this.ui.showBuilder();
+    this.ui.setStatus(`${phase}无法继续：${error instanceof Error ? error.message : "请检查机体装配"}`);
+    this.render();
+  }
+
+  restoreBeyondBattleCheckpoint() {
+    const checkpoint = this.beyondBattleCheckpoint;
+    const run = this.beyondRun;
+    if (!checkpoint || !run) return;
+    run.currentNodeId = checkpoint.currentNodeId;
+    run.visited.length = checkpoint.visitedLength;
+    const node = this.beyondSystem.findNode(run, checkpoint.nodeId);
+    if (node) node.cleared = false;
+    run.activeEvent = checkpoint.activeEvent ?? null;
+    this.beyondBattleCheckpoint = null;
+    this.beyondBattleNode = null;
+  }
+
+  continueBeyondResult(action = "map") {
+    const pending = this.beyondPendingResult;
+    this.beyondPendingResult = null;
+    this.ui.hideBeyondResult?.();
+    if (action === "combat" && pending?.battleNode) {
+      this.startBeyondBattle(pending.battleNode);
+      return;
+    }
+    this.toBeyondMap();
+  }
+
+  continueBeyondStage() {
+    const shouldAdvance = this.beyondPendingChapterTransition;
+    this.beyondPendingChapterTransition = false;
+    this.ui.closeBeyondStageComplete?.(() => {
+      if (shouldAdvance) this.toBeyondMap();
+      else this.toBeyondMap();
+    });
+  }
+
+  enterBeyondNodeWithResult(id) {
+    if (!this.beyondRun) return;
+    try {
+      const checkpoint = { currentNodeId: this.beyondRun.currentNodeId, visitedLength: this.beyondRun.visited.length, nodeId: id, activeEvent: this.beyondRun.activeEvent ?? null };
+      const node = this.beyondSystem.enterNode(this.beyondRun, id);
+      this.beyondBattleNode = node;
+      this.recordBeyondNodeVisit(node);
+      if (["combat", "elite", "boss"].includes(node.type)) {
+        this.beyondBattleCheckpoint = checkpoint;
+        this.recordBeyondBattleStart(node);
+        this.startBeyondBattle(node);
+        return;
+      }
+      if (node.type === "shop") {
+        this.beyondShopOffers = this.beyondSystem.getShopOffers(this.beyondRun);
+        this.ui.showBeyondShop?.(this.beyondRun, this.beyondShopOffers);
+        return;
+      }
+      if (node.type === "event") {
+        this.beyondEventCheckpoint = checkpoint;
+        this.ui.showBeyondEvent?.(this.beyondSystem.createEventEncounter(this.beyondRun, node));
+        return;
+      }
+      const result = this.beyondSystem.resolvePeacefulNodeDetailed(this.beyondRun, node);
+      this.beyondRun.log.push(result.message);
+      if (result.battle) {
+        const battleNode = { ...node, type: "combat" };
+        this.beyondBattleCheckpoint = checkpoint;
+        this.beyondPendingResult = { battleNode };
+        this.recordBeyondBattleStart(battleNode);
+        this.toBeyondMap();
+        this.ui.showBeyondResult?.({ node, result, action: "combat" });
+        return;
+      }
+      this.toBeyondMap();
+      this.ui.showBeyondResult?.({ node, result, action: "map" });
+    } catch (error) {
+      console.warn("无法进入光锥节点", error);
+    }
+  }
+
+  chooseBeyondEvent({ nodeId, eventId, choiceId } = {}) {
+    if (!this.beyondRun) return;
+    try {
+      const node = this.beyondSystem.findNode(this.beyondRun, nodeId);
+      const result = this.beyondSystem.resolveEventChoice(this.beyondRun, node, eventId, choiceId);
+      this.beyondRun.log.push(result.message);
+      this.ui.hideBeyondEvent?.();
+      if (result.battle) {
+        const battleNode = { ...node, type: result.battleElite ? "elite" : "combat", eventId, eventTitle: result.event.title };
+        this.beyondBattleNode = battleNode;
+        this.beyondBattleCheckpoint = this.beyondEventCheckpoint ?? null;
+        this.beyondEventCheckpoint = null;
+        this.recordBeyondBattleStart(battleNode);
+        this.startBeyondBattle(battleNode);
+        return;
+      }
+      this.beyondEventCheckpoint = null;
+      this.toBeyondMap();
+      this.ui.showBeyondResult?.({ node, result, action: "map" });
+    } catch (error) {
+      this.ui.showBeyondEventError?.(error instanceof Error ? error.message : "事件处理失败");
+    }
+  }
+
+  finishBeyondBattleWithRewards(victory) {
+    const node = this.beyondBattleNode;
+    if (!this.beyondRun || !node) { this.toBeyondMap(); return; }
+    this.beyondRun.hp = Math.max(0, this.player?.hp ?? this.beyondRun.hp);
+    if (!victory) {
+      const summary = this.buildBeyondCompletionSummary([], 0);
+      this.beyondRun = null;
+      this.ui.showBeyondComplete?.({ summary, victory: false });
+      return;
+    }
+    this.beyondBattleCheckpoint = null;
+    const elite = node.type === "elite";
+    const boss = node.type === "boss";
+    const rewards = boss ? [] : this.beyondSystem.rewardModules(this.beyondRun, elite ? 2 : 1, { elite, boss });
+    const goldReward = boss ? 0 : elite ? 55 : 24;
+    this.beyondRun.gold += goldReward;
+    this.beyondRun.stats ??= {};
+    this.beyondRun.stats.goldGained = (this.beyondRun.stats.goldGained ?? 0) + goldReward;
+    this.beyondRun.log.push(`${node.type} 胜利：${rewards.length} 个模块，${goldReward} 金币`);
+    if (boss) {
+      if ((this.beyondRun.chapter ?? 1) < (this.beyondRun.totalChapters ?? 1)) {
+        this.beyondSystem.advanceChapter(this.beyondRun);
+        this.beyondPendingChapterTransition = true;
+        this.ui.showBeyondStageComplete?.({ score: this.score, elapsed: this.elapsed, node, rewards: [], goldReward: 0, chapterComplete: true, chapter: this.beyondRun.chapter - 1, totalChapters: this.beyondRun.totalChapters });
+        return;
+      }
+      this.beyondRun.completed = true;
+      const summary = this.buildBeyondCompletionSummary(rewards, goldReward);
+      this.ui.gameOverScreen?.classList.add("is-hidden");
+      this.ui.showBeyondComplete?.({ summary });
+      return;
+    }
+    this.ui.showBeyondStageComplete?.({ score: this.score, elapsed: this.elapsed, node, rewards, goldReward });
+    this.ui.showBeyondBattleRewards?.(rewards, goldReward);
+  }
+
   start(spec) {
     this.stopLoop();
+    this.ui.hideBeyondBattleRewards?.();
+    try {
     this.sound.unlock();
     this.sound.startMusic();
     const loadout = this.moduleSystem.install(spec);
-    const stats = this.moduleSystem.calculateStats(PLAYER_BASE_STATS, loadout);
+    const stats = this.moduleSystem.calculateStats(spec?.mode === "beyond" ? { ...PLAYER_BASE_STATS, maxHp: BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp } : PLAYER_BASE_STATS, loadout);
     this.player = new Player({ x: this.bounds.width / 2, y: this.bounds.height - 92, stats, loadout });
     this.mode = spec?.mode ?? "endless";
+    if (this.ui.pauseReturnButton) this.ui.pauseReturnButton.textContent = this.mode === "beyond" ? "返回路线图" : "返回主菜单";
+    this.beyondConfig = this.mode === "beyond" ? spec?.beyondConfig ?? null : null;
+    this.beyondBattleNode = this.mode === "beyond" ? spec?.beyondNode ?? this.beyondBattleNode : null;
+    if (this.mode === "beyond" && this.beyondRun) this.player.hp = Math.min(this.player.stats.maxHp, this.beyondRun.hp ?? this.player.hp);
     this.dodgeDifficulty = this.mode === "dodge" ? getDodgeDifficulty(spec?.dodgeDifficulty) : null;
     this.skillSystem = new SkillSystem(this.mode === "dodge" ? [] : loadout);
     this.tutorialMode = Boolean(spec?.tutorial || this.mode === "tutorial");
@@ -71,7 +333,7 @@ export class Game {
     this.tutorialHasUsedSkill = false;
     this.tutorialScoreGoal = this.tutorialMode ? 800 : 0;
     this.levelNumber = Number(spec?.level ?? 1);
-    this.levelConfig = this.mode === "levels" ? getLevelConfig(this.levelNumber) : null;
+    this.levelConfig = this.mode === "levels" ? getLevelConfig(this.levelNumber) : this.mode === "beyond" && this.beyondConfig ? { number: this.beyondConfig.level, targetScore: this.beyondConfig.targetScore, boss: this.beyondConfig.boss, spawnInterval: this.beyondConfig.spawnInterval, minimumSpawnInterval: this.beyondConfig.minimumSpawnInterval, speedMultiplier: this.beyondConfig.speedMultiplier, hpMultiplier: this.beyondConfig.hpMultiplier, damageMultiplier: this.beyondConfig.damageMultiplier } : null;
     const spawnerConfig = this.levelConfig
       ? { fixed: true, spawnInterval: this.levelConfig.spawnInterval, minimumSpawnInterval: this.levelConfig.minimumSpawnInterval, speedMultiplier: this.levelConfig.speedMultiplier, hpMultiplier: this.levelConfig.hpMultiplier }
       : { ...LEVEL_CONFIG.difficulty, hpMultiplierStep: LEVEL_CONFIG.difficulty.hpMultiplierStep ?? 0.06 };
@@ -81,9 +343,12 @@ export class Game {
     this.explosions = [];
     this.lasers = [];
     this.decoys = [];
-    this.wingman = this.mode === "dodge" ? null : (loadout.modules.some(({ module }) => module?.id === "special-wingman") ? new Wingman(this.player) : null);
+    const wolfpack = hasActiveSynergy(loadout, "synergy-wolfpack");
+    this.wingman = this.mode === "dodge" ? null : (loadout.modules.some(({ module }) => module?.id === "special-wingman") ? new Wingman(this.player, { wolfpack }) : null);
     this.freezeTimer = 0;
     this.polarityWindow = 0;
+    this.whiteHoleActive = hasActiveSynergy(loadout, "synergy-white-hole");
+    this.whiteHoleHealing = null;
     this.ionSaw = { active: false, damage: 1, damageTimer: 0 };
     this.sonicWaves = [];
     this.damageNumbers = [];
@@ -99,27 +364,46 @@ export class Game {
     this.environment = null;
     this.dodgePatternTimer = this.mode === "dodge" ? 0.7 : Infinity;
     this.dodgePatternIndex = 0;
+    this.dodgePatternHistory = -1;
     this.dodgeBulletsDodged = 0;
     this.countdownRemaining = 3;
     this.environmentTimer = this.levelConfig?.environment?.firstDelay ?? Infinity;
     this.environmentPool = this.levelConfig?.environmentPool ?? [];
     this.state = "countdown";
-    this.ui.showPlaying({ hp: this.player.hp, maxHp: this.player.stats.maxHp, score: 0, elapsed: 0, attackSpeed: getPlayerAttackSpeed(this.player), skills: this.skillSystem.getState(), level: this.levelConfig?.number ?? null, goal: this.levelConfig?.targetScore ?? null, boss: false, tutorial: this.tutorialMode, modeLabel: this.tutorialMode ? "教程 / 800分" : this.dodgeDifficulty ? `躲避 · ${this.dodgeDifficulty.name}` : null });
+    this.beyondPauseSaveButton?.classList.toggle("is-hidden", this.mode !== "beyond");
+    if (this.beyondPauseSaveButton) this.beyondPauseSaveButton.hidden = this.mode !== "beyond";
+    this.ui.showPlaying({ hp: this.player.hp, maxHp: this.player.stats.maxHp, score: 0, elapsed: 0, attackSpeed: getPlayerAttackSpeed(this.player), skills: this.skillSystem.getState(), level: this.levelConfig?.number ?? null, goal: this.levelConfig?.targetScore ?? null, boss: false, tutorial: this.tutorialMode, modeLabel: this.tutorialMode ? "教程 / 800分" : this.mode === "beyond" ? "光锥之外" : this.dodgeDifficulty ? `躲避 · ${this.dodgeDifficulty.name}` : null });
     this.ui.updateCountdown(this.countdownRemaining);
     this.lastFrame = performance.now();
     this.animationFrame = requestAnimationFrame((time) => this.frame(time));
+    } catch (error) {
+      this.handleCombatError(error, "战斗初始化");
+    }
   }
 
   stopLoop() { if (this.animationFrame) cancelAnimationFrame(this.animationFrame); this.animationFrame = null; }
 
-  toMenu() { this.stopLoop(); this.state = "menu"; this.ui.showMenu(); this.render(); }
-  toLevelSelect() { this.stopLoop(); this.state = "menu"; this.ui.showLevelSelect(); this.render(); }
-  toModeSelect() { this.stopLoop(); this.state = "menu"; this.ui.showModeSelect(); this.render(); }
+  armAudioInteraction() {
+    if (this.audioInteractionArmed || typeof document === "undefined") return;
+    this.audioInteractionArmed = true;
+    const unlock = () => {
+      this.audioInteractionArmed = false;
+      document.removeEventListener("pointerup", unlock, true);
+      document.removeEventListener("keydown", unlock, true);
+      this.sound.startMusic();
+    };
+    document.addEventListener("pointerup", unlock, true);
+    document.addEventListener("keydown", unlock, true);
+  }
+
+  toMenu() { this.stopLoop(); this.armAudioInteraction(); this.beyondPauseSaveButton?.classList.add("is-hidden"); if (this.beyondPauseSaveButton) this.beyondPauseSaveButton.hidden = true; this.state = "menu"; this.ui.showMenu(); this.render(); }
+  toLevelSelect() { this.stopLoop(); this.armAudioInteraction(); this.state = "menu"; this.ui.showLevelSelect(); this.render(); }
+  toModeSelect() { this.stopLoop(); this.armAudioInteraction(); this.state = "menu"; this.ui.showModeSelect(); this.render(); }
   exitTutorialBattle() { if (!this.tutorialMode) return; if (!this.tutorialHasMoved) { this.ui.showTutorialBattleHint("请先用 WASD / 方向键，或手指拖动飞机移动一次。", false); return; } if (!this.tutorialHasUsedSkill) { this.ui.showTutorialBattleHint("请点击左下角的主动技能按钮，或按数字键释放一次技能。", false); return; } if (this.score < this.tutorialScoreGoal) { this.ui.showTutorialBattleHint(`继续消灭敌机，达到 ${this.tutorialScoreGoal} 分后自动进入下一步（当前 ${Math.floor(this.score)} 分）。`, false); return; } this.stopLoop(); this.state = "menu"; this.ui.completeTutorialAction(1); this.ui.showTutorial(2, false); this.render(); }
   pause() { if (this.state !== "playing") return false; this.state = "paused"; this.stopLoop(); this.ui.showPause(); return true; }
-  resume() { if (this.state !== "paused") return false; this.state = "playing"; this.ui.hidePause(); this.lastFrame = performance.now(); this.animationFrame = requestAnimationFrame((time) => this.frame(time)); return true; }
+  resume() { if (this.state !== "paused") return false; this.state = "playing"; this.sound.resumeMusic(); this.ui.hidePause(); this.lastFrame = performance.now(); this.animationFrame = requestAnimationFrame((time) => this.frame(time)); return true; }
   pauseForEnvironment() { if (this.state !== "playing") return false; this.state = "paused"; this.stopLoop(); return true; }
-  resumeFromEnvironment() { if (this.state !== "paused") return false; this.state = "playing"; this.lastFrame = performance.now(); this.animationFrame = requestAnimationFrame((time) => this.frame(time)); return true; }
+  resumeFromEnvironment() { if (this.state !== "paused") return false; this.state = "playing"; this.sound.resumeMusic(); this.lastFrame = performance.now(); this.animationFrame = requestAnimationFrame((time) => this.frame(time)); return true; }
   triggerShake(kind = "hit") {
     const impact = IMPACT_CONFIG[kind] ?? IMPACT_CONFIG.hit;
     this.shakeTime = Math.max(this.shakeTime, impact.duration);
@@ -131,12 +415,34 @@ export class Game {
   activateSkill(index) { const activated = this.skillSystem?.activate(index, this); if (activated) { this.sound.play("skill"); if (this.tutorialMode) { this.tutorialHasUsedSkill = true; this.exitTutorialBattle(); } } return activated; }
   startOverclock(duration) { this.player.overclockTimer = duration; }
   markPolarityProjectile(projectile) { if (!projectile || projectile.team !== "enemy" || projectile.polarityDelay > 0 || projectile.kind === "blackHole") return; projectile.polarityDelay = 0.25; projectile.vx = 0; projectile.vy = 0; projectile.polarityColor = "#9d7bff"; }
-  convertPolarityProjectile(projectile) { if (!projectile || projectile.polarityDelay > 0) return; projectile.team = "player"; projectile.kind = "polarityBolt"; projectile.color = projectile.polarityColor ?? "#9d7bff"; projectile.vx = 0; projectile.vy = -Math.max(220, GAME_CONFIG.projectile.enemySpeed * 1.15); projectile.pierce = false; projectile.life = Math.max(3, projectile.life); }
-  startPolarityReverse(duration) { this.polarityWindow = Math.max(this.polarityWindow, duration); for (const projectile of this.projectiles) this.markPolarityProjectile(projectile); }
+  convertPolarityProjectile(projectile) {
+    if (!projectile || projectile.polarityDelay > 0) return;
+    projectile.team = "player";
+    projectile.kind = projectile.whiteHoleCandidate ? "whiteHoleBolt" : "polarityBolt";
+    projectile.color = projectile.whiteHoleCandidate ? "#f4e9ff" : (projectile.polarityColor ?? "#9d7bff");
+    projectile.vx = 0; projectile.vy = -Math.max(220, GAME_CONFIG.projectile.enemySpeed * 1.15);
+    projectile.pierce = Boolean(projectile.whiteHoleCandidate);
+    projectile.life = Math.max(projectile.whiteHoleCandidate ? 8 : 3, projectile.life);
+    if (projectile.whiteHoleCandidate) { projectile.homingPlayer = true; projectile.playerTarget = this.player; projectile.homingTurnRate = 5.5; projectile.whiteHoleHealState = this.whiteHoleHealing; }
+  }
+  startPolarityReverse(duration) {
+    this.polarityWindow = Math.max(this.polarityWindow, duration);
+    this.whiteHoleHealing = this.whiteHoleActive ? { remaining: 30 } : null;
+    for (const projectile of this.projectiles) {
+      if (this.whiteHoleActive && projectile.blackHoleCapturedBy) {
+        const hole = projectile.blackHoleCapturedBy; hole.blackHole?.capturedProjectiles?.delete(projectile);
+        projectile.blackHoleCapturedBy = null; projectile.blackHoleOrbit = null; projectile.whiteHoleCandidate = true;
+      }
+      this.markPolarityProjectile(projectile);
+    }
+  }
   applyBlackHolePull(dt) {
     const holes = this.projectiles.filter((projectile) => projectile.kind === "blackHole" && projectile.life > 0);
     for (const hole of holes) {
-      const field = hole.blackHole ?? {}; const radius = field.pullRadius ?? 66; const strength = field.pullStrength ?? 105;
+      const field = hole.blackHole ?? {};
+      const baseRadius = field.pullRadius ?? 66;
+      const radius = field.enemyCaptured ? baseRadius * 1.75 : baseRadius;
+      const strength = field.pullStrength ?? 105;
       for (const enemy of this.enemies) {
         if (enemy.hp <= 0) continue;
         const dx = hole.x - enemy.x; const dy = hole.y - enemy.y; const distance = Math.hypot(dx, dy);
@@ -170,9 +476,10 @@ export class Game {
   startIonSaw(duration) { this.ionSaw.active = true; this.ionSaw.duration = Math.max(this.ionSaw.duration ?? 0, duration); this.ionSaw.damageTimer = 0; }
   startSonicWave(duration) { this.sonicWaves.push({ duration, spawnTimer: 0, nextY: this.player.y, step: SONIC_WAVE_CONFIG.spawnStep }); }
 
-  createDodgeBullet({ x, y, vx = 0, vy = 120, radius = 7, kind = "dodgeOrb", color = "#ff7fd1", damage = this.dodgeDifficulty.damage, life = 8, dodgeMotion = null }) {
+  createDodgeBullet({ x, y, vx = 0, vy = 120, radius = 7, kind = "dodgeOrb", color = "#ff7fd1", damage = this.dodgeDifficulty.damage, life = 8, dodgeMotion = null, dodgeSplit = null }) {
     const projectile = new Projectile({ x, y, vx, vy, damage, radius, color, life, team: "enemy", kind, dodgeMotion });
     projectile.dodgeBullet = true;
+    projectile.dodgeSplit = dodgeSplit;
     return projectile;
   }
 
@@ -180,12 +487,19 @@ export class Game {
     const difficulty = this.dodgeDifficulty;
     if (!difficulty) return;
     const count = difficulty.bulletCount;
-    const speed = difficulty.speed * (1 + Math.min(0.55, this.elapsed / 150));
-    const pattern = this.dodgePatternIndex % 5;
+    const speed = difficulty.speed * (1 + Math.min(0.65, this.elapsed / 135)) * (0.92 + Math.random() * 0.16);
+    const patterns = difficulty.patternPool ?? [0, 1, 2, 3, 4];
+    let pattern = this.dodgePatternIndex < patterns.length ? patterns[this.dodgePatternIndex] : patterns[Math.floor(Math.random() * patterns.length)];
+    if (patterns.length > 1 && pattern === this.dodgePatternHistory) {
+      const alternatives = patterns.filter((entry) => entry !== pattern);
+      pattern = alternatives[Math.floor(Math.random() * alternatives.length)];
+    }
     this.dodgePatternIndex += 1;
+    this.dodgePatternHistory = pattern;
+    const splitChance = difficulty.splitChance ?? 0;
     if (pattern === 0) {
       for (let index = 0; index < count; index += 1) {
-        this.projectiles.push(this.createDodgeBullet({ x: 28 + Math.random() * (this.bounds.width - 56), y: -18 - index * 20, vy: speed, radius: 7, kind: "dodgeOrb", color: "#ff80d8" }));
+        this.projectiles.push(this.createDodgeBullet({ x: 28 + Math.random() * (this.bounds.width - 56), y: -18 - index * 20, vy: speed, radius: 7, kind: "dodgeOrb", color: index % 2 ? "#ff80d8" : "#e790ff", dodgeSplit: Math.random() < splitChance * 0.35 ? { delay: 1.2, count: 3, spread: 0.62, speed: speed * 1.08 } : null }));
       }
     } else if (pattern === 1) {
       const amount = 5 + count;
@@ -205,11 +519,76 @@ export class Game {
         const angle = (index / amount) * Math.PI * 2 + this.elapsed * 0.55;
         this.projectiles.push(this.createDodgeBullet({ x: this.bounds.width / 2, y: 235, vx: Math.cos(angle) * speed * 0.74, vy: Math.sin(angle) * speed * 0.74, radius: 6, kind: "dodgeRing", color: "#ffd36e", life: 7 }));
       }
-    } else {
+    } else if (pattern === 4) {
       const amount = 4 + count;
       for (let index = 0; index < amount; index += 1) {
         const x = 30 + (index / Math.max(1, amount - 1)) * (this.bounds.width - 60);
-        this.projectiles.push(this.createDodgeBullet({ x, y: -20 - index * 28, vy: speed * 0.86, radius: 6, kind: "dodgeWave", color: "#ff9b68", dodgeMotion: { type: "sine", amplitude: 34 + count * 5, frequency: 1.4 + index * 0.07, phase: index * 0.8 } }));
+        this.projectiles.push(this.createDodgeBullet({ x, y: -20 - index * 28, vy: speed * 0.86, radius: 6, kind: "dodgeWave", color: index % 2 ? "#ff9b68" : "#ffd36e", dodgeMotion: { type: "sine", amplitude: 34 + count * 5, frequency: 1.4 + index * 0.07, phase: index * 0.8 } }));
+      }
+    } else if (pattern === 5) {
+      const amount = 3 + count;
+      for (let index = 0; index < amount; index += 1) {
+        this.projectiles.push(this.createDodgeBullet({ x: 34 + Math.random() * (this.bounds.width - 68), y: -24 - Math.random() * 130, vy: speed * (0.42 + Math.random() * 0.16), radius: 9 + count * 0.5, kind: "dodgeMine", color: index % 2 ? "#70f4dc" : "#72d9ff", life: 9, dodgeMotion: { type: "curve", steer: 70 + count * 12, frequency: 1.2 + Math.random() * 0.7, phase: Math.random() * Math.PI * 2, maxSpeed: speed * 0.75 } }));
+      }
+    } else if (pattern === 6) {
+      const centerX = this.bounds.width * (0.35 + Math.random() * 0.3);
+      const centerY = 170 + Math.random() * 150;
+      const orbitRadius = 34 + Math.random() * 28;
+      const amount = 4 + count * 2;
+      for (let index = 0; index < amount; index += 1) {
+        const angle = (index / amount) * Math.PI * 2;
+        this.projectiles.push(this.createDodgeBullet({ x: centerX + Math.cos(angle) * orbitRadius, y: centerY + Math.sin(angle) * orbitRadius, vx: Math.cos(angle) * speed * 0.35, vy: Math.sin(angle) * speed * 0.35, radius: 6, kind: "dodgeSpiral", color: index % 2 ? "#b38cff" : "#ff87d7", life: 7.5, dodgeMotion: { type: "orbit", centerX, centerY, radius: orbitRadius, angle, angularSpeed: (0.8 + Math.random() * 0.7) * (index % 2 ? 1 : -1) } }));
+      }
+    } else if (pattern === 7) {
+      const amount = 1 + Math.min(2, count);
+      for (let index = 0; index < amount; index += 1) {
+        this.projectiles.push(this.createDodgeBullet({ x: 44 + Math.random() * (this.bounds.width - 88), y: -28 - index * 56, vy: speed * 0.58, radius: 11, kind: "dodgeSplit", color: "#ff76b8", life: 9, dodgeSplit: { delay: 0.85 + Math.random() * 0.45, count: 3 + count, spread: 0.78, speed: speed * (0.88 + Math.random() * 0.18) } }));
+      }
+    } else if (pattern === 8) {
+      const amount = 3 + count;
+      for (let index = 0; index < amount; index += 1) {
+        const fromLeft = index % 2 === 0;
+        this.projectiles.push(this.createDodgeBullet({ x: fromLeft ? -24 : this.bounds.width + 24, y: 120 + (index / Math.max(1, amount - 1)) * 430, vx: (fromLeft ? 1 : -1) * speed * 0.68, vy: (index % 3 - 1) * speed * 0.46, radius: 6, kind: "dodgeCross", color: fromLeft ? "#67e6ff" : "#b18cff", life: 8, dodgeMotion: { type: "curve", steer: 46, frequency: 1.6, phase: index * 0.8, maxSpeed: speed * 0.92 } }));
+      }
+    } else if (pattern === 9) {
+      const lanes = 7 + count * 2;
+      const gap = Math.floor(Math.random() * lanes);
+      for (let lane = 0; lane < lanes; lane += 1) {
+        if (lane === gap || (lane === gap - 1 && Math.random() < 0.35)) continue;
+        this.projectiles.push(this.createDodgeBullet({ x: (lane + 0.5) * this.bounds.width / lanes, y: -22 - Math.random() * 35, vy: speed * 0.66, radius: 5.5, kind: "dodgeWall", color: "#ff9fca", life: 9, dodgeMotion: { type: "sine", amplitude: 8 + count * 2, frequency: 1.1, phase: lane * 0.4 } }));
+      }
+    } else if (pattern === 10) {
+      // 低空突发：弹幕直接在屏幕下半区出现，向上穿过玩家航线。
+      const amount = 2 + count * 2;
+      for (let index = 0; index < amount; index += 1) {
+        this.projectiles.push(this.createDodgeBullet({
+          x: 28 + Math.random() * (this.bounds.width - 56),
+          y: this.bounds.height * (0.56 + Math.random() * 0.34),
+          vx: (Math.random() - 0.5) * speed * 0.28,
+          vy: -speed * (0.48 + Math.random() * 0.22),
+          radius: 7,
+          kind: "dodgeOrb",
+          color: index % 2 ? "#6de8ff" : "#b28cff",
+          life: 7,
+          dodgeMotion: { type: "curve", steer: 42 + count * 8, frequency: 1.25 + Math.random() * 0.6, phase: Math.random() * Math.PI * 2, maxSpeed: speed * 0.72 },
+        }));
+      }
+    } else if (pattern === 11) {
+      // 反向扇面：从屏幕底边向上展开，避免所有危险都只从上方进入。
+      const amount = 4 + count * 2;
+      const centerX = this.bounds.width / 2;
+      for (let index = 0; index < amount; index += 1) {
+        const angle = ((index / Math.max(1, amount - 1)) - 0.5) * 1.02;
+        this.projectiles.push(this.createDodgeBullet({
+          x: centerX + (index - (amount - 1) / 2) * 14,
+          y: this.bounds.height + 22 + Math.random() * 24,
+          vx: Math.sin(angle) * speed * 0.72,
+          vy: -Math.cos(angle) * speed * 0.72,
+          radius: 6,
+          kind: "dodgeShard",
+          color: index % 2 ? "#ff79cf" : "#8ee8ff",
+          life: 8,
+        }));
       }
     }
   }
@@ -223,7 +602,24 @@ export class Game {
       this.spawnDodgePattern();
       this.dodgePatternTimer = Math.max(0.28, difficulty.spawnInterval * (1 - Math.min(0.3, this.elapsed / 180)));
     }
-    for (const projectile of this.projectiles) projectile.update(dt, [], this.bounds);
+    const spawnedDodgeBullets = [];
+    for (const projectile of this.projectiles) {
+      projectile.update(dt, [], this.bounds);
+      const split = projectile.dodgeSplit;
+      if (!split || split.done || projectile.age < split.delay) continue;
+      split.done = true;
+      const baseAngle = Math.atan2(projectile.vy, projectile.vx);
+      const amount = Math.max(2, split.count ?? 3);
+      for (let index = 0; index < amount; index += 1) {
+        const ratio = amount === 1 ? 0 : (index / (amount - 1)) - 0.5;
+        const angle = baseAngle + ratio * (split.spread ?? 0.7);
+        const childSpeed = split.speed ?? Math.max(120, Math.hypot(projectile.vx, projectile.vy));
+        spawnedDodgeBullets.push(this.createDodgeBullet({ x: projectile.x, y: projectile.y, vx: Math.cos(angle) * childSpeed, vy: Math.sin(angle) * childSpeed, radius: Math.max(4, projectile.radius * 0.62), kind: "dodgeShard", color: projectile.color, life: 6.5 }));
+      }
+      projectile.active = false;
+      projectile.life = 0;
+    }
+    this.projectiles.push(...spawnedDodgeBullets);
     const collision = this.collisionSystem.resolve({ player: this.player, enemies: [], projectiles: this.projectiles });
     let dodged = 0;
     this.projectiles = this.projectiles.filter((projectile) => {
@@ -279,7 +675,7 @@ export class Game {
       if (!definition) continue;
       const side = index % 2 === 0 ? -1 : 1;
       const x = Math.max(definition.radius + 4, Math.min(this.bounds.width - definition.radius - 4, this.boss.x + side * (58 + index * 16)));
-      spawned.push(new Enemy(definition, x, { level: this.levelNumber, spawnY: this.boss.y + 10 + index * 8, summoned: true, hpMultiplier: this.levelConfig?.hpMultiplier ?? 1, speedMultiplier: this.levelConfig?.speedMultiplier ?? 1 }));
+      spawned.push(new Enemy(definition, x, { level: this.levelNumber, spawnY: this.boss.y + 10 + index * 8, summoned: true, hpMultiplier: this.levelConfig?.hpMultiplier ?? 1, speedMultiplier: this.levelConfig?.speedMultiplier ?? 1, damageMultiplier: this.levelConfig?.damageMultiplier ?? 1 }));
     }
     this.bossSummonCount += spawned.length;
     return spawned;
@@ -287,23 +683,27 @@ export class Game {
 
   frame(time) {
     if (this.state !== "playing" && this.state !== "countdown") return;
-    const dt = Math.min(0.034, Math.max(0.001, (time - this.lastFrame) / 1000));
-    this.lastFrame = time;
-    if (this.state === "countdown") {
-      this.countdownRemaining = Math.max(0, this.countdownRemaining - dt);
-      this.ui.updateCountdown(this.countdownRemaining);
-      this.render();
-      if (this.countdownRemaining <= 0) {
-        this.state = "playing";
-        this.lastFrame = time;
-        this.ui.updateCountdown(0);
+    try {
+      const dt = Math.min(0.034, Math.max(0.001, (time - this.lastFrame) / 1000));
+      this.lastFrame = time;
+      if (this.state === "countdown") {
+        this.countdownRemaining = Math.max(0, this.countdownRemaining - dt);
+        this.ui.updateCountdown(this.countdownRemaining);
+        this.render();
+        if (this.countdownRemaining <= 0) {
+          this.state = "playing";
+          this.lastFrame = time;
+          this.ui.updateCountdown(0);
+        }
+        this.animationFrame = requestAnimationFrame((next) => this.frame(next));
+        return;
       }
-      this.animationFrame = requestAnimationFrame((next) => this.frame(next));
-      return;
+      this.update(dt);
+      this.render();
+      if (this.state === "playing") this.animationFrame = requestAnimationFrame((next) => this.frame(next));
+    } catch (error) {
+      this.handleCombatError(error, "战斗运行");
     }
-    this.update(dt);
-    this.render();
-    if (this.state === "playing") this.animationFrame = requestAnimationFrame((next) => this.frame(next));
   }
 
   updateSonicWave(dt) {
@@ -366,15 +766,23 @@ export class Game {
     }
     if (wasOverclocked && this.player.overclockTimer <= 0) this.player.weaponSilenceTimer = Math.max(this.player.weaponSilenceTimer, 1);
     const playerShots = this.weaponSystem.firePlayer(this.player, this.enemies);
-    if (playerShots.length) this.sound.play("shot");
+    if (playerShots.some((projectile) => projectile.kind === "ball")) this.sound.play("ballLightning");
+    if (playerShots.some((projectile) => projectile.kind !== "ball")) this.sound.play("shot");
+    if (playerShots.some((projectile) => projectile.kind === "chainLightning")) this.sound.play("lightning");
     this.projectiles.push(...playerShots);
     for (const decoy of this.decoys) { decoy.update(dt); if (decoy.alive) this.projectiles.push(...this.weaponSystem.firePlayer(decoy, this.enemies, { damageMultiplier: decoy.damageMultiplier })); }
     this.decoys = this.decoys.filter((decoy) => decoy.alive);
-    if (this.wingman) { this.wingman.update(dt, this.player, this.bounds); const shot = this.wingman.fire(); if (shot) this.projectiles.push(shot); }
+    if (this.wingman) {
+      this.wingman.update(dt, this.player, this.bounds);
+      const shot = this.wingman.fire();
+      if (shot) this.projectiles.push(shot);
+      const nestShots = this.weaponSystem.fireWingmanNest(this.wingman, this.enemies);
+      if (nestShots.length) { this.projectiles.push(...nestShots); this.sound.play("shot"); }
+    }
 
     if (this.levelConfig?.boss && !this.bossSpawned && this.score >= this.levelConfig.targetScore) {
       this.bossSpawned = true;
-      this.boss = new Enemy(createBossDefinition(this.levelNumber), this.bounds.width / 2, { level: this.levelNumber });
+      this.boss = new Enemy(createBossDefinition(this.levelNumber), this.bounds.width / 2, { level: this.levelNumber, hpMultiplier: this.levelConfig?.hpMultiplier ?? 1, speedMultiplier: this.levelConfig?.speedMultiplier ?? 1, damageMultiplier: this.levelConfig?.damageMultiplier ?? 1 });
       this.enemies = [this.boss];
       this.bossSummonTimer = 1.2;
       this.bossSummonCount = 0;
@@ -383,11 +791,13 @@ export class Game {
       if (enemy) this.enemies.push(enemy);
     }
     if (this.bossSpawned && this.boss && this.boss.hp > 0) this.enemies.push(...this.updateBossSummons(dt));
+    const statusDamageEvents = [];
     for (const current of this.enemies) {
       current.frozen = this.freezeTimer > 0 && !current.definition.boss;
       current.environmentSpeedMultiplier = environmentEffects.enemy.speed ?? 1;
       current.environmentShootIntervalMultiplier = environmentEffects.enemy.shootInterval ?? 1;
       current.environmentProjectileSpeedMultiplier = environmentEffects.enemy.projectileSpeed ?? 1;
+      statusDamageEvents.push(...(current.updateBurn?.(dt) ?? []));
       current.update(dt, this.bounds);
       if (current.canShoot()) {
         const shots = this.weaponSystem.fireEnemy(current, this.player);
@@ -402,9 +812,10 @@ export class Game {
       projectile.update(dt, this.enemies, this.bounds);
     }
 
-    const collision = this.collisionSystem.resolve({ player: this.player, enemies: this.enemies, projectiles: this.projectiles, wingman: this.wingman, lasers: this.lasers, freezeActive: this.freezeTimer > 0, ionSaw: this.ionSaw });
+    const collision = this.collisionSystem.resolve({ player: this.player, enemies: this.enemies, projectiles: this.projectiles, wingman: this.wingman, lasers: this.lasers, freezeActive: this.freezeTimer > 0, ionSaw: this.ionSaw, statusDamageEvents });
     if (collision.sawTriggered) this.ionSaw.damageTimer = 1 / 6;
     this.score += collision.score;
+    if (collision.playerHealing > 0) this.player.hp = Math.min(this.player.stats.maxHp, this.player.hp + collision.playerHealing);
     if (this.tutorialMode && this.tutorialHasMoved && this.tutorialHasUsedSkill && this.score >= this.tutorialScoreGoal) { this.exitTutorialBattle(); return; }
     this.explosions.push(...(collision.explosionEvents ?? []));
     if ((collision.damageEvents?.length ?? 0) > 0) { this.triggerShake("hit"); this.sound.play("playerImpact"); }
@@ -412,7 +823,7 @@ export class Game {
     if (this.damageNumbersEnabled) for (const event of collision.damageEvents ?? []) {
       const angle = Math.random() * Math.PI * 2;
       const radius = Math.sqrt(Math.random()) * 10;
-      this.damageNumbers.push({ x: event.x + Math.cos(angle) * radius, y: event.y + Math.sin(angle) * radius, amount: event.amount, age: 0, life: 0.65 });
+      this.damageNumbers.push({ x: event.x + Math.cos(angle) * radius, y: event.y + Math.sin(angle) * radius, amount: event.amount, element: event.element ?? "neutral", age: 0, life: 0.65 });
     }
     const bossDefeated = this.boss && collision.destroyedEnemies.has(this.boss);
     this.enemies = this.enemies.filter((current) => !collision.destroyedEnemies.has(current) && (current.boss || current.y < this.bounds.height + 80));
@@ -426,11 +837,11 @@ export class Game {
     this.updateExplosions(dt);
     this.stars.forEach((star) => { star.y += star.speed * dt; if (star.y > this.bounds.height) star.y = -4; });
     if (bossDefeated || (this.levelConfig && !this.levelConfig.boss && this.score >= this.levelConfig.targetScore)) { this.endGame({ victory: true }); return; }
-    this.ui.updateHud({ hp: this.player.hp, maxHp: this.player.stats.maxHp, score: this.score, elapsed: this.elapsed, attackSpeed: getPlayerAttackSpeed(this.player), level: this.levelConfig?.number ?? null, goal: this.levelConfig?.targetScore ?? null, boss: Boolean(this.bossSpawned && this.boss), environment: this.environment, modeLabel: this.tutorialMode ? "教程 / 800分" : null });
+    this.ui.updateHud({ hp: this.player.hp, maxHp: this.player.stats.maxHp, score: this.score, elapsed: this.elapsed, attackSpeed: getPlayerAttackSpeed(this.player), level: this.levelConfig?.number ?? null, goal: this.levelConfig?.targetScore ?? null, boss: Boolean(this.bossSpawned && this.boss), environment: this.environment, modeLabel: this.tutorialMode ? "教程 / 800分" : this.mode === "beyond" ? "光锥之外" : null });
     this.ui.updateSkills(this.skillSystem.getState());
   }
 
-  endGame({ victory = false } = {}) { this.state = "gameover"; this.stopLoop(); this.ui.showGameOver({ score: this.score, elapsed: this.elapsed, victory, level: this.levelNumber, mode: this.mode }); }
+  endGame({ victory = false } = {}) { this.state = "gameover"; this.stopLoop(); if (this.mode === "beyond") { this.finishBeyondBattleWithRewards(victory); return; } this.ui.showGameOver({ score: this.score, elapsed: this.elapsed, victory, level: this.levelNumber, mode: this.mode }); }
 
   render() {
     const gradient = this.ctx.createLinearGradient(0, 0, 0, this.bounds.height);
@@ -538,7 +949,7 @@ export class Game {
   drawDamageNumbers() {
     if (!this.damageNumbersEnabled) return;
     this.ctx.save(); this.ctx.font = "800 21px system-ui, sans-serif"; this.ctx.textAlign = "center"; this.ctx.textBaseline = "middle"; this.ctx.shadowBlur = 13; this.ctx.shadowColor = "#8ff5ff"; this.ctx.lineWidth = 2;
-    for (const number of this.damageNumbers) { this.ctx.globalAlpha = Math.max(0, 1 - number.age / number.life); this.ctx.fillStyle = "#e9feff"; this.ctx.strokeStyle = "rgba(15, 52, 75, .78)"; this.ctx.strokeText(`${Math.round(number.amount)}`, number.x, number.y); this.ctx.fillText(`${Math.round(number.amount)}`, number.x, number.y); }
+    for (const number of this.damageNumbers) { this.ctx.globalAlpha = Math.max(0, 1 - number.age / number.life); this.ctx.fillStyle = ELEMENT_DAMAGE_COLORS[number.element] ?? ELEMENT_DAMAGE_COLORS.neutral; this.ctx.shadowColor = this.ctx.fillStyle; this.ctx.strokeStyle = "rgba(15, 20, 50, .82)"; this.ctx.strokeText(`${Math.round(number.amount)}`, number.x, number.y); this.ctx.fillText(`${Math.round(number.amount)}`, number.x, number.y); }
     this.ctx.restore();
   }
 
@@ -552,6 +963,11 @@ export class Game {
       this.ctx.globalCompositeOperation = "lighter";
       if (explosion.kind === "psionic") {
         this.drawPsionicExplosion(radius, fade, progress);
+        this.ctx.restore();
+        continue;
+      }
+      if (explosion.kind === "waterShot") {
+        this.drawWaterExplosion(radius, fade, progress);
         this.ctx.restore();
         continue;
       }
@@ -642,6 +1058,16 @@ export class Game {
     this.ctx.globalAlpha = fade * 0.9;
     this.ctx.fillStyle = "#ffffff"; this.ctx.shadowBlur = 8;
     this.ctx.beginPath(); this.ctx.arc(0, 0, Math.max(3, radius * 0.2), 0, Math.PI * 2); this.ctx.fill();
+  }
+
+  drawWaterExplosion(radius, fade, progress) {
+    this.ctx.globalAlpha = fade * 0.2; this.ctx.fillStyle = "#176dff"; this.ctx.shadowBlur = 24; this.ctx.shadowColor = "#4fd9ff";
+    this.ctx.beginPath(); this.ctx.arc(0, 0, radius, 0, Math.PI * 2); this.ctx.fill();
+    this.ctx.globalAlpha = fade * 0.9; this.ctx.strokeStyle = "#2388ff"; this.ctx.lineWidth = 2.5; this.ctx.shadowBlur = 14;
+    this.ctx.beginPath(); this.ctx.arc(0, 0, radius * (0.45 + progress * 0.55), 0, Math.PI * 2); this.ctx.stroke();
+    this.ctx.globalAlpha = fade * 0.82; this.ctx.strokeStyle = "#9de7ff"; this.ctx.lineWidth = 1.3;
+    for (let index = 0; index < 8; index += 1) { const angle = index * Math.PI / 4 + this.elapsed * 1.8; const inner = radius * 0.25; const outer = radius * (0.8 + (index % 2) * 0.2); this.ctx.beginPath(); this.ctx.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner); this.ctx.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer); this.ctx.stroke(); }
+    this.ctx.globalAlpha = fade; this.ctx.fillStyle = "#d9f8ff"; this.ctx.shadowBlur = 10; this.ctx.beginPath(); this.ctx.arc(0, 0, Math.max(2, radius * 0.16), 0, Math.PI * 2); this.ctx.fill();
   }
 
   drawGrid() {

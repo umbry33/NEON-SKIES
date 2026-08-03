@@ -12,6 +12,7 @@ export class Enemy {
     this.hp = Math.ceil(definition.hp * (difficulty.hpMultiplier ?? 1));
     this.maxHp = this.hp;
     this.speed = definition.speed * (difficulty.speedMultiplier ?? 1);
+    this.damageMultiplier = difficulty.damageMultiplier ?? 1;
     this.shootTimer = definition.shootInterval * (0.55 + Math.random() * 0.45);
     this.silenceTimer = 0;
     this.frozen = false;
@@ -24,6 +25,7 @@ export class Enemy {
     this.bossChargeTimer = definition.dashInterval ?? 0;
     this.bossChargeTime = 0;
     this.shieldActive = false;
+    this.burn = null;
   }
 
   update(dt, bounds = { width: 480 }) {
@@ -70,6 +72,22 @@ export class Enemy {
   takeDamage(amount) {
     this.hp -= this.shieldActive ? amount * 0.35 : amount;
     return this.hp <= 0;
+  }
+
+  applyBurn(effect = {}) {
+    this.burn = { duration: effect.duration ?? 3, remaining: effect.duration ?? 3, tickInterval: effect.tickInterval ?? (1 / 3), tickTimer: effect.tickInterval ?? (1 / 3), damage: effect.damage ?? 1, ticksRemaining: effect.ticks ?? 9 };
+  }
+
+  updateBurn(dt) {
+    if (!this.burn || this.hp <= 0) return [];
+    this.burn.remaining -= dt; this.burn.tickTimer -= dt;
+    const events = [];
+    while (this.burn.tickTimer <= 0 && this.burn.ticksRemaining > 0 && this.hp > 0) {
+      events.push({ enemy: this, amount: this.burn.damage, element: "fire" });
+      this.burn.ticksRemaining -= 1; this.burn.tickTimer += this.burn.tickInterval;
+    }
+    if (this.burn.remaining <= 0 || this.burn.ticksRemaining <= 0) this.burn = null;
+    return events;
   }
 
   silence(seconds) { this.silenceTimer = Math.max(this.silenceTimer, seconds); }
@@ -129,6 +147,11 @@ export class Enemy {
       ctx.globalAlpha = 0.98; ctx.strokeStyle = "#9ef8ff"; ctx.shadowBlur = 14; ctx.shadowColor = "#55eaff"; ctx.lineWidth = 2;
       ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.arc(0, 0, this.radius + 8 + Math.sin(this.age * 8) * 2, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]);
       ctx.fillStyle = "#d7ffff"; ctx.font = "700 9px system-ui"; ctx.textAlign = "center"; ctx.fillText("SILENCE", 0, -this.radius - 10);
+    }
+    if (this.burn) {
+      ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.9; ctx.shadowColor = "#ff2f25"; ctx.shadowBlur = 16; ctx.strokeStyle = "#ff4632"; ctx.fillStyle = "#ffd05a"; ctx.lineWidth = 2;
+      for (const side of [-1, 1]) { const x = side * (this.radius * .56); ctx.beginPath(); ctx.moveTo(x, this.radius * .55); ctx.quadraticCurveTo(x + side * 5, this.radius * .05, x, -this.radius * .9); ctx.quadraticCurveTo(x - side * 5, -this.radius * .35, x, -this.radius * 1.35); ctx.stroke(); ctx.beginPath(); ctx.arc(x, -this.radius * .9, 2.5 + Math.sin(this.age * 12 + side) * 1.2, 0, Math.PI * 2); ctx.fill(); }
+      ctx.globalCompositeOperation = "source-over";
     }
     if (this.summoned) {
       ctx.globalAlpha = 0.72; ctx.strokeStyle = "#ff5c92"; ctx.shadowColor = "#ff3c70"; ctx.shadowBlur = 12; ctx.lineWidth = 1.2;
