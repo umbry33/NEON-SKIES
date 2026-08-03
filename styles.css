@@ -209,9 +209,9 @@ body { background: #050a14; }
 .mode-card small { margin-top: 8px; color: #8bc8d5; font-size: 10px; letter-spacing: .14em; }
 .tutorial-mode-card { border-color: rgba(194, 146, 255, .48); background: linear-gradient(135deg, rgba(66, 42, 112, .82), rgba(23, 20, 54, .94)); }
 .dodge-mode-card { border-color: rgba(255, 190, 91, .58); background: linear-gradient(135deg, rgba(92, 57, 29, .88), rgba(31, 21, 42, .96)); }
-.dodge-mode-card strong { color: #ffe0a1; }
+.dodge-mode-card strong { color: #fff; }
 .dodge-difficulty-card { border-color: rgba(255, 190, 91, .48); background: linear-gradient(135deg, rgba(73, 47, 29, .88), rgba(21, 20, 43, .96)); }
-.dodge-difficulty-card strong { color: #ffe0a1; }
+.dodge-difficulty-card strong { color: #fff; }
 .dodge-difficulty-card span { display: block; margin-top: 8px; color: #c9b8a0; font-size: .7rem; line-height: 1.5; }
 .tutorial-screen { display: grid; place-items: center; background: radial-gradient(circle at 50% 34%, rgba(75, 48, 128, .36), transparent 38%), linear-gradient(150deg, #0a1025, #030711 72%); }
 .tutorial-shell { position: relative; width: min(430px, calc(100% - 30px)); padding: 38px 24px 24px; border: 1px solid rgba(194, 146, 255, .34); border-radius: 24px; text-align: center; background: rgba(8, 13, 34, .88); box-shadow: 0 0 70px rgba(133, 85, 220, .18), inset 0 0 28px rgba(194, 146, 255, .04); }
@@ -282,6 +282,7 @@ body { background: #050a14; }
 .settings-card > p { margin: 15px 0 0; color: var(--muted); font-size: .7rem; line-height: 1.6; }
 .settings-toggle { display: flex; align-items: center; gap: 10px; padding: 11px 10px; border: 1px solid rgba(139,202,255,.18); border-radius: 9px; color: var(--text); background: rgba(10,28,51,.72); font-size: .78rem; cursor: pointer; }
 .settings-toggle + .settings-toggle { margin-top: 9px; }
+.settings-range + .settings-toggle { margin-top: 12px; }
 .settings-toggle input { width: 17px; height: 17px; accent-color: var(--cyan); }
 .changelog-modal { position: absolute; inset: 0; z-index: 45; display: grid; grid-template-rows: minmax(0, 1fr); place-items: center; overflow: hidden; padding: 16px; background: rgba(2,7,16,.82); backdrop-filter: blur(6px); }
 .changelog-modal.is-hidden { display: none; }
@@ -1667,8 +1668,8 @@ body { background: #02050c; }
 .settings-range input[type="range"]::-webkit-slider-runnable-track {
   height: 4px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #62e8ff, #8d82ff 52%, #ff83d3);
-  box-shadow: 0 0 8px rgba(104, 221, 255, .28);
+  background: rgba(135, 161, 220, .24);
+  box-shadow: 0 0 5px rgba(135, 161, 220, .16);
 }
 
 .settings-range input[type="range"]::-webkit-slider-thumb {
@@ -1685,7 +1686,13 @@ body { background: #02050c; }
 .settings-range input[type="range"]::-moz-range-track {
   height: 4px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #62e8ff, #8d82ff 52%, #ff83d3);
+  background: rgba(135, 161, 220, .18);
+}
+
+.settings-range input[type="range"]::-moz-range-progress {
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(135, 161, 220, .24);
 }
 
 .settings-range input[type="range"]::-moz-range-thumb {
@@ -1759,8 +1766,12 @@ body { background: #02050c; }
 
 @media (max-width: 520px) {
   #builder-screen .synergy-config-button {
-    right: calc(100% + 10px);
-    left: auto;
+    /* On narrow screens there is no safe outside rail: keep both cards
+       inside the board frame so the full button remains reachable. */
+    right: auto !important;
+    left: 0 !important;
+    width: clamp(72px, 24vw, 96px) !important;
+    min-width: 0 !important;
   }
 }
 
@@ -1802,7 +1813,8 @@ body { background: #02050c; }
 .beyond-map::-webkit-scrollbar-track { border-radius: 999px; background: rgba(8, 16, 48, .3); }
 .beyond-map::-webkit-scrollbar-thumb { min-height: 60px; border: 2px solid transparent; border-radius: 999px; background: rgba(255, 139, 214, .9); background-clip: padding-box; box-shadow: 0 0 12px rgba(255, 139, 214, .52); }
 .beyond-mode-card > strong {
-  background: linear-gradient(90deg, #5eeaff 0%, #747eff 48%, #d36bff 100%);
+  background: linear-gradient(90deg, #00f0ff 0%, #9d00ff 100%) !important;
+  background-image: linear-gradient(90deg, #00f0ff 0%, #9d00ff 100%) !important;
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent !important;
@@ -1937,3 +1949,14 @@ body { background: #02050c; }
 .battle-score-objective > strong i { color: rgba(178, 210, 255, .6); font-style: normal; }
 .battle-score-objective > strong b:last-child { color: #8deaff; }
 .battle-canvas-wrap > canvas { flex: 1 1 auto; width: auto; height: calc(100% - 36px) !important; max-height: calc(100% - 36px); min-height: 0; }
+
+/* Keep Dodge mode in the same cool-blue card family as the other modes. */
+.dodge-mode-card,
+.dodge-mode-card:hover,
+.dodge-mode-card:focus-visible {
+  border-color: rgba(157, 231, 255, .56) !important;
+}
+.dodge-mode-card:hover,
+.dodge-mode-card:focus-visible {
+  border-color: rgba(196, 247, 255, .86) !important;
+}

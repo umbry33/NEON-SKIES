@@ -57,6 +57,7 @@ export class Game {
     this.sonicWaves = [];
     this.damageNumbers = [];
     this.damageNumbersEnabled = true;
+    this.countdownEnabled = true;
     this.vibrationEnabled = true;
     this.shakeTime = 0;
     this.shakeDuration = 0;
@@ -66,7 +67,7 @@ export class Game {
       size: 0.6 + Math.random() * 1.8, speed: GAME_CONFIG.stars.speedMin + Math.random() * (GAME_CONFIG.stars.speedMax - GAME_CONFIG.stars.speedMin),
       alpha: 0.25 + Math.random() * 0.65,
     }));
-    this.ui.bind({ onStart: (spec) => this.start(spec), onMenu: () => this.toMenu(), onPause: () => this.pause(), onResume: () => this.resume(), onSkill: (index) => this.activateSkill(index), onDamageNumbersChanged: (enabled) => { this.damageNumbersEnabled = enabled; if (!enabled) this.damageNumbers = []; }, onVibrationChanged: (enabled) => { this.vibrationEnabled = enabled; }, onMusicVolumeChanged: (value) => this.sound.setMusicVolume(value), onSoundVolumeChanged: (value) => this.sound.setSoundVolume(value), onNextLevel: () => this.start({ ...this.ui.getSelectedIds(), mode: "levels", level: Math.min(50, this.levelNumber + 1) }), onBeyondStageContinue: () => this.continueBeyondStage(), onLevelSelect: () => this.toLevelSelect(), onModeSelect: () => this.toModeSelect(), onTutorialBattleExit: () => this.exitTutorialBattle(), onEnvironmentPause: () => this.pauseForEnvironment(), onEnvironmentResume: () => this.resumeFromEnvironment() });
+    this.ui.bind({ onStart: (spec) => this.start(spec), onMenu: () => this.toMenu(), onPause: () => this.pause(), onResume: () => this.resume(), onSkill: (index) => this.activateSkill(index), onDamageNumbersChanged: (enabled) => { this.damageNumbersEnabled = enabled; if (!enabled) this.damageNumbers = []; }, onVibrationChanged: (enabled) => { this.vibrationEnabled = enabled; }, onCountdownChanged: (enabled) => { this.countdownEnabled = enabled; }, onMusicVolumeChanged: (value) => this.sound.setMusicVolume(value), onSoundVolumeChanged: (value) => this.sound.setSoundVolume(value), onNextLevel: () => this.start({ ...this.ui.getSelectedIds(), mode: "levels", level: Math.min(50, this.levelNumber + 1) }), onBeyondStageContinue: () => this.continueBeyondStage(), onLevelSelect: () => this.toLevelSelect(), onModeSelect: () => this.toModeSelect(), onTutorialBattleExit: () => this.exitTutorialBattle(), onEnvironmentPause: () => this.pauseForEnvironment(), onEnvironmentResume: () => this.resumeFromEnvironment() });
     this.bindBeyondLightConeEvents();
     this.ui.onBeyondPauseReturn = () => {
       if (this.mode !== "beyond") return false;
@@ -366,10 +367,10 @@ export class Game {
     this.dodgePatternIndex = 0;
     this.dodgePatternHistory = -1;
     this.dodgeBulletsDodged = 0;
-    this.countdownRemaining = 3;
+    this.countdownRemaining = this.countdownEnabled ? 3 : 0;
     this.environmentTimer = this.levelConfig?.environment?.firstDelay ?? Infinity;
     this.environmentPool = this.levelConfig?.environmentPool ?? [];
-    this.state = "countdown";
+    this.state = this.countdownEnabled ? "countdown" : "playing";
     this.beyondPauseSaveButton?.classList.toggle("is-hidden", this.mode !== "beyond");
     if (this.beyondPauseSaveButton) this.beyondPauseSaveButton.hidden = this.mode !== "beyond";
     this.ui.showPlaying({ hp: this.player.hp, maxHp: this.player.stats.maxHp, score: 0, elapsed: 0, attackSpeed: getPlayerAttackSpeed(this.player), skills: this.skillSystem.getState(), level: this.levelConfig?.number ?? null, goal: this.levelConfig?.targetScore ?? null, boss: false, tutorial: this.tutorialMode, modeLabel: this.tutorialMode ? "教程 / 800分" : this.mode === "beyond" ? "光锥之外" : this.dodgeDifficulty ? `躲避 · ${this.dodgeDifficulty.name}` : null });

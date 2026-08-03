@@ -275,6 +275,18 @@ export function installBeyondLightConeUI(ui) {
     renderDifficultyPicker();
   }));
   renderDifficultyPicker();
+  const leaveDifficultySelect = (event) => {
+    if (startPanel.classList.contains("is-hidden")) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    screen.classList.add("is-hidden");
+    ui.showModeSelect({ direction: "back" });
+    // 同一次触摸产生的后续事件可能继续触发旧的页面切换；下一帧再确认一次目标。
+    requestAnimationFrame(() => ui.showModeSelect({ direction: "back" }));
+  };
+  const backButton = $("#beyond-back-button");
+  // 难度选择尚未创建航程，直接返回模式选择，避免触发航程放弃确认。
+  ["pointerup", "touchend", "click"].forEach((eventName) => backButton?.addEventListener(eventName, leaveDifficultySelect, true));
   tap(modeButton, () => emit(ui, "beyond:open")); tap($("#beyond-new-run-button"), () => emit(ui, "beyond:new", { difficulty: ui.beyondSelectedDifficulty })); tap($("#beyond-load-button"), () => { setArchiveAction("import"); $("#beyond-save-input").value = ""; $("#beyond-save-message").textContent = "请粘贴航程存档码"; setAnimatedVisibility(saveModal, true); }); tap($("#beyond-save-button"), () => emit(ui, "beyond:save")); tap($("#beyond-build-button"), () => emit(ui, "beyond:build")); tap($("#beyond-back-button"), () => setAnimatedVisibility($("#beyond-exit-one"), true)); tap($("#beyond-node-close"), () => setAnimatedVisibility(nodePanel, false)); tap($("#beyond-node-action"), () => ui.beyondPendingNode && emit(ui, "beyond:node", { id: ui.beyondPendingNode.id })); tap($("#beyond-save-close"), () => setAnimatedVisibility(saveModal, false)); tap(saveCopy, async () => { try { await navigator.clipboard.writeText($("#beyond-save-input").value); $("#beyond-save-message").textContent = "航程存档码已复制"; } catch { $("#beyond-save-input").select(); document.execCommand?.("copy"); } }); tap(saveImport, () => emit(ui, "beyond:load", { code: $("#beyond-save-input").value })); tap($("#beyond-exit-one-cancel"), () => setAnimatedVisibility($("#beyond-exit-one"), false)); tap($("#beyond-exit-one-next"), () => { setAnimatedVisibility($("#beyond-exit-one"), false); setAnimatedVisibility($("#beyond-exit-two"), true); }); tap($("#beyond-exit-two-cancel"), () => setAnimatedVisibility($("#beyond-exit-two"), false)); tap($("#beyond-exit-confirm"), () => emit(ui, "beyond:exit"));
   tap(shopPanel.querySelector("[data-shop-close]"), () => setAnimatedVisibility(shopPanel, false, () => emit(ui, "beyond:shop-close")));
 

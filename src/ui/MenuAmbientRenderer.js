@@ -60,23 +60,6 @@ export class MenuAmbientRenderer {
     this.frame = null;
   }
 
-  drawPalm(ctx, x, ground, scale, flip = 1) {
-    ctx.save();
-    ctx.translate(x, ground);
-    ctx.scale(scale * flip, scale);
-    ctx.strokeStyle = "rgba(18, 8, 52, .58)";
-    ctx.fillStyle = "rgba(22, 7, 61, .44)";
-    ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(-5, -31, 4, -69, -2, -104); ctx.stroke();
-    ctx.translate(-2, -104);
-    for (let branch = 0; branch < 8; branch += 1) {
-      ctx.save(); ctx.rotate(-1.72 + branch * .47);
-      ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(18, -15, 39, -6); ctx.quadraticCurveTo(22, 2, 0, 0); ctx.fill();
-      ctx.restore();
-    }
-    ctx.restore();
-  }
-
   drawLoadout(ctx, x, y, width, height, time) {
     ctx.save(); ctx.translate(x, y + Math.sin(time * .7) * .7); ctx.rotate(Math.sin(time * .55) * .008);
     ctx.scale(PLAYER_DRAW_SCALE, PLAYER_DRAW_SCALE);
@@ -147,9 +130,7 @@ export class MenuAmbientRenderer {
     ctx.restore();
 
     // 两侧的低对比度棕榈剪影，给标题区域留出清晰的阅读空间。
-    this.drawPalm(ctx, w * .08, h * .78, Math.min(1, w / 480) * .5, 1);
-    this.drawPalm(ctx, w * .92, h * .8, Math.min(1, w / 480) * .44, -1);
-
+    ctx.save();
     ctx.save();
     ctx.strokeStyle = "rgba(186, 76, 255, 0.28)";
     ctx.lineWidth = 1;

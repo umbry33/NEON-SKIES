@@ -47,24 +47,6 @@ export class AppAmbientRenderer {
     this.frame = null;
   }
 
-  drawPalm(ctx, x, groundY, scale, flip = 1) {
-    ctx.save();
-    ctx.translate(x, groundY);
-    ctx.scale(scale * flip, scale);
-    ctx.strokeStyle = "rgba(37, 8, 61, .66)";
-    ctx.fillStyle = "rgba(40, 6, 66, .48)";
-    ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.bezierCurveTo(-6, -40, 5, -78, -3, -116); ctx.stroke();
-    ctx.translate(-3, -116);
-    for (let branch = 0; branch < 8; branch += 1) {
-      const angle = -1.7 + branch * .48;
-      ctx.save(); ctx.rotate(angle);
-      ctx.beginPath(); ctx.moveTo(0, 0); ctx.quadraticCurveTo(21, -17, 44, -7); ctx.quadraticCurveTo(24, 2, 0, 0); ctx.fill();
-      ctx.restore();
-    }
-    ctx.restore();
-  }
-
   render(now) {
     if (!this.running || !this.ctx) return;
     const { ctx, width: w, height: h } = this;
@@ -113,9 +95,6 @@ export class AppAmbientRenderer {
       if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     }
     ctx.stroke(); ctx.restore();
-
-    this.drawPalm(ctx, w * .075, horizon + 42, Math.min(1, w / 480) * .72, 1);
-    this.drawPalm(ctx, w * .925, horizon + 55, Math.min(1, w / 480) * .64, -1);
 
     ctx.save();
     for (const particle of this.particles) {

@@ -22,7 +22,8 @@ export const MUSIC_CONFIG = {
   scheduleAhead: 0.8,
   schedulerInterval: 90,
   // Base output level at 100%. The settings slider multiplies this value.
-  volume: 0.46,
+  // 100% now equals the previous 200% output; the 0%～300% slider ratio is unchanged.
+  volume: 0.92,
   pad: { volume: 0.1, durationBars: 1.16, filter: 1250 },
   bass: { volume: 0.095, duration: 0.62, filter: 680 },
   keys: { volume: 0.06, duration: 0.44, filter: 2800 },
