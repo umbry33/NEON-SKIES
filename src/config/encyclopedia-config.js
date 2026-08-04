@@ -36,9 +36,9 @@ export function getEncyclopediaSections() {
     },
     {
       title: "难度选择",
-      tag: "LEVEL 1–10",
-      description: "开始前可以选择 10 档难度。难度越高，敌人的生命、攻击压力和生成节奏越强，同时会影响航程中的奖励质量。Lv.1 为非常简单，Lv.10 为高于现有关卡的地狱难度。",
-      meta: `Lv.1–Lv.10 · ${BEYOND_LIGHT_CONE_CONFIG.difficulties[0].name} / ${BEYOND_LIGHT_CONE_CONFIG.difficulties.at(-1).name}`,
+      tag: "LEVEL 1–4",
+      description: "开始前可以选择 4 档难度。难度越高，敌人的生命、攻击压力和生成节奏越强，同时会影响航程中的奖励质量。Lv.1 为休闲难度，Lv.4 为高于现有关卡的极限难度。",
+      meta: `Lv.1–Lv.4 · ${BEYOND_LIGHT_CONE_CONFIG.difficulties[0].name} / ${BEYOND_LIGHT_CONE_CONFIG.difficulties.at(-1).name}`,
     },
     {
       title: "路线地图",

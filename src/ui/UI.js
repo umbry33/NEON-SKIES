@@ -202,7 +202,7 @@ export class UI {
     this.moduleGlowToggle.checked = false; setModuleGlowEnabled(false); this.loadout = createLoadout(); this.history = []; this.dragState = null; this.suppressClick = false; this.instanceCounter = 1; this.selectedMode = "endless"; this.selectedLevel = 1; this.quickAssemblyEnabled = false; this.quickAssemblyModuleId = null; this.tutorialActionsDone = new Set(); this.tutorialContext = null; this.tutorialBuilderInitialSignature = "";
     this.boardView = { scale: 1, offsetX: 0, offsetY: 0 }; this.boardPointers = new Map(); this.boardGesture = null; this.quickAssemblyPointer = null;
     this.selectedDodgeDifficulty = "easy";
-    this.beyondRun = null; this.beyondPendingNode = null; this.beyondBuilderMode = false;
+    this.beyondRun = null; this.beyondPendingNode = null; this.beyondBuilderMode = false; this.beyondReturnLoadout = null;
     installBeyondLightConeUI(this);
     this.appAmbient = new AppAmbientRenderer(document.querySelector("#app-ambient-canvas"), document.querySelector(".app-shell")); this.appAmbient.start();
     this.menuAmbient = new MainMenuFlightRenderer(document.querySelector("#menu-ambient-canvas"), this.menuScreen, document.querySelector(".menu-aircraft"), () => this.loadout);
@@ -289,7 +289,8 @@ export class UI {
         this.pushHistory();
         this.loadout = pruneDisconnected(candidate).loadout;
         this.renderAssembly();
-        this.setStatus("\u6a21\u5757\u5df2\u5220\u9664");
+        if (this.beyondBuilderMode) this.renderModuleLibrary();
+        this.setStatus(this.beyondBuilderMode ? "模块已返回本局模块仓库" : "\u6a21\u5757\u5df2\u5220\u9664");
       }
       this.deleteZone.classList.remove("is-active");
     }, true);
@@ -329,32 +330,31 @@ export class UI {
     this.synergyConfigList.innerHTML = states.map((synergy) => {
       const active = synergy.activeSelections.length > 0;
       const requirements = synergy.requirements.map((moduleId) => getModuleById(moduleId)?.name ?? moduleId).join(" + ");
-      const status = active ? "已装配" : synergy.availableSelection ? "可装配" : "需求未满足或模块已被占用";
-      const removeActions = synergy.activeSelections.map((selection) => `<button class="synergy-link-button" type="button" data-synergy-remove="${synergy.id}" data-synergy-modules="${selection.moduleInstanceIds.join(",")}">卸下</button>`).join("");
-      const equipAction = synergy.availableSelection ? `<button class="synergy-link-button is-ready" type="button" data-synergy-equip="${synergy.id}" data-synergy-modules="${synergy.availableSelection.moduleInstanceIds.join(",")}">装配连携</button>` : "";
+      const status = active ? "已装配（全部符合条件的模块生效）" : synergy.availableSelection ? "可装配" : "需求未满足";
+      const removeActions = active ? `<button class="synergy-link-button" type="button" data-synergy-remove="${synergy.id}">卸下</button>` : "";
+      const equipAction = synergy.availableSelection ? `<button class="synergy-link-button is-ready" type="button" data-synergy-equip="${synergy.id}">装配连携</button>` : "";
       const typeLabel = synergy.type === "automatic" ? "自动连携" : synergy.type === "passive" ? "被动连携" : "主动连携";
       const stateClass = active ? "is-active" : synergy.availableSelection ? "is-available" : "is-unavailable";
       return `<article class="synergy-link-card ${stateClass}"><div><p class="synergy-link-type">${typeLabel}</p><h4>${escapeHtml(synergy.name)}</h4></div><span class="synergy-link-status">${status}</span><p>${escapeHtml(synergy.description)}</p><small>需求：${escapeHtml(requirements)}</small>${removeActions}${equipAction}</article>`;
     }).join("") || "<p class=\"detail-description\">暂无可用连携能力。</p>";
-    this.synergyConfigList.querySelectorAll("[data-synergy-equip]").forEach((button) => bindTap(button, () => this.equipSynergy(button.dataset.synergyEquip, String(button.dataset.synergyModules ?? "").split(",").filter(Boolean))));
-    this.synergyConfigList.querySelectorAll("[data-synergy-remove]").forEach((button) => bindTap(button, () => this.removeSynergy(button.dataset.synergyRemove, String(button.dataset.synergyModules ?? "").split(",").filter(Boolean))));
+    this.synergyConfigList.querySelectorAll("[data-synergy-equip]").forEach((button) => bindTap(button, () => this.equipSynergy(button.dataset.synergyEquip)));
+    this.synergyConfigList.querySelectorAll("[data-synergy-remove]").forEach((button) => bindTap(button, () => this.removeSynergy(button.dataset.synergyRemove)));
   }
-  equipSynergy(id, moduleInstanceIds) {
-    const candidate = { ...this.loadout, synergies: [...this.loadout.synergies, { id, moduleInstanceIds }] };
+  equipSynergy(id) {
+    const candidate = { ...this.loadout, synergies: [...this.loadout.synergies, { id }] };
     const synergies = normalizeSynergies(candidate);
     if (synergies.length === this.loadout.synergies.length) { this.setStatus("当前模块不能装配这个连携能力"); return; }
     this.pushHistory(); this.loadout = { ...candidate, synergies }; this.renderAssembly(); this.renderSynergyConfig(); this.setStatus("连携能力已装配");
   }
-  removeSynergy(id, moduleInstanceIds) {
-    const signature = moduleInstanceIds.join(",");
-    this.pushHistory(); this.loadout = { ...this.loadout, synergies: this.loadout.synergies.filter((synergy) => synergy.id !== id || synergy.moduleInstanceIds.join(",") !== signature) };
+  removeSynergy(id) {
+    this.pushHistory(); this.loadout = { ...this.loadout, synergies: this.loadout.synergies.filter((synergy) => synergy.id !== id) };
     this.renderAssembly(); this.renderSynergyConfig(); this.setStatus("连携能力已卸下");
   }
   showAttackSpeedRules() { this.attackSpeedModal?.classList.remove("is-hidden"); }
   hideAttackSpeedRules() { this.attackSpeedModal?.classList.add("is-hidden"); }
   async copyLoadoutCode() { try { const code = encodeLoadoutCode(this.loadout); this.loadoutCodeInput.value = code; let copied = false; if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(code); copied = true; } if (!copied) { this.loadoutCodeInput.focus(); this.loadoutCodeInput.select(); try { copied = document.execCommand("copy"); } catch {} } this.loadoutCodeMessage.textContent = copied ? "配置码已复制" : "配置码已生成，可长按或全选复制"; } catch (error) { this.loadoutCodeMessage.textContent = error instanceof Error ? error.message : "无法复制配置码"; } }
   importLoadoutCode() { try { const { loadout, moduleCount } = decodeLoadoutCode(this.loadoutCodeInput.value); this.pushHistory(); this.loadout = loadout; this.instanceCounter = Math.max(this.instanceCounter, moduleCount + 1); this.renderAssembly(); this.hideLoadoutCode(); this.setStatus(`已导入 ${moduleCount} 个模块`); } catch (error) { this.loadoutCodeMessage.textContent = error instanceof Error ? error.message : "配置码无效"; } }
-   getSelectedIds() { return { modules: this.loadout.modules.map(({ instanceId, moduleId, x, y, rotation }) => ({ instanceId, moduleId, x, y, rotation })), synergies: this.loadout.synergies.map(({ id, moduleInstanceIds }) => ({ id, moduleInstanceIds: [...moduleInstanceIds] })), mode: this.selectedMode, level: this.selectedLevel, dodgeDifficulty: this.selectedDodgeDifficulty }; }
+   getSelectedIds() { return { modules: this.loadout.modules.map(({ instanceId, moduleId, x, y, rotation }) => ({ instanceId, moduleId, x, y, rotation })), synergies: this.loadout.synergies.map(({ id }) => ({ id })), mode: this.selectedMode, level: this.selectedLevel, dodgeDifficulty: this.selectedDodgeDifficulty }; }
   getLoadoutSignature() { return this.loadout.modules.map(({ instanceId, moduleId, x, y, rotation }) => `${instanceId}:${moduleId}:${x}:${y}:${rotation}`).sort().join("|"); }
   setStatus(message) { this.loadoutStatus.textContent = message; }
   setQuickAssembly(enabled) { this.quickAssemblyEnabled = Boolean(enabled); if (!this.quickAssemblyEnabled) { this.quickAssemblyModuleId = null; this.hideQuickAssemblyPreview(); } this.quickAssemblyToggle.classList.toggle("is-active", this.quickAssemblyEnabled); this.quickAssemblyToggle.setAttribute("aria-pressed", String(this.quickAssemblyEnabled)); this.quickAssemblyToggle.querySelector("small").textContent = this.quickAssemblyEnabled ? "ON" : "OFF"; this.moduleLibrary.querySelectorAll("[data-drag-module]").forEach((node) => node.classList.toggle("is-quick-selected", node.dataset.dragModule === this.quickAssemblyModuleId)); this.setStatus(this.quickAssemblyEnabled ? "快捷装配已开启：选择模块后点击核心网络" : "快捷装配已关闭"); }
@@ -406,7 +406,7 @@ export class UI {
   }
   toggleMoreMenu() { const open = this.moreMenuPanel?.classList.toggle("is-hidden") === false; this.moreMenuButton?.setAttribute("aria-expanded", String(open)); }
   hideMoreMenu() { this.moreMenuPanel?.classList.add("is-hidden"); this.moreMenuButton?.setAttribute("aria-expanded", "false"); }
-  showMenu({ direction = "back" } = {}) { this.transitionToScreen(this.menuScreen, { direction }); this.menuAmbient?.start(); this.gameOverScreen.classList.add("is-hidden"); this.hidePause(); this.hideModuleDetail(); this.hideLoadoutCode(); this.hideAttackSpeedRules(); this.hideChangelog(); this.settingsModal.classList.add("is-hidden"); this.hideMoreMenu(); }
+  showMenu({ direction = "back" } = {}) { if (this.beyondReturnLoadout) { this.loadout = this.beyondReturnLoadout; this.beyondReturnLoadout = null; this.beyondBuilderMode = false; this.renderModuleLibrary(); this.renderAssembly(); } this.transitionToScreen(this.menuScreen, { direction }); this.menuAmbient?.start(); this.gameOverScreen.classList.add("is-hidden"); this.hidePause(); this.hideModuleDetail(); this.hideLoadoutCode(); this.hideAttackSpeedRules(); this.hideChangelog(); this.settingsModal.classList.add("is-hidden"); this.hideMoreMenu(); }
   showModeSelect({ direction = "forward" } = {}) { this.transitionToScreen(this.modeScreen, { direction }); }
   showDodgeDifficulty({ direction = "forward" } = {}) { this.transitionToScreen(this.dodgeDifficultyScreen, { direction }); }
   showTutorial(step = 0, reset = true, { direction = "forward" } = {}) { this.transitionToScreen(this.tutorialScreen, { direction }); if (reset) this.tutorialActionsDone.clear(); this.tutorialStep = step; this.renderInteractiveTutorial(); }

@@ -3,6 +3,7 @@ import { MODULE_CONFIG, createLoadout, getModuleById } from "../config/module-co
 import { BEYOND_EVENTS, getBeyondEventById } from "../config/beyond-events-config.js";
 
 const allModules = [...MODULE_CONFIG.weapons, ...MODULE_CONFIG.specials].filter((module) => module.id !== "special-energy-aggregator" || true);
+const FIRST_CHAPTER_OPENING_EVENT_IDS = ["orphan-wingman", "zero-maintenance", "gravity-post"];
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 const CODE_KEY = [39, 113, 201, 86, 157, 18, 245, 92, 67, 180, 23, 141];
@@ -41,8 +42,7 @@ export class BeyondLightConeSystem {
     const selectedDifficulty = getBeyondDifficulty(difficulty);
     const chapter = 1;
     const chapterSeed = `${seed}:chapter:${chapter}`;
-    const map = this.generateMap(chapterSeed);
-    const startModule = "weapon-psionic";
+    const map = this.generateMap(chapterSeed, chapter);
     return {
       version: 3,
       seed,
@@ -54,10 +54,10 @@ export class BeyondLightConeSystem {
       currentNodeId: null,
       visited: [],
       gold: BEYOND_LIGHT_CONE_CONFIG.startingGold,
-      hp: BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp,
-      inventory: { [startModule]: 1 },
-      loadout: createLoadout({ modules: [{ instanceId: "beyond-psionic-1", moduleId: startModule, x: 7, y: 6, rotation: 0 }] }),
-      stats: { nodes: { combat: 0, elite: 0, boss: 0, shop: 0, rest: 0, event: 0 }, battles: 0, modulesGained: 0, goldGained: 0, goldSpent: 0, healing: 0 },
+      hp: Math.round(BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp),
+      inventory: {},
+      loadout: createLoadout(),
+      stats: { nodes: { combat: 0, elite: 0, boss: 0, shop: 0, rest: 0, event: 0 }, routeLength: 0, battles: 0, totalElapsed: 0, modulesGained: 0, goldGained: 0, goldSpent: 0, healing: 0 },
       eventState: { combatStreak: 0, peacefulStreak: 0 },
       eventHistory: [],
       activeEvent: null,
@@ -66,17 +66,19 @@ export class BeyondLightConeSystem {
     };
   }
 
-  generateMap(seed) {
+  generateMap(seed, chapter = 1) {
     const rng = rngFrom(seed); const { layers, lanes, eliteRange } = BEYOND_LIGHT_CONE_CONFIG;
+    const openingEvents = chapter === 1;
     const eliteTarget = eliteRange[0] + Math.floor(rng() * (eliteRange[1] - eliteRange[0] + 1));
     const eliteState = { target: eliteTarget, current: 0 };
     const result = []; let previousTypes = [];
     for (let layer = 0; layer < layers; layer += 1) {
-      const count = layer === 0 || layer >= layers - 2 ? 1 : 2 + Math.floor(rng() * 2);
+      const count = openingEvents && layer === 0 ? 3 : layer === 0 || layer >= layers - 2 ? 1 : 2 + Math.floor(rng() * 2);
       const usedLanes = shuffled(rng, Array.from({ length: lanes }, (_, i) => i)).slice(0, count).sort((a, b) => a - b);
-      const types = usedLanes.map((lane) => pickNodeType({ layer, layers, rng, elites: eliteState, previousTypes })).map((type, index) => ({
+      const types = usedLanes.map((lane, index) => openingEvents && layer === 0 ? "event" : pickNodeType({ layer, layers, rng, elites: eliteState, previousTypes })).map((type, index) => ({
         id: `${layer}-${usedLanes[index]}-${Math.floor(rng() * 9999).toString(36)}`,
         layer, lane: usedLanes[index], type, edges: [], cleared: false,
+        ...(openingEvents && layer === 0 ? { eventId: FIRST_CHAPTER_OPENING_EVENT_IDS[index] } : {}),
       }));
       if (layer === layers - 2) types[0].type = "rest";
       if (layer === layers - 1) types[0].type = "boss";
@@ -119,7 +121,7 @@ export class BeyondLightConeSystem {
     if (!run || (run.chapter ?? 1) >= (run.totalChapters ?? 1)) return false;
     run.chapter = (run.chapter ?? 1) + 1;
     run.chapterSeed = `${run.seed}:chapter:${run.chapter}`;
-    run.map = this.generateMap(run.chapterSeed);
+    run.map = this.generateMap(run.chapterSeed, run.chapter);
     run.currentNodeId = null;
     run.visited = [];
     run.activeEvent = null;
@@ -164,7 +166,7 @@ export class BeyondLightConeSystem {
     const history = new Set(run.eventHistory ?? []);
     const candidates = BEYOND_EVENTS.filter((event) => !history.has(event.id));
     const pool = candidates.length ? candidates : BEYOND_EVENTS;
-    const event = retained ?? choose(rngFrom(`${run.seed}:event:${run.visited.length}:${node.id}`), pool);
+    const event = retained ?? getBeyondEventById(node.eventId) ?? choose(rngFrom(`${run.seed}:event:${run.visited.length}:${node.id}`), pool);
     run.activeEvent = { nodeId: node.id, eventId: event.id };
     return { nodeId: node.id, event, choices: event.choices.map((item) => ({ ...item, ...this.getEventChoiceState(run, item) })) };
   }
@@ -192,7 +194,7 @@ export class BeyondLightConeSystem {
       } else if (effect.type === "hp") {
         const amount = Number(effect.amount ?? 0);
         const before = run.hp;
-        run.hp = Math.max(1, Math.min(BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp, run.hp + amount));
+        run.hp = Math.round(Math.max(1, Math.min(BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp, run.hp + amount)));
         const change = run.hp - before;
         if (change > 0) { result.healAmount += change; run.stats.healing = (run.stats.healing ?? 0) + change; }
         if (change < 0) result.damageAmount += Math.abs(change);
@@ -255,14 +257,14 @@ export class BeyondLightConeSystem {
   }
   resolvePeacefulNode(run, node) {
     const result = { node, rewardIds: [], message: "" };
-    if (node.type === "rest") { run.hp = Math.min(BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp, run.hp + 34); result.message = "机体已修复 34 点生命"; }
+    if (node.type === "rest") { run.hp = Math.round(Math.min(BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp, run.hp + 34)); result.message = "机体已修复 34 点生命"; }
     else if (node.type === "shop") { result.message = "商店已开启：消耗金币可购买模块"; }
     else if (node.type === "event") {
       const forceCombat = run.eventState.peacefulStreak >= 2;
       const rng = rngFrom(`${run.seed}:event:${run.visited.length}`);
       const outcome = forceCombat ? "combat" : choose(rng, ["gold", "module", "combat", "heal"]);
       if (outcome === "combat") { run.eventState.combatStreak += 1; run.eventState.peacefulStreak = 0; result.battle = true; result.message = "未知信号演化为战斗"; }
-      else { run.eventState.peacefulStreak += 1; run.eventState.combatStreak = 0; if (outcome === "gold") { run.gold += 32; result.message = "获得 32 金币"; } if (outcome === "module") { result.rewardIds = this.rewardModules(run, 1); result.message = "获得一个模块"; } if (outcome === "heal") { run.hp = Math.min(BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp, run.hp + 18); result.message = "恢复 18 点生命"; } }
+      else { run.eventState.peacefulStreak += 1; run.eventState.combatStreak = 0; if (outcome === "gold") { run.gold += 32; result.message = "获得 32 金币"; } if (outcome === "module") { result.rewardIds = this.rewardModules(run, 1); result.message = "获得一个模块"; } if (outcome === "heal") { run.hp = Math.round(Math.min(BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp, run.hp + 18)); result.message = "恢复 18 点生命"; } }
     }
     return result;
   }
@@ -270,7 +272,7 @@ export class BeyondLightConeSystem {
     const result = { node, rewardIds: [], goldAmount: 0, healAmount: 0, message: "" };
     if (node.type === "rest") {
       const before = run.hp;
-      run.hp = Math.min(BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp, run.hp + 34);
+      run.hp = Math.round(Math.min(BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp, run.hp + 34));
       result.healAmount = run.hp - before;
       result.message = `恢复 ${result.healAmount} 点生命`;
     } else if (node.type === "shop") {
@@ -298,7 +300,7 @@ export class BeyondLightConeSystem {
           result.message = "事件奖励：获得模块";
         } else {
           const before = run.hp;
-          run.hp = Math.min(BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp, run.hp + 18);
+          run.hp = Math.round(Math.min(BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp, run.hp + 18));
           result.healAmount = run.hp - before;
           run.stats ??= {};
           run.stats.healing = (run.stats.healing ?? 0) + result.healAmount;
@@ -311,18 +313,19 @@ export class BeyondLightConeSystem {
 
   getBattleConfig(run, node) {
     const diff = getBeyondDifficulty(run.difficulty); const depth = node.layer; const chapter = Math.max(1, run.chapter ?? 1); const chapterOffset = chapter - 1;
+    const globalDepth = chapterOffset * BEYOND_LIGHT_CONE_CONFIG.layers + depth;
     const elite = node.type === "elite"; const boss = node.type === "boss";
-    const hpProgression = 1 + chapterOffset * (diff.chapterHpStep ?? 0);
-    const damageProgression = 1 + chapterOffset * (diff.chapterDamageStep ?? 0);
-    const spawnProgression = 1 + chapterOffset * (diff.chapterSpawnStep ?? 0);
+    const hpProgression = 1 + globalDepth * (diff.chapterHpStep ?? 0) / BEYOND_LIGHT_CONE_CONFIG.layers;
+    const damageProgression = 1 + globalDepth * (diff.chapterDamageStep ?? 0) / BEYOND_LIGHT_CONE_CONFIG.layers;
+    const spawnProgression = 1 + globalDepth * (diff.chapterSpawnStep ?? 0) / BEYOND_LIGHT_CONE_CONFIG.layers;
     return {
-      nodeType: node.type, level: 5 + depth * 3 + diff.level * 2 + chapterOffset * 4,
-      targetScore: boss ? Math.round((1000 + depth * 140) * (1 + chapterOffset * 0.12)) : Math.round((260 + depth * 95) * (elite ? 1.5 : 1) * (1 + chapterOffset * 0.1)),
+      nodeType: node.type, level: 5 + globalDepth * 3 + diff.level * 2,
+      targetScore: boss ? Math.round(1000 + globalDepth * 140) : Math.round((260 + globalDepth * 95) * (elite ? 1.5 : 1)),
       boss,
-      hpMultiplier: +(diff.hpMultiplier * hpProgression * (1 + depth * .065) * (elite ? 1.28 : 1)).toFixed(2),
+      hpMultiplier: +(diff.hpMultiplier * hpProgression * (1 + globalDepth * .065) * (elite ? 1.28 : 1)).toFixed(2),
       damageMultiplier: +(diff.damageMultiplier * damageProgression).toFixed(2),
-      speedMultiplier: +(1 + (diff.level - 1) * .035 + depth * .018 + chapterOffset * .025).toFixed(2),
-      spawnInterval: Math.max(.42, 1.28 / (diff.spawnMultiplier * spawnProgression) - depth * .025 - (elite ? .1 : 0)),
+      speedMultiplier: +(1 + (diff.level - 1) * .035 + globalDepth * .018).toFixed(2),
+      spawnInterval: Math.max(.42, 1.28 / (diff.spawnMultiplier * spawnProgression) - globalDepth * .025 - (elite ? .1 : 0)),
       minimumSpawnInterval: Math.max(.34, .7 / (diff.spawnMultiplier * spawnProgression)),
       chapter,
       totalChapters: run.totalChapters ?? 1,
@@ -347,7 +350,7 @@ export class BeyondLightConeSystem {
       v: 3, s: run.seed, d: run.difficulty, k: run.chapter ?? 1, u: run.totalChapters ?? getBeyondChapterCount(run.difficulty), m: run.chapterSeed ?? `${run.seed}:chapter:${run.chapter ?? 1}`, c: point(run.currentNodeId), p: run.visited.map(point).filter(Boolean),
       g: Math.round(run.gold), h: Math.round(run.hp), i: Object.entries(run.inventory ?? {}).map(([id, count]) => [moduleCode(id), count]).filter(([code]) => code >= 0),
       b: entries.map((entry) => [moduleCode(entry.moduleId), entry.x, entry.y, entry.rotation ?? 0]),
-      y: (run.loadout?.synergies ?? []).map((synergy) => [synergy.id, synergy.moduleInstanceIds.map((id) => instanceToIndex.get(id)).filter(Number.isInteger)]),
+      y: (run.loadout?.synergies ?? []).map((synergy) => [synergy.id, (synergy.moduleInstanceIds ?? []).map((id) => instanceToIndex.get(id)).filter(Number.isInteger)]),
       e: run.eventState ?? {}, r: run.eventHistory ?? [], a: run.activeEvent ? [point(run.activeEvent.nodeId), run.activeEvent.eventId] : null, t: run.currentBattle ? [Math.round(run.currentBattle.score ?? 0), Math.round(run.currentBattle.elapsed ?? 0), point(run.currentBattle.nodeId)] : null,
       q: run.stats ?? {},
     };
@@ -356,17 +359,18 @@ export class BeyondLightConeSystem {
     const chapter = Math.max(1, Number(data.k ?? 1));
     const totalChapters = Math.max(chapter, Number(data.u ?? getBeyondChapterCount(data.d)));
     const chapterSeed = data.m ?? ((data.v ?? 1) >= 3 ? `${data.s}:chapter:${chapter}` : data.s);
-    const map = this.generateMap(chapterSeed); const nodeAt = (point) => Array.isArray(point) ? map[point[0]]?.[point[1]]?.id ?? null : null;
+    const map = this.generateMap(chapterSeed, chapter); const nodeAt = (point) => Array.isArray(point) ? map[point[0]]?.[point[1]]?.id ?? null : null;
     // 兼容旧存档：历史奖励节点统一转为事件节点，避免重新出现已移除的节点类型。
     map.flat().forEach((node) => { if (node.type === "reward") node.type = "event"; });
     const modules = (data.b ?? []).map((entry, index) => ({ instanceId: `b${index}`, moduleId: moduleIdFromCode(entry[0]), x: entry[1], y: entry[2], rotation: entry[3] ?? 0 })).filter((entry) => entry.moduleId);
-    const synergies = (data.y ?? []).map(([id, indexes]) => ({ id, moduleInstanceIds: indexes.map((index) => `b${index}`).filter((instanceId) => modules.some((entry) => entry.instanceId === instanceId)) }));
+    const synergies = (data.y ?? []).map(([id, indexes = []]) => ({ id, moduleInstanceIds: indexes.map((index) => `b${index}`).filter((instanceId) => modules.some((entry) => entry.instanceId === instanceId)) }));
     const inventory = Object.fromEntries((data.i ?? []).map(([code, count]) => [moduleIdFromCode(code), count]).filter(([id]) => id));
     const visited = (data.p ?? []).map(nodeAt).filter(Boolean); visited.forEach((id) => { const node = map.flat().find((item) => item.id === id); if (node) node.cleared = true; });
     const difficulty = getBeyondDifficulty(data.d, { preferLegacy: (data.v ?? 1) < 2 }).level;
     const activeEventNodeId = Array.isArray(data.a?.[0]) ? nodeAt(data.a[0]) : null;
     const activeEvent = activeEventNodeId && getBeyondEventById(data.a?.[1]) ? { nodeId: activeEventNodeId, eventId: data.a[1] } : null;
-    return { version: data.v ?? 1, seed: data.s, difficulty, chapter, totalChapters, chapterSeed, map, currentNodeId: nodeAt(data.c), visited, gold: data.g ?? 0, hp: data.h ?? BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp, inventory, loadout: createLoadout({ modules, synergies }), eventState: data.e ?? { combatStreak: 0, peacefulStreak: 0 }, eventHistory: Array.isArray(data.r) ? data.r.filter((id) => getBeyondEventById(id)) : [], activeEvent, currentBattle: data.t ? { score: data.t[0], elapsed: data.t[1], nodeId: nodeAt(data.t[2]) } : null, log: ["已从存档继续航程"], completed: false };
+    const stats = data.q ?? { nodes: { combat: 0, elite: 0, boss: 0, shop: 0, rest: 0, event: 0 }, routeLength: visited.length, battles: 0, totalElapsed: 0, modulesGained: 0, goldGained: 0, goldSpent: 0, healing: 0 };
+    return { version: data.v ?? 1, seed: data.s, difficulty, chapter, totalChapters, chapterSeed, map, currentNodeId: nodeAt(data.c), visited, gold: Math.round(data.g ?? 0), hp: Math.round(data.h ?? BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp), inventory, loadout: createLoadout({ modules, synergies }), stats, eventState: data.e ?? { combatStreak: 0, peacefulStreak: 0 }, eventHistory: Array.isArray(data.r) ? data.r.filter((id) => getBeyondEventById(id)) : [], activeEvent, currentBattle: data.t ? { score: data.t[0], elapsed: data.t[1], nodeId: nodeAt(data.t[2]) } : null, log: ["已从存档继续航程"], completed: false };
   }
   getInventoryRows(run) { return Object.entries(run?.inventory ?? {}).filter(([, count]) => count > 0).map(([id, count]) => ({ id, name: getModuleById(id)?.name ?? id, count })); }
 }

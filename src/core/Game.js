@@ -137,6 +137,7 @@ export class Game {
     const stats = this.ensureBeyondStats();
     if (!stats || !node) return;
     stats.nodes[node.type] = (stats.nodes[node.type] ?? 0) + 1;
+    stats.routeLength = (stats.routeLength ?? 0) + 1;
   }
 
   recordBeyondBattleStart(node) {
@@ -151,9 +152,9 @@ export class Game {
     const nodes = stats.nodes ?? {};
     return {
       score: this.score,
-      elapsed: this.elapsed,
+      elapsed: stats.totalElapsed ?? this.elapsed,
       difficulty: run?.difficulty ?? 1,
-      routeLength: run?.visited?.length ?? 0,
+      routeLength: stats.routeLength ?? run?.visited?.length ?? 0,
       battles: stats.battles ?? 0,
       events: nodes.event ?? 0,
       shops: nodes.shop ?? 0,
@@ -280,7 +281,9 @@ export class Game {
   finishBeyondBattleWithRewards(victory) {
     const node = this.beyondBattleNode;
     if (!this.beyondRun || !node) { this.toBeyondMap(); return; }
-    this.beyondRun.hp = Math.max(0, this.player?.hp ?? this.beyondRun.hp);
+    this.beyondRun.hp = Math.round(Math.max(0, this.player?.hp ?? this.beyondRun.hp));
+    this.beyondRun.stats ??= {};
+    this.beyondRun.stats.totalElapsed = (this.beyondRun.stats.totalElapsed ?? 0) + Math.max(0, this.elapsed);
     if (!victory) {
       const summary = this.buildBeyondCompletionSummary([], 0);
       this.beyondRun = null;
@@ -290,17 +293,18 @@ export class Game {
     this.beyondBattleCheckpoint = null;
     const elite = node.type === "elite";
     const boss = node.type === "boss";
-    const rewards = boss ? [] : this.beyondSystem.rewardModules(this.beyondRun, elite ? 2 : 1, { elite, boss });
-    const goldReward = boss ? 0 : elite ? 55 : 24;
+    const rewards = this.beyondSystem.rewardModules(this.beyondRun, boss || elite ? 2 : 1, { elite, boss });
+    const goldReward = boss ? 100 : elite ? 55 : 24;
     this.beyondRun.gold += goldReward;
-    this.beyondRun.stats ??= {};
     this.beyondRun.stats.goldGained = (this.beyondRun.stats.goldGained ?? 0) + goldReward;
     this.beyondRun.log.push(`${node.type} 胜利：${rewards.length} 个模块，${goldReward} 金币`);
     if (boss) {
+      this.beyondRun.hp = Math.round(BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp);
       if ((this.beyondRun.chapter ?? 1) < (this.beyondRun.totalChapters ?? 1)) {
         this.beyondSystem.advanceChapter(this.beyondRun);
         this.beyondPendingChapterTransition = true;
-        this.ui.showBeyondStageComplete?.({ score: this.score, elapsed: this.elapsed, node, rewards: [], goldReward: 0, chapterComplete: true, chapter: this.beyondRun.chapter - 1, totalChapters: this.beyondRun.totalChapters });
+        this.ui.showBeyondStageComplete?.({ score: this.score, elapsed: this.elapsed, node, rewards, goldReward, chapterComplete: true, chapter: this.beyondRun.chapter - 1, totalChapters: this.beyondRun.totalChapters });
+        this.ui.showBeyondBattleRewards?.(rewards, goldReward);
         return;
       }
       this.beyondRun.completed = true;
@@ -816,7 +820,7 @@ export class Game {
     const collision = this.collisionSystem.resolve({ player: this.player, enemies: this.enemies, projectiles: this.projectiles, wingman: this.wingman, lasers: this.lasers, freezeActive: this.freezeTimer > 0, ionSaw: this.ionSaw, statusDamageEvents });
     if (collision.sawTriggered) this.ionSaw.damageTimer = 1 / 6;
     this.score += collision.score;
-    if (collision.playerHealing > 0) this.player.hp = Math.min(this.player.stats.maxHp, this.player.hp + collision.playerHealing);
+    if (collision.playerHealing > 0) this.player.hp = Math.round(Math.min(this.player.stats.maxHp, this.player.hp + collision.playerHealing));
     if (this.tutorialMode && this.tutorialHasMoved && this.tutorialHasUsedSkill && this.score >= this.tutorialScoreGoal) { this.exitTutorialBattle(); return; }
     this.explosions.push(...(collision.explosionEvents ?? []));
     if ((collision.damageEvents?.length ?? 0) > 0) { this.triggerShake("hit"); this.sound.play("playerImpact"); }

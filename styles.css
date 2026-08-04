@@ -780,6 +780,28 @@ body { background: #02050c; }
   content: none !important;
 }
 
+#mode-screen .mode-card {
+  text-align: left;
+}
+
+#mode-screen .menu-content {
+  width: 100%;
+}
+
+#mode-screen .mode-actions {
+  margin-inline: auto;
+}
+
+#level-select-screen .menu-content,
+#dodge-difficulty-screen .menu-content {
+  width: 100%;
+}
+
+#level-select-screen .level-grid,
+#dodge-difficulty-screen .mode-actions {
+  margin-inline: auto;
+}
+
 #builder-screen .assembly-board {
   border-color: rgba(119, 224, 255, .72);
   background:
@@ -1959,4 +1981,17 @@ body { background: #02050c; }
 .dodge-mode-card:hover,
 .dodge-mode-card:focus-visible {
   border-color: rgba(196, 247, 255, .86) !important;
+}
+/* Final interaction fixes for modal cards and the beyond-mode label. */
+.module-detail-card { box-sizing: border-box; }
+.changelog-modal { z-index: 100 !important; pointer-events: auto; }
+.changelog-card { box-sizing: border-box; z-index: 1; pointer-events: auto; }
+.changelog-card .detail-close { z-index: 2; pointer-events: auto; }
+.beyond-mode-card > strong {
+  background: linear-gradient(90deg, #00f0ff 0%, #9d00ff 100%) !important;
+  background-image: linear-gradient(90deg, #00f0ff 0%, #9d00ff 100%) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent !important;
+  -webkit-text-fill-color: transparent !important;
 }

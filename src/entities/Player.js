@@ -16,7 +16,7 @@ export class Player {
     this.collisionBounds = this.getCollisionBounds();
     // 自动模块不一定会直接开火（例如能量聚合器），只有声明攻击行为的模块才进入开火队列。
     this.weaponEntries = this.installedEntries.filter(({ module }) => module?.type === "weapon" && module.behavior?.type);
-    this.hp = stats.maxHp;
+    this.hp = Math.round(stats.maxHp);
     this.weaponTimers = new Map();
     this.activeWhirlwinds = new Map();
     this.whirlwindCooldowns = new Map();
@@ -92,7 +92,7 @@ export class Player {
 
   damage(amount) {
     if (this.invulnerabilityTimer > 0) return false;
-    this.hp = Math.max(0, this.hp - amount);
+    this.hp = Math.round(Math.max(0, this.hp - Math.max(0, Number(amount) || 0)));
     this.invulnerabilityTimer = 1;
     this.hitFlash = 1;
     return this.hp <= 0;
