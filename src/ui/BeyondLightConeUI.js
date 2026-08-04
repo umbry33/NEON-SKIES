@@ -75,6 +75,11 @@ export function installBeyondLightConeUI(ui) {
   resultModal.className = "beyond-result-modal beyond-animated is-hidden";
   resultModal.innerHTML = `<div class="beyond-result-card"><p id="beyond-result-tag" class="eyebrow">NODE REPORT</p><h3 id="beyond-result-title">节点结果</h3><p id="beyond-result-message" class="detail-description"></p><div id="beyond-result-details" class="beyond-result-details"></div><div id="beyond-result-rewards" class="beyond-result-rewards"></div><button id="beyond-result-continue" class="primary-button" type="button">继续航程</button></div>`;
   screen.append(resultModal);
+  const fusionResultModal = document.createElement("div");
+  fusionResultModal.id = "beyond-fusion-result-modal";
+  fusionResultModal.className = "beyond-fusion-result-modal beyond-animated is-hidden";
+  fusionResultModal.innerHTML = `<div class="beyond-fusion-result-card"><p class="eyebrow">MODULE FORGED</p><h3>合成成功</h3><canvas id="beyond-fusion-result-icon" width="96" height="96" aria-hidden="true"></canvas><strong id="beyond-fusion-result-name"></strong><p id="beyond-fusion-result-message">新的模块已加入本局库存。</p><button id="beyond-fusion-result-close" class="primary-button" type="button">继续合成</button></div>`;
+  screen.append(fusionResultModal);
   const eventPanel = document.createElement("div");
   eventPanel.id = "beyond-event-panel";
   eventPanel.className = "beyond-event-panel beyond-animated is-hidden";
@@ -318,7 +323,15 @@ export function installBeyondLightConeUI(ui) {
   };
   const fusionSlotMarkup = (id, index, previewId = null) => {
     const ghost = !id && previewId; const module = getModuleById(id ?? previewId);
-    return `<button type="button" class="beyond-fusion-slot${ghost ? " is-recipe-ghost" : ""}" data-fusion-slot="${index}" aria-label="${ghost ? `配方参考：${module?.name ?? previewId}` : id ? `已放置：${module?.name ?? id}` : "空合成槽"}">${module?.name ?? (id ?? "＋")}</button>`;
+    const moduleId = id ?? previewId;
+    const label = module?.name ?? (id ?? "＋");
+    return `<button type="button" class="beyond-fusion-slot${ghost ? " is-recipe-ghost" : ""}" data-fusion-slot="${index}" aria-label="${ghost ? `配方参考：${label}` : id ? `已放置：${label}` : "空合成槽"}">${moduleId ? `<canvas class="fusion-slot-icon" width="48" height="48" data-icon-module="${moduleId}" aria-hidden="true"></canvas><span>${escapeHtml(label)}</span>` : "＋"}</button>`;
+  };
+  const recipeMaterialsAvailable = (module) => {
+    const counts = new Map((ui.beyondFusionData?.inventoryRows ?? []).map((row) => [row.id, row.free ?? 0]));
+    const required = new Map();
+    (module?.fusionRecipe ?? []).forEach((item) => required.set(item.moduleId, (required.get(item.moduleId) ?? 0) + 1));
+    return [...required].every(([id, count]) => (counts.get(id) ?? 0) >= count);
   };
   const renderFusion = (data) => {
     const { inventoryRows = [], recipes = [] } = data ?? ui.beyondFusionData ?? {}; ui.beyondFusionData = { inventoryRows, recipes };
@@ -353,12 +366,13 @@ export function installBeyondLightConeUI(ui) {
     fusionGrid.querySelectorAll("[data-fusion-slot]").forEach((button) => {
       button.addEventListener("dragover", (event) => { event.preventDefault(); button.classList.add("is-drop-target"); });
       button.addEventListener("dragleave", () => button.classList.remove("is-drop-target"));
-      button.addEventListener("drop", (event) => { event.preventDefault(); const moduleId = event.dataTransfer?.getData("text/plain") || ui.beyondFusionDrag?.moduleId; const index = Number(button.dataset.fusionSlot); const available = inventoryRows.find((row) => row.id === moduleId)?.free ?? 0; const placed = ui.beyondFusionSlots.filter((id) => id === moduleId).length; if (moduleId && !ui.beyondFusionSlots[index] && available > placed) { ui.beyondFusionSlots[index] = moduleId; ui.beyondFusionTarget = null; ui.beyondFusionDrag = null; renderFusion(); } });
+      button.addEventListener("drop", (event) => { event.preventDefault(); const moduleId = event.dataTransfer?.getData("text/plain") || ui.beyondFusionDrag?.moduleId; const index = Number(button.dataset.fusionSlot); const available = inventoryRows.find((row) => row.id === moduleId)?.free ?? 0; const placed = ui.beyondFusionSlots.filter((id) => id === moduleId).length; if (moduleId && !ui.beyondFusionSlots[index] && available > placed) { ui.beyondFusionSlots[index] = moduleId; ui.beyondFusionDrag = null; renderFusion(); } });
     });
+    fusionGrid.querySelectorAll("[data-icon-module]").forEach((canvas) => paintModuleCanvas(canvas, getModuleById(canvas.dataset.iconModule), canvas.width));
     fusionRecipeList.innerHTML = `${recipes.map((module) => `<button type="button" class="beyond-fusion-recipe" data-fusion-recipe="${module.id}"><strong>${module.name}</strong><small>${rarityNames[module.rarity] ?? "模块"}</small><p>${module.fusionRecipe.map((item) => getModuleById(item.moduleId)?.name ?? item.moduleId).join(" ＋ ")}</p><em>点击设为目标配方</em></button>`).join("")}`;
-    fusionRecipeList.querySelectorAll("[data-fusion-recipe]").forEach((button) => tap(button, () => { ui.beyondFusionTarget = button.dataset.fusionRecipe; ui.beyondFusionSlots = Array(9).fill(null); fusionMessage.textContent = `已显示${getModuleById(ui.beyondFusionTarget)?.name ?? "目标配方"}的虚影，请将材料拖入对应槽位。`; renderFusion(); }));
+    fusionRecipeList.querySelectorAll("[data-fusion-recipe]").forEach((button) => tap(button, () => { const targetModule = getModuleById(button.dataset.fusionRecipe); ui.beyondFusionTarget = button.dataset.fusionRecipe; ui.beyondFusionSlots = recipeMaterialsAvailable(targetModule) ? getFusionPreviewSlots(targetModule) : Array(9).fill(null); fusionMessage.textContent = recipeMaterialsAvailable(targetModule) ? `已自动放入${targetModule?.name ?? "目标配方"}所需材料，可直接合成。` : `已显示${targetModule?.name ?? "目标配方"}的虚影，请将材料拖入对应槽位。`; renderFusion(); }));
   };
-  ui.showBeyondFusion = (data) => { ui.beyondFusionMode = "synthesize"; ui.beyondFusionSlots = Array(9).fill(null); ui.beyondFusionSelected = null; ui.beyondFusionTarget = null; ui.hideAllScreens(); screen.classList.remove("is-hidden"); startPanel.classList.add("is-hidden"); runPanel.classList.add("is-hidden"); fusionPanel.classList.remove("is-hidden"); renderFusion(data); };
+  ui.showBeyondFusion = (data) => { setAnimatedVisibility(fusionResultModal, false); ui.beyondFusionMode = "synthesize"; ui.beyondFusionSlots = Array(9).fill(null); ui.beyondFusionSelected = null; ui.beyondFusionTarget = null; ui.hideAllScreens(); screen.classList.remove("is-hidden"); startPanel.classList.add("is-hidden"); runPanel.classList.add("is-hidden"); fusionPanel.classList.remove("is-hidden"); renderFusion(data); };
   ui.refreshBeyondFusion = (data, message = "") => { renderFusion(data); if (message) fusionMessage.textContent = message; };
   // 难度选择尚未创建航程，直接返回模式选择，避免触发航程放弃确认。
   ["pointerup", "touchend", "click"].forEach((eventName) => backButton?.addEventListener(eventName, leaveDifficultySelect, true));
@@ -417,7 +431,7 @@ export function installBeyondLightConeUI(ui) {
     if (target && targetIndex >= 0 && !ui.beyondFusionSlots[targetIndex] && (drag.sourceIndex !== null || available > placed)) {
       const replaced = ui.beyondFusionSlots[targetIndex];
       if (drag.sourceIndex !== null) ui.beyondFusionSlots[drag.sourceIndex] = replaced ?? null;
-      ui.beyondFusionSlots[targetIndex] = drag.moduleId; ui.beyondFusionTarget = null; renderFusion();
+      ui.beyondFusionSlots[targetIndex] = drag.moduleId; renderFusion();
     } else if (drag.sourceIndex !== null) {
       ui.beyondFusionSlots[drag.sourceIndex] = drag.moduleId; renderFusion();
     }
@@ -431,8 +445,8 @@ export function installBeyondLightConeUI(ui) {
     if (sourceIndex !== null) ui.beyondFusionSlots[sourceIndex] = null;
     ui.beyondFusionDrag = { moduleId, sourceIndex }; source.classList.add("is-dragging"); event.preventDefault();
   });
-  fusionPanel.addEventListener("pointerup", finishFusionPointerDrag);
-  fusionPanel.addEventListener("pointercancel", finishFusionPointerDrag);
+  fusionPanel.addEventListener("pointerup", finishFusionPointerDrag, true);
+  fusionPanel.addEventListener("pointercancel", finishFusionPointerDrag, true);
   map.addEventListener("pointerup", (event) => { const button = event.target.closest?.("[data-node]"); const node = ui.beyondRun?.map?.flat().find((item) => item.id === button?.dataset.node); if (!node || node.type !== "boss") return; requestAnimationFrame(() => { const reward = getModuleById(node.bossRewardId); $("#beyond-node-title").textContent = `✹ ${node.bossName ?? "首领"}`; $("#beyond-node-description").textContent = "这位首领守护着一件固定传说模块。击败它即可获得奖励并恢复满血。"; $("#beyond-node-rewards").textContent = `固定奖励：${reward?.name ?? "传说模块"}`; }); }, true);
 
   const hideExitOverlays = () => { clearTimeout(exitBackdrop?.__beyondAnimationTimer); exitBackdrop?.classList.add("is-hidden"); exitBackdrop?.classList.remove("is-closing", "is-opening"); $("#beyond-exit-one")?.classList.add("is-hidden"); $("#beyond-exit-one")?.classList.remove("is-closing", "is-opening"); $("#beyond-exit-two")?.classList.add("is-hidden"); $("#beyond-exit-two")?.classList.remove("is-closing", "is-opening"); };
@@ -445,6 +459,8 @@ export function installBeyondLightConeUI(ui) {
   ui.showBeyondShop = (run, offers) => { setAnimatedVisibility(shopPanel, true); const list = shopPanel.querySelector(".beyond-shop-offers"); list.innerHTML = offers.map((offer, index) => `<button type="button" data-shop-offer="${index}" ${run.gold < offer.cost ? "disabled" : ""}><b>${getModuleById(offer.id)?.name ?? offer.id}</b><small>${offer.cost} 金币</small></button>`).join(""); list.querySelectorAll("[data-shop-offer]").forEach((button) => tap(button, () => emit(ui, "beyond:shop-buy", { index: Number(button.dataset.shopOffer) }))); };
 
   tap(resultContinue, () => { const action = ui.beyondPendingResultAction ?? "map"; setAnimatedVisibility(resultModal, false, () => emit(ui, "beyond:result-continue", { action })); });
+  tap($("#beyond-fusion-result-close"), () => setAnimatedVisibility(fusionResultModal, false));
+  ui.showBeyondFusionResult = (module) => { if (!module) return; ui.beyondFusionSlots = Array(9).fill(null); ui.beyondFusionTarget = null; renderFusion(); const icon = $("#beyond-fusion-result-icon"); const name = $("#beyond-fusion-result-name"); if (icon) paintModuleCanvas(icon, module, icon.width); if (name) name.textContent = module.name; setAnimatedVisibility(fusionResultModal, true); };
   tap(completeExit, () => setAnimatedVisibility(completeModal, false, () => emit(ui, "beyond:complete-exit")));
 
   function renderMap(run, available) {

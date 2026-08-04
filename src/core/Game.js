@@ -60,7 +60,7 @@ export class Game {
     this.mirageAnchor = null;
     this.polarTether = null;
     this.overflowDrive = null;
-    this.abyssBloom = null;
+    this.abyssBlooms = [];
     this.damageNumbers = [];
     this.damageNumbersEnabled = true;
     this.countdownEnabled = true;
@@ -133,7 +133,7 @@ export class Game {
   openBeyondBuilder() { if (this.beyondRun) this.ui.showBeyondBuilder(this.beyondRun); }
   getBeyondFusionData() { return this.beyondRun ? { inventoryRows: this.beyondSystem.getInventoryRows(this.beyondRun), recipes: this.beyondSystem.getFusionRecipes() } : { inventoryRows: [], recipes: [] }; }
   openBeyondFusion() { if (this.beyondRun) this.ui.showBeyondFusion?.(this.getBeyondFusionData()); }
-  synthesizeBeyondModules(slots) { if (!this.beyondRun) return; try { const result = this.beyondSystem.synthesize(this.beyondRun, slots); this.ui.refreshBeyondFusion?.(this.getBeyondFusionData(), `合成成功：${result.product.name}`); } catch (error) { this.ui.refreshBeyondFusion?.(this.getBeyondFusionData(), error instanceof Error ? error.message : "合成失败"); } }
+  synthesizeBeyondModules(slots) { if (!this.beyondRun) return; try { const result = this.beyondSystem.synthesize(this.beyondRun, slots); this.ui.refreshBeyondFusion?.(this.getBeyondFusionData(), `合成成功：${result.product.name}`); this.ui.showBeyondFusionResult?.(result.product); } catch (error) { this.ui.refreshBeyondFusion?.(this.getBeyondFusionData(), error instanceof Error ? error.message : "合成失败"); } }
   decomposeBeyondModule(moduleId) { if (!this.beyondRun) return; try { const result = this.beyondSystem.decompose(this.beyondRun, moduleId); this.ui.refreshBeyondFusion?.(this.getBeyondFusionData(), `已分解 ${result.module.name}，材料已返还`); } catch (error) { this.ui.refreshBeyondFusion?.(this.getBeyondFusionData(), error instanceof Error ? error.message : "分解失败"); } }
   saveBeyondBuild(spec) { if (!this.beyondRun) return; this.beyondRun.loadout = this.moduleSystem.install(spec); this.toBeyondMap(); }
   exportBeyondRun() { const code = this.getBeyondSaveCode(); if (code) this.ui.setBeyondSaveCode?.(code); }
@@ -374,7 +374,7 @@ export class Game {
     this.mirageAnchor = null;
     this.polarTether = null;
     this.overflowDrive = null;
-    this.abyssBloom = null;
+    this.abyssBlooms = [];
     this.damageNumbers = [];
     this.shakeTime = 0;
     this.shakeDuration = 0;
@@ -509,7 +509,7 @@ export class Game {
   getFusionSkillOrigin(moduleInstanceId, skillId) {
     const player = this.player;
     if (!player) return { x: 0, y: 0 };
-    const entry = player.installedEntries?.find(({ instanceId, module }) => (moduleInstanceId && instanceId === moduleInstanceId) || module?.skill?.id === skillId);
+    const entry = player.installedEntries?.find(({ instanceId, module }) => moduleInstanceId ? instanceId === moduleInstanceId : module?.skill?.id === skillId);
     if (!entry) return { x: player.x, y: player.y };
     const bounds = getFootprintBounds(entry.module);
     const core = player.loadout?.corePosition ?? { x: 7, y: 7 };
@@ -519,7 +519,7 @@ export class Game {
   startMirageAnchor(duration) { this.mirageAnchor = { x: this.player.x, y: this.player.y, duration, maxDuration: duration }; }
   startPolarTether(duration) { this.polarTether = { duration, pulseTimer: 0 }; }
   startOverflowDrive(duration) { this.overflowDrive = { duration, pulseTimer: 0 }; this.player.weaponTimers.forEach((_, slotId) => this.player.weaponTimers.set(slotId, 0)); }
-  startAbyssBloom(duration, moduleInstanceId = null) { this.abyssBloom = { duration, pulse: 0, fireTimer: 0, moduleInstanceId }; }
+  startAbyssBloom(duration, moduleInstanceId = null) { this.abyssBlooms.push({ duration, pulse: 0, fireTimer: 0, moduleInstanceId }); }
 
   updateFusionSkills(dt) {
     if (this.cryoHive) {
@@ -558,20 +558,20 @@ export class Game {
       if (this.overflowDrive.pulseTimer <= 0) { this.overflowDrive.pulseTimer += .72; this.player.weaponTimers.forEach((_, slotId) => this.player.weaponTimers.set(slotId, 0)); }
       if (this.overflowDrive.duration <= 0) this.overflowDrive = null;
     }
-    if (this.abyssBloom) {
-      this.abyssBloom.duration = Math.max(0, this.abyssBloom.duration - dt); this.abyssBloom.pulse += dt; this.abyssBloom.fireTimer -= dt;
-      if (this.abyssBloom.fireTimer <= 0) {
-        this.abyssBloom.fireTimer += .184;
-        const baseAngle = this.abyssBloom.pulse * .9;
+    this.abyssBlooms = this.abyssBlooms.filter((bloom) => {
+      bloom.duration = Math.max(0, bloom.duration - dt); bloom.pulse += dt; bloom.fireTimer -= dt;
+      if (bloom.fireTimer <= 0) {
+        bloom.fireTimer += .184;
+        const baseAngle = bloom.pulse * .9;
+        const origin = this.getFusionSkillOrigin(bloom.moduleInstanceId, "abyssBloom");
         for (let petalIndex = 0; petalIndex < 4; petalIndex += 1) {
           const angle = baseAngle + petalIndex * Math.PI / 2;
-          const origin = this.getFusionSkillOrigin(this.abyssBloom.moduleInstanceId, "abyssBloom");
           const x = origin.x + Math.cos(angle) * 32; const y = origin.y + Math.sin(angle) * 32;
           this.projectiles.push(new Projectile({ x, y, vx: Math.cos(angle) * 285, vy: Math.sin(angle) * 285, damage: 7, radius: 5.5, color: "#c47cff", life: 2.6, team: "player", kind: "abyssPetal", pierce: true, element: "dark" }));
         }
       }
-      if (this.abyssBloom.duration <= 0) this.abyssBloom = null;
-    }
+      return bloom.duration > 0;
+    });
   }
 
   createDodgeBullet({ x, y, vx = 0, vy = 120, radius = 7, kind = "dodgeOrb", color = "#ff7fd1", damage = this.dodgeDifficulty.damage, life = 8, dodgeMotion = null, dodgeSplit = null }) {
@@ -994,10 +994,10 @@ export class Game {
       this.ctx.globalAlpha = .32; this.ctx.shadowColor = "#32eaff"; this.ctx.shadowBlur = 20; this.ctx.strokeStyle = "#32eaff"; this.ctx.lineWidth = 2;
       this.ctx.beginPath(); this.ctx.arc(this.player.x, this.player.y, 28 + Math.sin(this.elapsed * 17) * 4, 0, Math.PI * 2); this.ctx.stroke();
     }
-    if (this.abyssBloom) {
+    for (const bloom of this.abyssBlooms) {
       this.ctx.globalAlpha = .88; this.ctx.shadowColor = "#c47cff"; this.ctx.shadowBlur = 22; this.ctx.strokeStyle = "#d9b4ff"; this.ctx.fillStyle = "#5b237f"; this.ctx.lineWidth = 1.5;
-      const origin = this.getFusionSkillOrigin(this.abyssBloom.moduleInstanceId, "abyssBloom");
-      for (let index = 0; index < 4; index += 1) { const angle = this.abyssBloom.pulse * .9 + index * Math.PI / 2; const x = origin.x + Math.cos(angle) * 32; const y = origin.y + Math.sin(angle) * 32; this.ctx.save(); this.ctx.translate(x, y); this.ctx.rotate(angle + Math.PI / 2); this.ctx.beginPath(); this.ctx.moveTo(0, -10); this.ctx.quadraticCurveTo(9, -2, 0, 11); this.ctx.quadraticCurveTo(-9, -2, 0, -10); this.ctx.fill(); this.ctx.stroke(); this.ctx.restore(); }
+      const origin = this.getFusionSkillOrigin(bloom.moduleInstanceId, "abyssBloom");
+      for (let index = 0; index < 4; index += 1) { const angle = bloom.pulse * .9 + index * Math.PI / 2; const x = origin.x + Math.cos(angle) * 32; const y = origin.y + Math.sin(angle) * 32; this.ctx.save(); this.ctx.translate(x, y); this.ctx.rotate(angle + Math.PI / 2); this.ctx.beginPath(); this.ctx.moveTo(0, -10); this.ctx.quadraticCurveTo(9, -2, 0, 11); this.ctx.quadraticCurveTo(-9, -2, 0, -10); this.ctx.fill(); this.ctx.stroke(); this.ctx.restore(); }
     }
     this.ctx.restore();
   }

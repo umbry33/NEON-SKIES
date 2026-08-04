@@ -29,10 +29,25 @@ export function getEncyclopediaSections() {
   });
   const environments = ENVIRONMENT_CONFIG.map((environment) => ({
     title: environment.name, tag: `第 ${environment.minLevel} 关起`, description: environment.description, meta: `持续 ${environment.duration}s` }));
-  const bosses = [5, 25, 50].map((level) => {
+  const bossStages = [5, 25, 50].map((level) => {
     const boss = createBossDefinition(level);
     return { title: `${level} 关首领`, tag: boss.bossSkills.join(" / ").toUpperCase(), description: "首领会在上半区域游走、发射特殊弹幕并召唤护卫机。高阶首领还会冲刺或释放环形弹幕。", meta: `生命 ${boss.hp} · 召唤间隔 ${boss.summon.interval.toFixed(1)}s` };
   });
+  const bossVariantDescriptions = {
+    "storm-warden": "雷暴监守以螺旋弹幕逐步压缩安全区域，并在战斗中召唤护卫机。",
+    "nest-matriarch": "覆巢母舰发射扇形弹幕，同时持续召唤护卫机形成多层火力。",
+    "prism-oracle": "棱镜先知释放十字弹幕，并会短暂冲刺改变战场位置。",
+    "zero-archon": "零度执政官以环形弹幕封锁航线，配合冲刺和护卫机制造交叉压力。",
+    "lattice-leviathan": "晶格利维坦释放高密度径向弹幕，并结合冲刺与召唤改变躲避节奏。",
+    "abyss-gardener": "深渊园丁发射深渊长枪弹幕，召唤护卫机守住自身周围的空域。",
+    "chorus-conductor": "合唱指挥舰以环形弹幕组织节奏，并持续召唤护卫机协同攻击。",
+    "cryo-hive-queen": "寒潮蜂后释放十字弹幕，结合冲刺和蜂群召唤制造多方向夹击。",
+  };
+  const bossVariants = Object.keys(bossVariantDescriptions).map((variantId) => {
+    const boss = createBossDefinition(25, variantId);
+    return { title: boss.name, tag: `BOSS VARIANT · ${boss.attackPattern.toUpperCase()}`, description: bossVariantDescriptions[variantId], meta: `形态 ${boss.bossShape} · 技能 ${boss.bossSkills.join(" / ")} · 生命 ${boss.hp}` };
+  });
+  const bosses = [...bossStages, ...bossVariants];
   // 光锥之外的百科内容集中在这里，模式配置发生变化时同步核对本区块。
   const beyond = [
     {

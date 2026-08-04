@@ -2010,6 +2010,9 @@ body { background: #02050c; }
 .beyond-fusion-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; margin: 12px auto; max-width: 290px; }
 .beyond-fusion-slot, .beyond-fusion-decompose-slot { min-height: 70px; border: 1px dashed rgba(141, 237, 255, .58); border-radius: 10px; color: #dcfaff; background: rgba(8, 23, 55, .7); font-weight: 800; }
 .beyond-fusion-slot { padding: 8px; font-size: .78rem; line-height: 1.2; overflow-wrap: anywhere; touch-action: none; }
+.beyond-fusion-slot { display: grid; place-items: center; align-content: center; gap: 2px; }
+.beyond-fusion-slot .fusion-slot-icon { display: block; width: 42px; height: 42px; filter: drop-shadow(0 0 7px rgba(143, 249, 255, .42)); pointer-events: none; }
+.beyond-fusion-slot > span { max-width: 100%; overflow-wrap: anywhere; pointer-events: none; }
 .beyond-fusion-slot.is-recipe-ghost { border-style: solid; border-color: rgba(255, 237, 152, .78); color: rgba(255, 241, 175, .78); background: repeating-linear-gradient(135deg, rgba(255, 225, 105, .16) 0 5px, rgba(255, 225, 105, .04) 5px 10px); box-shadow: inset 0 0 15px rgba(255, 225, 105, .1); }
 .beyond-fusion-slot.is-drop-target { border-color: #ffffff; background: rgba(47, 201, 232, .32); box-shadow: 0 0 18px rgba(88, 242, 255, .5); }
 .beyond-fusion-slot { position: relative; }
@@ -2035,6 +2038,14 @@ body { background: #02050c; }
 .beyond-fusion-recipe.is-available em { color: #a8ffff; font-weight: 800; }
 .beyond-fusion-recipe p { grid-column: 1 / -1; margin: 0; color: #c9e8ff; font-size: .78rem; }
 .beyond-fusion-recipe em { grid-column: 1 / -1; color: #ffe99b; font-size: .68rem; font-style: normal; }
+.beyond-fusion-result-modal { position: absolute; inset: 0; z-index: 60; display: grid; place-items: center; padding: 18px; background: rgba(2, 7, 20, .72); backdrop-filter: blur(6px); }
+.beyond-fusion-result-modal.is-hidden { display: none; }
+.beyond-fusion-result-card { display: grid; justify-items: center; gap: 8px; width: min(310px, 100%); padding: 24px 20px 20px; border: 1px solid rgba(123, 237, 255, .72); border-radius: 18px; color: #effcff; background: linear-gradient(145deg, rgba(18, 56, 108, .96), rgba(58, 22, 93, .96)); box-shadow: 0 0 35px rgba(75, 222, 255, .24), inset 0 0 24px rgba(187, 105, 255, .12); text-align: center; }
+.beyond-fusion-result-card h3 { margin: 0; font-size: 1.25rem; }
+.beyond-fusion-result-card canvas { width: 96px; height: 96px; filter: drop-shadow(0 0 14px rgba(216, 150, 255, .82)); }
+.beyond-fusion-result-card strong { color: #fff; font-size: 1.12rem; }
+.beyond-fusion-result-card p:not(.eyebrow) { margin: 0; color: #c8ecff; font-size: .8rem; }
+.beyond-fusion-result-card .primary-button { width: 100%; margin-top: 6px; }
 @media (max-width: 560px) { .beyond-fusion-layout { grid-template-columns: 1fr; } .beyond-fusion-layout > .beyond-fusion-recipes-section, .beyond-fusion-layout > section:nth-child(2), .beyond-fusion-layout > section:last-child { grid-column: 1; grid-row: auto; } .beyond-fusion-library .library-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } .beyond-fusion-panel { padding: 12px; } }
 .beyond-reward-copy { display: grid; gap: 2px; }
 .beyond-reward-copy strong { color: #f8fbff; font-size: .86rem; }

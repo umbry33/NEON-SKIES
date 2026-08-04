@@ -1,6 +1,6 @@
 export const ENEMY_CONFIG = [
   { id: "enemy-scout", name: "Scout", type: "scout", hp: 5, speed: 116, radius: 16, score: 100, color: "#ff6f9f", spawnWeight: 6, shootInterval: 2.4, movement: "straight" },
-  { id: "enemy-swift", name: "Swift", type: "swift", hp: 10, speed: 188, radius: 14, score: 160, color: "#ffbd6b", spawnWeight: 3, shootInterval: 2.8, movement: "sine" },
+  { id: "enemy-swift", name: "Swift", type: "swift", hp: 5, speed: 188, radius: 14, score: 160, color: "#ffbd6b", spawnWeight: 3, shootInterval: 2.8, movement: "sine" },
   { id: "enemy-guardian", name: "Guardian", type: "guardian", hp: 20, speed: 72, radius: 23, score: 340, color: "#b67cff", spawnWeight: 1, shootInterval: 1.8, movement: "straight" },
 ];
 

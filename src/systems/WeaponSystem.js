@@ -157,7 +157,7 @@ export class WeaponSystem {
     });
     if (!enemy.boss) {
       if (enemy.definition.attackPattern === "burst") return [-0.22, 0, 0.22].map((offset) => makeShot(base + offset, "burstBolt"));
-      return makeShot();
+      return makeShot(Math.PI);
     }
     if (enemy.definition.attackPattern === "radial") {
       const count = 10 + Math.min(6, Math.floor(enemy.level / 10));
