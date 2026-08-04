@@ -1815,6 +1815,17 @@ body { background: #02050c; }
   transform: none !important;
 }
 
+/* 手机端没有足够的左侧外置栏：连携按钮必须锚定在装配框内部，避免被屏幕边缘裁切。 */
+@media (max-width: 520px) {
+  #builder-screen .synergy-config-button {
+    right: auto !important;
+    left: 0 !important;
+    width: clamp(80px, 24vw, 96px) !important;
+    min-width: 80px !important;
+    max-width: calc(100vw - 20px) !important;
+  }
+}
+
 /* 光锥之外：独立的章节式航程界面。 */
 .beyond-screen { overflow: hidden; background: radial-gradient(circle at 50% 15%, rgba(83, 116, 255, .27), transparent 38%), linear-gradient(160deg, #0b0b2a, #24114a 56%, #080f2c); color: #ecf8ff; }
 .beyond-shell { position: relative; box-sizing: border-box; width: min(100%, 560px); min-height: 100%; margin: 0 auto; padding: max(18px, env(safe-area-inset-top)) 20px 30px; }
