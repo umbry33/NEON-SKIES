@@ -26,30 +26,34 @@ export class Enemy {
     this.bossChargeTime = 0;
     this.shieldActive = false;
     this.burn = null;
+    this.slowTimer = 0;
+    this.slowMultiplier = 1;
   }
 
   update(dt, bounds = { width: 480 }) {
+    this.slowTimer = Math.max(0, this.slowTimer - dt);
     if (this.frozen) return;
-    this.age += dt;
+    const behaviorDt = dt * (this.slowTimer > 0 ? this.slowMultiplier : 1);
+    this.age += behaviorDt;
     if (this.boss) {
-      this.bossChargeTimer -= dt;
+      this.bossChargeTimer -= behaviorDt;
       if (this.bossChargeTimer <= 0 && this.definition.dashInterval) {
         this.bossChargeTime = this.definition.dashDuration ?? 0.5;
         this.bossChargeTimer = this.definition.dashInterval;
       }
-      this.bossChargeTime = Math.max(0, this.bossChargeTime - dt);
+      this.bossChargeTime = Math.max(0, this.bossChargeTime - behaviorDt);
       const movement = this.bossChargeTime > 0 ? 1.85 : 0.9;
       this.x = bounds.width / 2 + Math.sin(this.age * movement) * bounds.width * (this.bossChargeTime > 0 ? 0.43 : 0.32);
       this.y = 118 + Math.sin(this.age * 1.55) * 66;
     } else {
-      this.dashTimer -= dt;
+      this.dashTimer -= behaviorDt;
       if (this.definition.movement === "dash" && this.dashTimer <= 0) {
         this.dashTime = this.definition.dashDuration ?? 0.6;
         this.dashTimer = this.definition.dashInterval ?? 3;
       }
-      this.dashTime = Math.max(0, this.dashTime - dt);
+      this.dashTime = Math.max(0, this.dashTime - behaviorDt);
       const speed = this.speed * this.environmentSpeedMultiplier * (this.dashTime > 0 ? (this.definition.dashMultiplier ?? 2.6) : 1);
-      this.y += speed * dt;
+      this.y += speed * behaviorDt;
       if (this.definition.movement === "sine") this.x = this.baseX + Math.sin(this.age * 3.2) * 38;
       if (this.definition.movement === "orbit") this.x = this.baseX + Math.sin(this.age * 2.1) * 70;
       if (this.definition.movement === "zigzag") this.x = this.baseX + Math.sin(this.age * 4.6) * 64;
@@ -59,7 +63,7 @@ export class Enemy {
         this.shieldActive = (this.age % cycle) < (this.definition.shieldDuration ?? 1.4);
       }
     }
-    this.shootTimer -= dt;
+    this.shootTimer -= behaviorDt;
     this.silenceTimer = Math.max(0, this.silenceTimer - dt);
   }
 
@@ -72,6 +76,11 @@ export class Enemy {
   takeDamage(amount) {
     this.hp -= this.shieldActive ? amount * 0.35 : amount;
     return this.hp <= 0;
+  }
+
+  applySlow({ multiplier = .67, duration = 3 } = {}) {
+    this.slowMultiplier = Math.max(0.01, Math.min(1, multiplier));
+    this.slowTimer = Math.max(0, duration);
   }
 
   applyBurn(effect = {}) {
@@ -93,7 +102,7 @@ export class Enemy {
   silence(seconds) { this.silenceTimer = Math.max(this.silenceTimer, seconds); }
 
   draw(ctx) {
-    const { type, color } = this.definition;
+    const { type, color, bossShape } = this.definition;
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.globalAlpha = this.isPhased ? 0.28 : 1;
@@ -103,7 +112,14 @@ export class Enemy {
     ctx.fillStyle = color;
     ctx.beginPath();
     if (this.boss) {
-      ctx.moveTo(0, -48); ctx.lineTo(38, -20); ctx.lineTo(48, 18); ctx.lineTo(20, 42); ctx.lineTo(-20, 42); ctx.lineTo(-48, 18); ctx.lineTo(-38, -20);
+      if (bossShape === "storm") { ctx.moveTo(0, -50); ctx.lineTo(18, -18); ctx.lineTo(48, -14); ctx.lineTo(27, 6); ctx.lineTo(38, 38); ctx.lineTo(0, 27); ctx.lineTo(-38, 38); ctx.lineTo(-27, 6); ctx.lineTo(-48, -14); ctx.lineTo(-18, -18); }
+      else if (bossShape === "nest" || bossShape === "hive") { ctx.moveTo(0, -51); ctx.lineTo(35, -29); ctx.lineTo(48, 4); ctx.lineTo(28, 41); ctx.lineTo(0, 49); ctx.lineTo(-28, 41); ctx.lineTo(-48, 4); ctx.lineTo(-35, -29); }
+      else if (bossShape === "prism") { ctx.moveTo(0, -55); ctx.lineTo(48, 0); ctx.lineTo(0, 55); ctx.lineTo(-48, 0); }
+      else if (bossShape === "cryo") { for (let i = 0; i < 12; i += 1) { const angle = -Math.PI / 2 + i * Math.PI * 2 / 12; const radius = i % 2 ? 38 : 52; const x = Math.cos(angle) * radius; const y = Math.sin(angle) * radius; i ? ctx.lineTo(x, y) : ctx.moveTo(x, y); } }
+      else if (bossShape === "lattice") { ctx.moveTo(0, -53); ctx.lineTo(44, -25); ctx.lineTo(44, 25); ctx.lineTo(0, 53); ctx.lineTo(-44, 25); ctx.lineTo(-44, -25); }
+      else if (bossShape === "abyss") { ctx.moveTo(0, -52); ctx.quadraticCurveTo(53, -24, 34, 22); ctx.quadraticCurveTo(16, 54, 0, 34); ctx.quadraticCurveTo(-16, 54, -34, 22); ctx.quadraticCurveTo(-53, -24, 0, -52); }
+      else if (bossShape === "chorus") { ctx.arc(0, 0, 45, 0, Math.PI * 2); }
+      else { ctx.moveTo(0, -48); ctx.lineTo(38, -20); ctx.lineTo(48, 18); ctx.lineTo(20, 42); ctx.lineTo(-20, 42); ctx.lineTo(-48, 18); ctx.lineTo(-38, -20); }
     } else if (type === "guardian") {
       ctx.moveTo(0, -25); ctx.lineTo(21, -8); ctx.lineTo(17, 17); ctx.lineTo(0, 24); ctx.lineTo(-17, 17); ctx.lineTo(-21, -8);
     } else if (type === "swift") {
@@ -147,7 +163,14 @@ export class Enemy {
     ctx.fillStyle = "#241b3a";
     ctx.beginPath(); ctx.arc(0, 0, type === "guardian" ? 7 : 5, 0, Math.PI * 2); ctx.fill();
     if (this.boss) {
-      ctx.shadowBlur = 12; ctx.strokeStyle = "#ff496e"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 57 + Math.sin(this.age * 5) * 3, 0, Math.PI * 2); ctx.stroke();
+      ctx.shadowBlur = 14; ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 57 + Math.sin(this.age * 5) * 3, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalCompositeOperation = "lighter"; ctx.lineWidth = 1.4; ctx.strokeStyle = "#f4ffff";
+      if (bossShape === "storm") { for (const angle of [-.7, .1, .9]) { ctx.beginPath(); ctx.moveTo(Math.cos(angle) * 15, Math.sin(angle) * 15); ctx.lineTo(Math.cos(angle + .2) * 43, Math.sin(angle + .2) * 43); ctx.stroke(); } }
+      else if (bossShape === "nest" || bossShape === "hive") { for (let i = 0; i < 3; i += 1) { const x = (i - 1) * 17; ctx.beginPath(); ctx.arc(x, bossShape === "hive" ? 7 : 0, 7, 0, Math.PI * 2); ctx.stroke(); } }
+      else if (bossShape === "prism" || bossShape === "lattice") { ctx.beginPath(); ctx.moveTo(-34, 0); ctx.lineTo(0, -34); ctx.lineTo(34, 0); ctx.lineTo(0, 34); ctx.closePath(); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-44, 0); ctx.lineTo(44, 0); ctx.moveTo(0, -44); ctx.lineTo(0, 44); ctx.stroke(); }
+      else if (bossShape === "cryo") { for (let i = 0; i < 6; i += 1) { const angle = i * Math.PI / 3; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(angle) * 41, Math.sin(angle) * 41); ctx.stroke(); } }
+      else if (bossShape === "abyss") { ctx.strokeStyle = "#e7baff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 18, this.age * 2, this.age * 2 + Math.PI * 1.65); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, 32, -this.age * 1.4, -this.age * 1.4 + Math.PI * 1.25); ctx.stroke(); }
+      else if (bossShape === "chorus") { for (let y = -18; y <= 18; y += 12) { ctx.beginPath(); ctx.moveTo(-34, y); ctx.quadraticCurveTo(0, y + Math.sin(this.age * 3 + y) * 8, 34, y); ctx.stroke(); } }
     }
     if (type === "prism") { ctx.strokeStyle = "#f0ffff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, -19); ctx.lineTo(0, 19); ctx.moveTo(-16, 0); ctx.lineTo(16, 0); ctx.stroke(); }
     if (type === "anchor") { ctx.strokeStyle = "#fff0b8"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(0, -26); ctx.lineTo(0, 17); ctx.moveTo(-14, 9); ctx.quadraticCurveTo(0, 27, 14, 9); ctx.stroke(); }

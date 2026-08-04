@@ -67,6 +67,7 @@ export class CollisionSystem {
           if (destroyedEnemies.has(enemy) || enemy.isPhased || removedProjectiles.has(projectile) || !projectile.canHit(enemy) || !circleIntersects(projectile, enemy)) continue;
           projectile.registerHit(enemy); addDamage(enemy, projectile.currentDamage, projectile.element);
           if (projectile.burn) enemy.applyBurn(projectile.burn);
+          if (projectile.slow) enemy.applySlow(projectile.slow);
           if (projectile.explosionRadius) {
             explosionEvents.push({ x: enemy.x, y: enemy.y, radius: projectile.explosionRadius, color: projectile.color, kind: projectile.kind, life: 0.38, maxLife: 0.38 });
             const explosionDamage = projectile.explosionDamage ?? projectile.currentDamage;
@@ -95,6 +96,7 @@ export class CollisionSystem {
     }
     for (const laser of lasers) if (laser.life > 0) for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && !enemy.isPhased && !laser.hitIds.has(enemy.id) && Math.abs(enemy.y - laser.y) <= enemy.radius + laser.thickness) { laser.hitIds.add(enemy.id); addDamage(enemy, laser.damage, laser.element ?? "electric"); }
     let sawHitCount = 0;
+    let sawProjectileCount = 0;
     if (ionSaw?.active && ionSaw.damageTimer <= 0) {
       const reach = ionSaw.reach ?? 42;
       const radius = ionSaw.radius ?? 26;
@@ -103,9 +105,15 @@ export class CollisionSystem {
         const nearBlade = Math.hypot(enemy.x - (player.x - reach), enemy.y - player.y) <= enemy.radius + radius || Math.hypot(enemy.x - (player.x + reach), enemy.y - player.y) <= enemy.radius + radius;
         if (nearBlade) { addDamage(enemy, ionSaw.damage); sawHitCount += 1; }
       }
+      for (const projectile of projectiles) {
+        if (projectile.team !== "enemy" || projectile.blackHoleCapturedBy || removedProjectiles.has(projectile)) continue;
+        const projectileRadius = projectile.radius ?? 0;
+        const nearBlade = Math.hypot(projectile.x - (player.x - reach), projectile.y - player.y) <= projectileRadius + radius || Math.hypot(projectile.x - (player.x + reach), projectile.y - player.y) <= projectileRadius + radius;
+        if (nearBlade) { removedProjectiles.add(projectile); sawProjectileCount += 1; }
+      }
     }
     // 机体碰撞只造成接触伤害，敌机仍然留在场上；只有玩家武器造成的伤害才能销毁敌机。
     if (!freezeActive) for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && intersectsPlayer(enemy)) playerDamage += GAME_CONFIG.projectile.enemyContactDamage;
-    return { removedProjectiles, destroyedEnemies, score, playerDamage, playerHealing, damageEvents, explosionEvents, sawHitCount, sawTriggered: Boolean(ionSaw?.active && ionSaw.damageTimer <= 0) };
+    return { removedProjectiles, destroyedEnemies, score, playerDamage, playerHealing, damageEvents, explosionEvents, sawHitCount, sawProjectileCount, sawTriggered: Boolean(ionSaw?.active && ionSaw.damageTimer <= 0) };
   }
 }

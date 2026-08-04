@@ -39,6 +39,7 @@ const tap = (element, handler) => {
     if (!element.disabled) handler(event);
   });
 };
+const escapeHtml = (value) => String(value).replace(/[&<>\x27"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\x27": "&#39;", '"': "&quot;" }[char]));
 const emit = (ui, name, detail = {}) => ui.beyondScreen?.dispatchEvent(new CustomEvent(name, { detail }));
 const setAnimatedVisibility = (element, visible, after = null) => {
   if (!element) { after?.(); return; }
@@ -67,7 +68,7 @@ const setAnimatedVisibility = (element, visible, after = null) => {
 export function installBeyondLightConeUI(ui) {
   const screen = document.createElement("section");
   screen.id = "beyond-screen"; screen.className = "game-screen beyond-screen is-hidden";
-  screen.innerHTML = `<div class="beyond-shell"><header class="beyond-header"><button id="beyond-back-button" class="round-button" type="button">&lt;</button><div><p class="eyebrow">BEYOND LIGHT CONE</p><h2>光锥之外</h2></div><button id="beyond-save-button" class="quick-assembly-toggle" type="button">存档码</button></header><section id="beyond-start-panel" class="beyond-start-panel"><p>随机生成航线、即时构筑机体，抵达地图顶端并击败首领。</p><div id="beyond-difficulty-grid" class="beyond-difficulty-grid"></div><button id="beyond-new-run-button" class="primary-button" type="button">开始新的航程</button><button id="beyond-load-button" class="secondary-button" type="button">导入航程存档</button></section><section id="beyond-run-panel" class="beyond-run-panel is-hidden"><div class="beyond-run-hud"><span>生命 <b id="beyond-hp">100 / 100</b></span><span>金币 <b id="beyond-gold">48</b></span><span>难度 <b id="beyond-difficulty">Lv.1</b></span><span>章节 <b id="beyond-chapter">1 / 1</b></span><button id="beyond-build-button" class="quick-assembly-toggle" type="button">改装机体</button></div><p id="beyond-route-hint" class="beyond-route-hint">选择下一处航线节点</p><div id="beyond-map" class="beyond-map"></div><div id="beyond-node-panel" class="beyond-node-panel beyond-animated beyond-panel-motion is-hidden"><p id="beyond-node-tag" class="eyebrow">NODE</p><h3 id="beyond-node-title">节点</h3><p id="beyond-node-description"></p><div id="beyond-node-rewards" class="beyond-node-rewards"></div><button id="beyond-node-action" class="primary-button" type="button">进入</button><button id="beyond-node-close" class="secondary-button" type="button">返回路线图</button></div></section></div><div id="beyond-save-modal" class="module-detail-modal beyond-animated is-hidden"><div class="module-detail-card loadout-code-card"><button id="beyond-save-close" class="detail-close" type="button">X</button><p class="eyebrow">RUN ARCHIVE</p><h3>航程存档码</h3><p class="detail-description">保存地图、路线、库存、机体与当前进度。</p><textarea id="beyond-save-input" class="loadout-code-input" spellcheck="false"></textarea><p id="beyond-save-message" class="loadout-code-message"></p><button id="beyond-save-copy" class="secondary-button" type="button">复制存档码</button><button id="beyond-save-import" class="primary-button" type="button">导入航程</button></div></div><div id="beyond-exit-one" class="screen-overlay beyond-animated is-hidden"><div class="overlay-card"><p class="eyebrow">END EXPEDITION</p><h2>退出本次航程？</h2><p>建议先复制存档码。</p><button id="beyond-exit-one-cancel" class="secondary-button" type="button">取消</button><button id="beyond-exit-one-next" class="primary-button" type="button">继续退出</button></div></div><div id="beyond-exit-two" class="screen-overlay beyond-animated is-hidden"><div class="overlay-card"><p class="eyebrow">FINAL CONFIRMATION</p><h2>确认放弃航程？</h2><p>本次获得的模块都会消失。</p><button id="beyond-exit-two-cancel" class="secondary-button" type="button">返回</button><button id="beyond-exit-confirm" class="primary-button" type="button">确认退出</button></div></div>`;
+  screen.innerHTML = `<div class="beyond-shell"><header class="beyond-header"><button id="beyond-back-button" class="round-button" type="button">&lt;</button><div><p class="eyebrow">BEYOND LIGHT CONE</p><h2>光锥之外</h2></div><button id="beyond-save-button" class="quick-assembly-toggle" type="button">存档码</button></header><section id="beyond-start-panel" class="beyond-start-panel"><p>随机生成航线、即时构筑机体，抵达地图顶端并击败首领。</p><div id="beyond-difficulty-grid" class="beyond-difficulty-grid"></div><button id="beyond-new-run-button" class="primary-button" type="button">开始新的航程</button><button id="beyond-load-button" class="secondary-button" type="button">导入航程存档</button></section><section id="beyond-run-panel" class="beyond-run-panel is-hidden"><div class="beyond-run-hud"><span>生命 <b id="beyond-hp">100 / 100</b></span><span>金币 <b id="beyond-gold">48</b></span><span>难度 <b id="beyond-difficulty">Lv.1</b></span><span>章节 <b id="beyond-chapter">1 / 1</b></span><button id="beyond-build-button" class="quick-assembly-toggle" type="button">改装机体</button><button id="beyond-fusion-button" class="quick-assembly-toggle" type="button">模块合成</button></div><p id="beyond-route-hint" class="beyond-route-hint">选择下一处航线节点</p><div id="beyond-map" class="beyond-map"></div><div id="beyond-node-panel" class="beyond-node-panel beyond-animated beyond-panel-motion is-hidden"><p id="beyond-node-tag" class="eyebrow">NODE</p><h3 id="beyond-node-title">节点</h3><p id="beyond-node-description"></p><div id="beyond-node-rewards" class="beyond-node-rewards"></div><button id="beyond-node-action" class="primary-button" type="button">进入</button><button id="beyond-node-close" class="secondary-button" type="button">返回路线图</button></div></section><section id="beyond-fusion-panel" class="beyond-fusion-panel is-hidden"><header><button id="beyond-fusion-back" class="round-button" type="button">&lt;</button><div><p class="eyebrow">MODULE FUSION</p><h2>模块合成</h2></div><button id="beyond-fusion-recipes" class="quick-assembly-toggle" type="button">查看配方</button></header><div class="beyond-fusion-mode"><button data-fusion-mode="synthesize" class="is-active" type="button">合成模式</button><button data-fusion-mode="decompose" type="button">分解模式</button></div><p id="beyond-fusion-message" class="beyond-route-hint">从库存拖动未装配模块，放入合成台对应位置。</p><div class="beyond-fusion-layout"><section><h3>本局库存</h3><div id="beyond-fusion-inventory" class="beyond-fusion-inventory"></div></section><section><h3 id="beyond-fusion-station-title">3 × 3 合成台</h3><div id="beyond-fusion-grid" class="beyond-fusion-grid"></div><button id="beyond-fusion-action" class="primary-button" type="button">开始合成</button></section></div><section id="beyond-fusion-recipe-list" class="beyond-fusion-recipe-list is-hidden"></section></section></div><div id="beyond-save-modal" class="module-detail-modal beyond-animated is-hidden"><div class="module-detail-card loadout-code-card"><button id="beyond-save-close" class="detail-close" type="button">X</button><p class="eyebrow">RUN ARCHIVE</p><h3>航程存档码</h3><p class="detail-description">保存地图、路线、库存、机体与当前进度。</p><textarea id="beyond-save-input" class="loadout-code-input" spellcheck="false"></textarea><p id="beyond-save-message" class="loadout-code-message"></p><button id="beyond-save-copy" class="secondary-button" type="button">复制存档码</button><button id="beyond-save-import" class="primary-button" type="button">导入航程</button></div></div><div id="beyond-exit-backdrop" class="beyond-exit-backdrop is-hidden" aria-hidden="true"></div><div id="beyond-exit-one" class="screen-overlay beyond-animated is-hidden"><div class="overlay-card"><p class="eyebrow">END EXPEDITION</p><h2>退出本次航程？</h2><p>建议先复制存档码。</p><button id="beyond-exit-one-cancel" class="secondary-button" type="button">取消</button><button id="beyond-exit-one-next" class="primary-button" type="button">继续退出</button></div></div><div id="beyond-exit-two" class="screen-overlay beyond-animated is-hidden"><div class="overlay-card"><p class="eyebrow">FINAL CONFIRMATION</p><h2>确认放弃航程？</h2><p>本次获得的模块都会消失。</p><button id="beyond-exit-two-cancel" class="secondary-button" type="button">返回</button><button id="beyond-exit-confirm" class="primary-button" type="button">确认退出</button></div></div>`;
   document.querySelector(".app-shell")?.append(screen);
   const resultModal = document.createElement("div");
   resultModal.id = "beyond-result-modal";
@@ -89,6 +90,7 @@ export function installBeyondLightConeUI(ui) {
   const $ = (selector) => screen.querySelector(selector);
   const startPanel = $("#beyond-start-panel"); const runPanel = $("#beyond-run-panel"); const grid = $("#beyond-difficulty-grid"); const map = $("#beyond-map"); const nodePanel = $("#beyond-node-panel"); const saveModal = $("#beyond-save-modal"); const saveCopy = $("#beyond-save-copy"); const saveImport = $("#beyond-save-import"); const resultTag = $("#beyond-result-tag"); const resultTitle = $("#beyond-result-title"); const resultMessage = $("#beyond-result-message"); const resultDetails = $("#beyond-result-details"); const resultRewards = $("#beyond-result-rewards"); const resultContinue = $("#beyond-result-continue"); const eventTag = $("#beyond-event-tag"); const eventTitle = $("#beyond-event-title"); const eventDescription = $("#beyond-event-description"); const eventChoices = $("#beyond-event-choices"); const eventMessage = $("#beyond-event-message"); const completeStats = $("#beyond-complete-stats"); const completeRewards = $("#beyond-complete-rewards"); const completeExit = $("#beyond-complete-exit"); const completeEyebrow = completeModal.querySelector(".eyebrow"); const completeTitle = completeModal.querySelector("h3"); const completeMessage = completeModal.querySelector(".beyond-complete-message");
   const setArchiveAction = (action) => { saveCopy?.classList.toggle("is-hidden", action !== "copy"); saveImport?.classList.toggle("is-hidden", action !== "import"); };
+  const exitBackdrop = $("#beyond-exit-backdrop");
   const rarityNames = { common: "普通", uncommon: "非凡", rare: "稀有", epic: "史诗", legendary: "传说" };
   const createModuleRewardIcon = (module, className, size = 36) => {
     const canvas = document.createElement("canvas");
@@ -291,14 +293,151 @@ export function installBeyondLightConeUI(ui) {
     requestAnimationFrame(() => ui.showModeSelect({ direction: "back" }));
   };
   const backButton = $("#beyond-back-button");
+  const fusionPanel = $("#beyond-fusion-panel"); const fusionGrid = $("#beyond-fusion-grid"); const fusionInventory = $("#beyond-fusion-inventory"); const fusionMessage = $("#beyond-fusion-message"); const fusionAction = $("#beyond-fusion-action"); const fusionRecipeList = $("#beyond-fusion-recipe-list");
+  ui.beyondFusionMode = "synthesize"; ui.beyondFusionSlots = Array(9).fill(null); ui.beyondFusionSelected = null; ui.beyondFusionTarget = null; ui.beyondFusionDrag = null;
+  fusionPanel.querySelector(".beyond-fusion-mode")?.remove();
+  $("#beyond-fusion-recipes")?.remove();
+  const fusionLayout = fusionPanel.querySelector(".beyond-fusion-layout");
+  const inventorySection = fusionInventory?.closest("section");
+  const stationSection = fusionGrid?.closest("section");
+  const recipeSection = document.createElement("section");
+  recipeSection.className = "beyond-fusion-recipes-section";
+  recipeSection.innerHTML = "<h3>全部合成配方</h3>";
+  const recipeScrollFrame = document.createElement("div");
+  recipeScrollFrame.className = "beyond-fusion-recipe-scroll-frame";
+  recipeScrollFrame.append(fusionRecipeList);
+  recipeSection.append(recipeScrollFrame);
+  fusionLayout?.insertBefore(recipeSection, stationSection);
+  if (inventorySection) fusionLayout?.append(inventorySection);
+  const getFusionPreviewSlots = (module) => {
+    if (!module?.fusionRecipe?.length) return Array(9).fill(null);
+    const minX = Math.min(...module.fusionRecipe.map((item) => item.x)); const maxX = Math.max(...module.fusionRecipe.map((item) => item.x));
+    const minY = Math.min(...module.fusionRecipe.map((item) => item.y)); const maxY = Math.max(...module.fusionRecipe.map((item) => item.y));
+    const offsetX = Math.floor((3 - (maxX - minX + 1)) / 2) - minX; const offsetY = Math.floor((3 - (maxY - minY + 1)) / 2) - minY;
+    const preview = Array(9).fill(null); module.fusionRecipe.forEach((item) => { preview[(item.y + offsetY) * 3 + item.x + offsetX] = item.moduleId; }); return preview;
+  };
+  const fusionSlotMarkup = (id, index, previewId = null) => {
+    const ghost = !id && previewId; const module = getModuleById(id ?? previewId);
+    return `<button type="button" class="beyond-fusion-slot${ghost ? " is-recipe-ghost" : ""}" data-fusion-slot="${index}" aria-label="${ghost ? `配方参考：${module?.name ?? previewId}` : id ? `已放置：${module?.name ?? id}` : "空合成槽"}">${module?.name ?? (id ?? "＋")}</button>`;
+  };
+  const renderFusion = (data) => {
+    const { inventoryRows = [], recipes = [] } = data ?? ui.beyondFusionData ?? {}; ui.beyondFusionData = { inventoryRows, recipes };
+    requestAnimationFrame(() => {
+      const counts = new Map((ui.beyondFusionData?.inventoryRows ?? []).map((row) => [row.id, row.free ?? 0]));
+      const ordered = Array.from(fusionRecipeList.querySelectorAll("[data-fusion-recipe]")).map((button) => {
+        const module = getModuleById(button.dataset.fusionRecipe); const required = new Map();
+        (module?.fusionRecipe ?? []).forEach((item) => required.set(item.moduleId, (required.get(item.moduleId) ?? 0) + 1));
+        const available = [...required].every(([id, count]) => (counts.get(id) ?? 0) >= count);
+        button.classList.toggle("is-available", available); const hint = button.querySelector("em");
+        if (hint) hint.textContent = available ? "材料齐全 · 点击设为目标配方" : "材料不足 · 点击设为目标配方";
+        return { button, available };
+      }).sort((left, right) => Number(right.available) - Number(left.available));
+      ordered.forEach(({ button }) => fusionRecipeList.appendChild(button));
+    });
+    const decompose = ui.beyondFusionMode === "decompose";
+    fusionRecipeList.classList.toggle("is-hidden", decompose);
+    recipeSection.classList.toggle("is-hidden", decompose);
+    $("#beyond-fusion-station-title").textContent = decompose ? "分解台" : "3 × 3 合成台";
+    fusionAction.textContent = decompose ? "分解选中模块" : "开始合成";
+    fusionMessage.textContent = decompose ? "选择一件未装配的合成模块，完整返还配方材料。" : "从库存选择未装配模块，再放入合成台；配方允许整体平移。";
+    const inventoryGroups = [["weapon", "自动模块"], ["special", "技能模块"]]; fusionInventory.classList.add("beyond-fusion-library"); fusionInventory.innerHTML = inventoryGroups.map(([type, title]) => { const rows = inventoryRows.filter((row) => getModuleById(row.id)?.type === type); if (!rows.length) return ""; return `<section class="library-group" data-module-type="${type}"><div class="library-group-title"><span>${title}</span><small>拖入九宫格</small></div><div class="library-cards">${rows.map((row) => { const module = getModuleById(row.id); const used = decompose ? 0 : ui.beyondFusionSlots.filter((id) => id === row.id).length; const availableNow = Math.max(0, row.free - used); const selectable = decompose ? Boolean(module?.fusionRecipe?.length && row.free > 0) : availableNow > 0; return `<button type="button" class="library-module beyond-fusion-library-module${ui.beyondFusionSelected === row.id ? " is-selected" : ""}" data-fusion-input="${row.id}" data-drag-module="${row.id}" draggable="${selectable}" ${selectable ? "" : "disabled"} title="拖动到合成台"><canvas class="module-icon-canvas" width="36" height="36" data-icon-module="${row.id}" aria-hidden="true"></canvas><span class="library-module-copy"><strong>${escapeHtml(module?.name ?? row.id)}</strong><small>库存 ${row.count} / 可用 ${availableNow}</small></span><span class="install-mark">+</span></button>`; }).join("")}</div></section>`; }).join("") || "<p>暂无可用模块</p>";
+    fusionInventory.querySelectorAll("[data-icon-module]").forEach((canvas) => paintModuleCanvas(canvas, getModuleById(canvas.dataset.iconModule), canvas.width));
+    fusionInventory.querySelectorAll("[data-fusion-input]").forEach((button) => {
+      button.addEventListener("dragstart", (event) => { if (button.disabled) { event.preventDefault(); return; } ui.beyondFusionDrag = { moduleId: button.dataset.fusionInput, sourceIndex: null }; event.dataTransfer?.setData("text/plain", button.dataset.fusionInput); button.classList.add("is-dragging"); });
+      button.addEventListener("dragend", () => { button.classList.remove("is-dragging"); ui.beyondFusionDrag = null; });
+      tap(button, () => { if (ui.beyondFusionMode === "decompose") { ui.beyondFusionSelected = button.dataset.fusionInput; renderFusion(); } });
+    });
+    fusionGrid.classList.toggle("is-decompose", decompose);
+    const previewSlots = getFusionPreviewSlots(getModuleById(ui.beyondFusionTarget));
+    fusionGrid.innerHTML = decompose ? `<button type="button" class="beyond-fusion-decompose-slot" data-fusion-decompose>${ui.beyondFusionSelected ? (getModuleById(ui.beyondFusionSelected)?.name ?? ui.beyondFusionSelected) : "拖入待分解模块"}</button>` : ui.beyondFusionSlots.map((id, index) => fusionSlotMarkup(id, index, previewSlots[index])).join("");
+    fusionGrid.querySelectorAll("[data-fusion-slot]").forEach((button) => {
+      button.addEventListener("dragover", (event) => { event.preventDefault(); button.classList.add("is-drop-target"); });
+      button.addEventListener("dragleave", () => button.classList.remove("is-drop-target"));
+      button.addEventListener("drop", (event) => { event.preventDefault(); const moduleId = event.dataTransfer?.getData("text/plain") || ui.beyondFusionDrag?.moduleId; const index = Number(button.dataset.fusionSlot); const available = inventoryRows.find((row) => row.id === moduleId)?.free ?? 0; const placed = ui.beyondFusionSlots.filter((id) => id === moduleId).length; if (moduleId && !ui.beyondFusionSlots[index] && available > placed) { ui.beyondFusionSlots[index] = moduleId; ui.beyondFusionTarget = null; ui.beyondFusionDrag = null; renderFusion(); } });
+    });
+    fusionRecipeList.innerHTML = `${recipes.map((module) => `<button type="button" class="beyond-fusion-recipe" data-fusion-recipe="${module.id}"><strong>${module.name}</strong><small>${rarityNames[module.rarity] ?? "模块"}</small><p>${module.fusionRecipe.map((item) => getModuleById(item.moduleId)?.name ?? item.moduleId).join(" ＋ ")}</p><em>点击设为目标配方</em></button>`).join("")}`;
+    fusionRecipeList.querySelectorAll("[data-fusion-recipe]").forEach((button) => tap(button, () => { ui.beyondFusionTarget = button.dataset.fusionRecipe; ui.beyondFusionSlots = Array(9).fill(null); fusionMessage.textContent = `已显示${getModuleById(ui.beyondFusionTarget)?.name ?? "目标配方"}的虚影，请将材料拖入对应槽位。`; renderFusion(); }));
+  };
+  ui.showBeyondFusion = (data) => { ui.beyondFusionMode = "synthesize"; ui.beyondFusionSlots = Array(9).fill(null); ui.beyondFusionSelected = null; ui.beyondFusionTarget = null; ui.hideAllScreens(); screen.classList.remove("is-hidden"); startPanel.classList.add("is-hidden"); runPanel.classList.add("is-hidden"); fusionPanel.classList.remove("is-hidden"); renderFusion(data); };
+  ui.refreshBeyondFusion = (data, message = "") => { renderFusion(data); if (message) fusionMessage.textContent = message; };
   // 难度选择尚未创建航程，直接返回模式选择，避免触发航程放弃确认。
   ["pointerup", "touchend", "click"].forEach((eventName) => backButton?.addEventListener(eventName, leaveDifficultySelect, true));
-  tap(modeButton, () => emit(ui, "beyond:open")); tap($("#beyond-new-run-button"), () => emit(ui, "beyond:new", { difficulty: ui.beyondSelectedDifficulty })); tap($("#beyond-load-button"), () => { setArchiveAction("import"); $("#beyond-save-input").value = ""; $("#beyond-save-message").textContent = "请粘贴航程存档码"; setAnimatedVisibility(saveModal, true); }); tap($("#beyond-save-button"), () => emit(ui, "beyond:save")); tap($("#beyond-build-button"), () => emit(ui, "beyond:build")); tap($("#beyond-back-button"), () => setAnimatedVisibility($("#beyond-exit-one"), true)); tap($("#beyond-node-close"), () => setAnimatedVisibility(nodePanel, false)); tap($("#beyond-node-action"), () => ui.beyondPendingNode && emit(ui, "beyond:node", { id: ui.beyondPendingNode.id })); tap($("#beyond-save-close"), () => setAnimatedVisibility(saveModal, false)); tap(saveCopy, async () => { try { await navigator.clipboard.writeText($("#beyond-save-input").value); $("#beyond-save-message").textContent = "航程存档码已复制"; } catch { $("#beyond-save-input").select(); document.execCommand?.("copy"); } }); tap(saveImport, () => emit(ui, "beyond:load", { code: $("#beyond-save-input").value })); tap($("#beyond-exit-one-cancel"), () => setAnimatedVisibility($("#beyond-exit-one"), false)); tap($("#beyond-exit-one-next"), () => { setAnimatedVisibility($("#beyond-exit-one"), false); setAnimatedVisibility($("#beyond-exit-two"), true); }); tap($("#beyond-exit-two-cancel"), () => setAnimatedVisibility($("#beyond-exit-two"), false)); tap($("#beyond-exit-confirm"), () => emit(ui, "beyond:exit"));
+  tap(modeButton, () => emit(ui, "beyond:open")); tap($("#beyond-new-run-button"), () => emit(ui, "beyond:new", { difficulty: ui.beyondSelectedDifficulty })); tap($("#beyond-load-button"), () => { setArchiveAction("import"); $("#beyond-save-input").value = ""; $("#beyond-save-message").textContent = "请粘贴航程存档码"; setAnimatedVisibility(saveModal, true); }); tap($("#beyond-save-button"), () => emit(ui, "beyond:save")); tap($("#beyond-build-button"), () => emit(ui, "beyond:build")); tap($("#beyond-fusion-button"), () => emit(ui, "beyond:fusion-open")); tap($("#beyond-fusion-back"), () => emit(ui, "beyond:fusion-close")); tap($("#beyond-fusion-recipes"), () => fusionRecipeList.classList.toggle("is-hidden")); $("#beyond-fusion-mode")?.querySelectorAll("[data-fusion-mode]").forEach((button) => tap(button, () => { ui.beyondFusionMode = button.dataset.fusionMode; ui.beyondFusionSelected = null; ui.beyondFusionTarget = null; ui.beyondFusionSlots = Array(9).fill(null); $("#beyond-fusion-mode").querySelectorAll("button").forEach((item) => item.classList.toggle("is-active", item === button)); renderFusion(); })); tap(fusionAction, () => emit(ui, ui.beyondFusionMode === "decompose" ? "beyond:decompose" : "beyond:fuse", ui.beyondFusionMode === "decompose" ? { moduleId: ui.beyondFusionSelected } : { slots: ui.beyondFusionSlots })); tap($("#beyond-back-button"), () => setAnimatedVisibility($("#beyond-exit-one"), true)); tap($("#beyond-node-close"), () => setAnimatedVisibility(nodePanel, false)); tap($("#beyond-node-action"), () => ui.beyondPendingNode && emit(ui, "beyond:node", { id: ui.beyondPendingNode.id })); tap($("#beyond-save-close"), () => setAnimatedVisibility(saveModal, false)); tap(saveCopy, async () => { try { await navigator.clipboard.writeText($("#beyond-save-input").value); $("#beyond-save-message").textContent = "航程存档码已复制"; } catch { $("#beyond-save-input").select(); document.execCommand?.("copy"); } }); tap(saveImport, () => emit(ui, "beyond:load", { code: $("#beyond-save-input").value })); tap($("#beyond-exit-one-cancel"), () => setAnimatedVisibility($("#beyond-exit-one"), false)); tap($("#beyond-exit-one-next"), () => { setAnimatedVisibility($("#beyond-exit-one"), false, () => setAnimatedVisibility($("#beyond-exit-two"), true)); }); tap($("#beyond-exit-two-cancel"), () => setAnimatedVisibility($("#beyond-exit-two"), false)); tap($("#beyond-exit-confirm"), () => emit(ui, "beyond:exit"));
   tap(shopPanel.querySelector("[data-shop-close]"), () => setAnimatedVisibility(shopPanel, false, () => emit(ui, "beyond:shop-close")));
+  const captureExitTap = (selector, handler) => {
+    const button = $(selector);
+    if (!button) return;
+    let suppressClickUntil = 0;
+    const invoke = (event) => {
+      if (event.type === "pointerup" && event.pointerType !== "touch" && event.pointerType !== "pen" && event.button != null && event.button !== 0) return;
+      if ((event.type === "touchend" || event.type === "click") && performance.now() < suppressClickUntil) { event.preventDefault(); event.stopImmediatePropagation(); return; }
+      event.preventDefault(); event.stopImmediatePropagation();
+      if (event.type !== "click") suppressClickUntil = performance.now() + 600;
+      handler();
+    };
+    ["pointerup", "touchend", "click"].forEach((eventName) => button.addEventListener(eventName, invoke, true));
+  };
+  const setExitDialogVisibility = (element, visible, after = null) => {
+    if (!element) { after?.(); return; }
+    if (visible) {
+      if (!element.classList.contains("is-hidden")) return;
+      element.classList.remove("is-hidden");
+      return;
+    }
+    if (element.classList.contains("is-hidden")) { after?.(); return; }
+    element.classList.add("is-hidden");
+    element.classList.remove("is-closing", "is-opening");
+    after?.();
+  };
+  captureExitTap("#beyond-back-button", () => { setAnimatedVisibility(exitBackdrop, true); setExitDialogVisibility($("#beyond-exit-one"), true); });
+  captureExitTap("#beyond-exit-one-cancel", () => setExitDialogVisibility($("#beyond-exit-one"), false, () => setAnimatedVisibility(exitBackdrop, false)));
+  captureExitTap("#beyond-exit-one-next", () => setExitDialogVisibility($("#beyond-exit-one"), false, () => setExitDialogVisibility($("#beyond-exit-two"), true)));
+  captureExitTap("#beyond-exit-two-cancel", () => setExitDialogVisibility($("#beyond-exit-two"), false, () => setAnimatedVisibility(exitBackdrop, false)));
+  captureExitTap("#beyond-exit-confirm", () => { exitBackdrop?.classList.add("is-hidden"); emit(ui, "beyond:exit"); });
+  fusionPanel.querySelectorAll("[data-fusion-mode]").forEach((button) => tap(button, () => { ui.beyondFusionMode = button.dataset.fusionMode; ui.beyondFusionSelected = null; ui.beyondFusionTarget = null; ui.beyondFusionSlots = Array(9).fill(null); fusionPanel.querySelectorAll("[data-fusion-mode]").forEach((item) => item.classList.toggle("is-active", item === button)); renderFusion(); }));
+  const clearFusionDropPreview = () => { fusionGrid.querySelectorAll(".beyond-fusion-drag-preview").forEach((node) => node.remove()); fusionGrid.querySelectorAll(".is-drop-target").forEach((node) => node.classList.remove("is-drop-target")); };
+  const showFusionDropPreview = (target, moduleId) => {
+    clearFusionDropPreview();
+    const index = Number(target?.dataset.fusionSlot);
+    const module = getModuleById(moduleId);
+    if (!target || !module || !Number.isInteger(index) || ui.beyondFusionSlots[index]) return;
+    const preview = document.createElement("span"); preview.className = "beyond-fusion-drag-preview"; preview.setAttribute("aria-hidden", "true");
+    const canvas = document.createElement("canvas"); canvas.width = 48; canvas.height = 48; preview.append(canvas); target.append(preview); target.classList.add("is-drop-target"); paintModuleCanvas(canvas, module, 48);
+  };
+  fusionPanel.addEventListener("pointermove", (event) => { const drag = ui.beyondFusionDrag; if (!drag || ui.beyondFusionMode !== "synthesize") return; const target = document.elementFromPoint(event.clientX, event.clientY)?.closest?.("[data-fusion-slot]"); showFusionDropPreview(target, drag.moduleId); });
+  fusionGrid.addEventListener("dragover", (event) => { const target = event.target.closest?.("[data-fusion-slot]"); const moduleId = event.dataTransfer?.getData("text/plain") || ui.beyondFusionDrag?.moduleId; if (target) { event.preventDefault(); showFusionDropPreview(target, moduleId); } });
+  fusionPanel.addEventListener("dragend", clearFusionDropPreview);
+  const finishFusionPointerDrag = (event) => {
+    const drag = ui.beyondFusionDrag; if (!drag) return;
+    clearFusionDropPreview();
+    const target = document.elementFromPoint(event.clientX, event.clientY)?.closest?.("[data-fusion-slot]");
+    const targetIndex = target ? Number(target.dataset.fusionSlot) : -1;
+    const rows = ui.beyondFusionData?.inventoryRows ?? []; const available = rows.find((row) => row.id === drag.moduleId)?.free ?? 0;
+    const placed = ui.beyondFusionSlots.filter((id) => id === drag.moduleId).length;
+    if (target && targetIndex >= 0 && !ui.beyondFusionSlots[targetIndex] && (drag.sourceIndex !== null || available > placed)) {
+      const replaced = ui.beyondFusionSlots[targetIndex];
+      if (drag.sourceIndex !== null) ui.beyondFusionSlots[drag.sourceIndex] = replaced ?? null;
+      ui.beyondFusionSlots[targetIndex] = drag.moduleId; ui.beyondFusionTarget = null; renderFusion();
+    } else if (drag.sourceIndex !== null) {
+      ui.beyondFusionSlots[drag.sourceIndex] = drag.moduleId; renderFusion();
+    }
+    ui.beyondFusionDrag = null;
+  };
+  fusionPanel.addEventListener("pointerdown", (event) => {
+    if (ui.beyondFusionMode !== "synthesize") return;
+    const source = event.target.closest?.("[data-fusion-input], [data-fusion-slot]"); if (!source || source.disabled) return;
+    const moduleId = source.dataset.fusionInput ?? ui.beyondFusionSlots[Number(source.dataset.fusionSlot)]; if (!moduleId) return;
+    const sourceIndex = source.dataset.fusionSlot === undefined ? null : Number(source.dataset.fusionSlot);
+    if (sourceIndex !== null) ui.beyondFusionSlots[sourceIndex] = null;
+    ui.beyondFusionDrag = { moduleId, sourceIndex }; source.classList.add("is-dragging"); event.preventDefault();
+  });
+  fusionPanel.addEventListener("pointerup", finishFusionPointerDrag);
+  fusionPanel.addEventListener("pointercancel", finishFusionPointerDrag);
+  map.addEventListener("pointerup", (event) => { const button = event.target.closest?.("[data-node]"); const node = ui.beyondRun?.map?.flat().find((item) => item.id === button?.dataset.node); if (!node || node.type !== "boss") return; requestAnimationFrame(() => { const reward = getModuleById(node.bossRewardId); $("#beyond-node-title").textContent = `✹ ${node.bossName ?? "首领"}`; $("#beyond-node-description").textContent = "这位首领守护着一件固定传说模块。击败它即可获得奖励并恢复满血。"; $("#beyond-node-rewards").textContent = `固定奖励：${reward?.name ?? "传说模块"}`; }); }, true);
 
-  const hideExitOverlays = () => { $("#beyond-exit-one")?.classList.add("is-hidden"); $("#beyond-exit-one")?.classList.remove("is-closing", "is-opening"); $("#beyond-exit-two")?.classList.add("is-hidden"); $("#beyond-exit-two")?.classList.remove("is-closing", "is-opening"); };
-  ui.showBeyondStart = () => { hideExitOverlays(); hideResult(); hideEvent(); setArchiveAction("import"); ui.hideAllScreens(); screen.classList.remove("is-hidden"); startPanel.classList.remove("is-hidden"); runPanel.classList.add("is-hidden"); };
-  ui.showBeyondRun = (run, available) => { hideExitOverlays(); hideResult(); hideEvent(); setArchiveAction("copy"); ui.beyondRun = run; ui.beyondBuilderMode = false; ui.hideAllScreens(); screen.classList.remove("is-hidden"); startPanel.classList.add("is-hidden"); runPanel.classList.remove("is-hidden"); $("#beyond-hp").textContent = `${Math.round(run.hp)} / ${Math.round(BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp)}`; $("#beyond-gold").textContent = run.gold; $("#beyond-difficulty").textContent = `Lv.${run.difficulty}`; $("#beyond-chapter").textContent = `${run.chapter ?? 1} / ${run.totalChapters ?? 1}`; $("#beyond-route-hint").textContent = available.length ? "选择与当前位置相连的下一处节点" : "航线已抵达终点"; nodePanel.classList.add("is-hidden"); renderMap(run, available); };
+  const hideExitOverlays = () => { clearTimeout(exitBackdrop?.__beyondAnimationTimer); exitBackdrop?.classList.add("is-hidden"); exitBackdrop?.classList.remove("is-closing", "is-opening"); $("#beyond-exit-one")?.classList.add("is-hidden"); $("#beyond-exit-one")?.classList.remove("is-closing", "is-opening"); $("#beyond-exit-two")?.classList.add("is-hidden"); $("#beyond-exit-two")?.classList.remove("is-closing", "is-opening"); };
+  ui.showBeyondStart = () => { hideExitOverlays(); hideResult(); hideEvent(); setArchiveAction("import"); ui.hideAllScreens(); screen.classList.remove("is-hidden"); fusionPanel.classList.add("is-hidden"); startPanel.classList.remove("is-hidden"); runPanel.classList.add("is-hidden"); };
+  ui.showBeyondRun = (run, available) => { hideExitOverlays(); hideResult(); hideEvent(); setArchiveAction("copy"); ui.beyondRun = run; ui.beyondBuilderMode = false; ui.hideAllScreens(); screen.classList.remove("is-hidden"); fusionPanel.classList.add("is-hidden"); startPanel.classList.add("is-hidden"); runPanel.classList.remove("is-hidden"); $("#beyond-hp").textContent = `${Math.round(run.hp)} / ${Math.round(BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp)}`; $("#beyond-gold").textContent = run.gold; $("#beyond-difficulty").textContent = `Lv.${run.difficulty}`; $("#beyond-chapter").textContent = `${run.chapter ?? 1} / ${run.totalChapters ?? 1}`; $("#beyond-route-hint").textContent = available.length ? "选择与当前位置相连的下一处节点" : "航线已抵达终点"; nodePanel.classList.add("is-hidden"); renderMap(run, available); };
   ui.showBeyondBuilder = (run) => { hideExitOverlays(); if (!ui.beyondReturnLoadout) ui.beyondReturnLoadout = ui.loadout; ui.beyondRun = run; ui.beyondBuilderMode = true; ui.loadout = createLoadout(run.loadout); ui.history = []; ui.hideAllScreens(); ui.builderScreen.classList.remove("is-hidden"); ui.builderSaveButton.textContent = "返回路线图"; ui.renderModuleLibrary(); ui.renderAssembly(); ui.setStatus("仅可使用本次航程库存中实际拥有的模块"); };
   ui.setBeyondSaveCode = (code, message = "已生成航程存档码", action = "copy") => { setArchiveAction(action); $("#beyond-save-input").value = code; $("#beyond-save-message").textContent = message; setAnimatedVisibility(saveModal, true); };
   ui.closeBeyondSave = () => setAnimatedVisibility(saveModal, false);

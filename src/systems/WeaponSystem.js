@@ -153,7 +153,7 @@ export class WeaponSystem {
     const makeShot = (angle = base, kind = "enemyBolt") => new Projectile({
       x: enemy.x, y: enemy.y + enemy.radius * 0.7, vx: Math.sin(angle) * speed,
       vy: -Math.cos(angle) * speed, damage: GAME_CONFIG.projectile.enemyDamage * (enemy.damageMultiplier ?? 1),
-      radius: enemy.boss ? 7 : GAME_CONFIG.projectile.enemyRadius, color: enemy.boss ? "#ff3c70" : "#ff638c", life: GAME_CONFIG.projectile.enemyLife, team: "enemy", kind,
+      radius: enemy.boss ? 7 : GAME_CONFIG.projectile.enemyRadius, color: enemy.boss ? (enemy.definition.color ?? "#ff3c70") : "#ff638c", life: GAME_CONFIG.projectile.enemyLife, team: "enemy", kind,
     });
     if (!enemy.boss) {
       if (enemy.definition.attackPattern === "burst") return [-0.22, 0, 0.22].map((offset) => makeShot(base + offset, "burstBolt"));
@@ -162,6 +162,21 @@ export class WeaponSystem {
     if (enemy.definition.attackPattern === "radial") {
       const count = 10 + Math.min(6, Math.floor(enemy.level / 10));
       return Array.from({ length: count }, (_, index) => makeShot((Math.PI * 2 * index) / count, "bossRadial"));
+    }
+    if (enemy.definition.attackPattern === "ring") {
+      const count = 8 + Math.min(6, Math.floor(enemy.level / 8));
+      const phase = enemy.age * .7;
+      return Array.from({ length: count }, (_, index) => makeShot(phase + (Math.PI * 2 * index) / count, "bossRing"));
+    }
+    if (enemy.definition.attackPattern === "spiral") {
+      const phase = enemy.age * 2.8;
+      return [-.42, 0, .42].map((offset) => makeShot(phase + offset, "bossSpiral"));
+    }
+    if (enemy.definition.attackPattern === "cross") {
+      return [-Math.PI / 2, 0, Math.PI / 2, Math.PI].map((offset) => makeShot(base + offset, "bossCross"));
+    }
+    if (enemy.definition.attackPattern === "lance") {
+      return [-.1, 0, .1].map((offset) => makeShot(base + offset, "bossLance"));
     }
     const count = 5 + Math.min(4, Math.floor(enemy.level / 5));
     return Array.from({ length: count }, (_, index) => {

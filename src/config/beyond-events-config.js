@@ -6,8 +6,13 @@ const module = (count = 1, rarity = "any") => ({ type: "module", count, rarity }
 const battle = (elite = false) => ({ type: "battle", elite });
 const duplicate = () => ({ type: "duplicate" });
 const random = (...outcomes) => ({ type: "random", outcomes });
+const legendary = () => ({ type: "legendary" });
 
 export const BEYOND_EVENTS = [
+  { id: "crown-vault", rareLegendary: true, title: "冠冕保险库", tag: "稀有传说信号", description: "一座仅对罕见航迹开启的保险库要求你用完整航程记录换取其中的核心装置。", choices: [choice("claim", "开启保险库", "获得一件传说模块", [legendary()]), choice("leave", "保留航迹", "获得 90 金币", [gold(90)])] },
+  { id: "sleeping-arsenal", rareLegendary: true, title: "沉睡军械库", tag: "稀有传说信号", description: "军械库的最后一台制造机仍在运作，它只愿为真正抵达这里的飞行员完成一次装配。", choices: [choice("forge", "请求制造", "获得一件传说模块", [legendary()]), choice("salvage", "拆取残件", "获得高品质模块与 30 金币", [module(1, "high"), gold(30)])] },
+  { id: "stellar-inheritance", rareLegendary: true, title: "星核遗赠", tag: "稀有传说信号", description: "一颗熄灭恒星的遗产被封存在微型引力场中，外壳上写着一行无法辨认的署名。", choices: [choice("inherit", "接收遗赠", "获得一件传说模块", [legendary()]), choice("stabilize", "稳定引力场", "恢复全部生命", [hp(99)])] },
+  { id: "last-conductor", rareLegendary: true, title: "终末指挥台", tag: "稀有传说信号", description: "指挥台仍保留着一条空置舰队的授权位，接入后会有一件核心模块响应你的呼叫。", choices: [choice("command", "接入授权", "获得一件传说模块", [legendary()]), choice("decode", "下载战术档案", "获得 72 金币与稀有模块", [gold(72), module(1, "rare")])]},
   { id: "stardust-bottle", title: "星尘漂流瓶", tag: "漂流信号", description: "一只折射着粉紫色微光的玻璃瓶从航线旁掠过，内部有一段尚未读完的求救讯号。", choices: [choice("decode", "解码讯号", "获得 36 金币", [gold(36)]), choice("seal", "封存星尘", "恢复 12 生命", [hp(12)])] },
   { id: "warped-vending", title: "失真售货机", tag: "故障零售", description: "一台老旧售货机把商品列表投影到星空中，投币口正在以不合常理的速度旋转。", choices: [choice("insert", "投入硬币", "消耗 20 金币，获得模块", [gold(-20), module()], { gold: 20 }), choice("kick", "踢开底座", "随机获得金币或恢复生命", [random({ label: "掉出一把零钱", effects: [gold(42)] }, { label: "喷出冷却雾", effects: [hp(16)] })])] },
   { id: "observer-echo", title: "观测者的回声", tag: "深空回响", description: "空无一人的观测站仍在重复播放你的飞行数据，仿佛有人比你更早抵达过这里。", choices: [choice("sync", "与回声同步", "失去 8 生命，获得稀有模块", [hp(-8), module(1, "rare")]), choice("rest", "关闭监听", "恢复 18 生命", [hp(18)])] },

@@ -656,6 +656,9 @@ export class UI {
     skills.forEach((skill, index) => {
       const button = this.skillPanel.querySelector(`[data-skill-index="${index}"]`);
       if (!button) return;
+      button.dataset.skillId = skill.id;
+      const name = button.querySelector("span");
+      if (name) name.textContent = skill.name;
       const cooldown = Math.max(0, skill.cooldownRemaining ?? 0);
       const cooling = cooldown > 0;
       button.classList.toggle("is-cooling", cooling);

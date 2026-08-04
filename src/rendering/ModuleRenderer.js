@@ -104,8 +104,8 @@ function drawNestPod(ctx, x) {
 
 function drawWeapon(ctx, module) {
   const type = module?.behavior?.type; const id = module?.id;
-  const accent = id === "special-energy-aggregator" ? "#5fe8ff" : type === "electricWhirlwind" ? "#ffd84a" : type === "ricochet" ? "#ffd36e" : type === "psionic" ? "#72f1c0" : type === "nest" ? "#ff294d" : type === "flameCrossbow" ? "#ff3b32" : type === "waterShot" ? "#2468ff" : type === "ballLightning" ? "#b7a1ff" : type === "lightning" ? "#b86cff" : type === "blackHole" ? "#b57bff" : "#ffd27a";
-  const fill = id === "special-energy-aggregator" ? "#092d3d" : type === "electricWhirlwind" ? "#3e2b0d" : type === "ricochet" ? "#3a2a13" : type === "psionic" ? "#123d3e" : type === "nest" || type === "flameCrossbow" ? "#090b13" : type === "waterShot" ? "#071b3c" : "#142d46";
+  const accent = id === "fusion-polar-saw" ? "#ffdf64" : id === "special-energy-aggregator" ? "#5fe8ff" : type === "electricWhirlwind" ? "#ffd84a" : type === "ricochet" ? "#ffd36e" : type === "psionic" ? "#72f1c0" : type === "nest" ? "#ff294d" : type === "flameCrossbow" ? "#ff3b32" : type === "waterShot" ? "#2468ff" : type === "ballLightning" ? "#b7a1ff" : type === "lightning" ? "#b86cff" : type === "blackHole" ? "#b57bff" : "#ffd27a";
+  const fill = id === "fusion-polar-saw" ? "#3a2b08" : id === "special-energy-aggregator" ? "#092d3d" : type === "electricWhirlwind" ? "#3e2b0d" : type === "ricochet" ? "#3a2a13" : type === "psionic" ? "#123d3e" : type === "nest" || type === "flameCrossbow" ? "#090b13" : type === "waterShot" ? "#071b3c" : "#142d46";
   drawFrame(ctx, module, accent, fill);
   setModuleGlow(ctx, accent, 5);
   if (type === "single") drawBarrel(ctx, 0);
@@ -147,6 +147,15 @@ function drawWeapon(ctx, module) {
     for (const [x, y] of [[-10, -8], [10, -7], [-11, 8], [11, 8]]) drawSpark(ctx, x, y, 2.7, "#b8ffe7");
     ctx.restore();
   }
+  else if (id === "fusion-polar-saw") {
+    ctx.save(); setModuleGlow(ctx, "#ffdf64", 12); ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.strokeStyle = "#fffbe0"; ctx.lineWidth = 1.45;
+    ctx.beginPath(); ctx.moveTo(0, -13); ctx.lineTo(-2.5, -5); ctx.lineTo(2, -3); ctx.lineTo(-2, 4); ctx.lineTo(0, 13); ctx.stroke();
+    for (const points of [[[-4, -1], [-10, -6], [-8, 0], [-13, 5]], [[4, -1], [10, -6], [8, 0], [13, 5]]]) { ctx.beginPath(); ctx.moveTo(points[0][0], points[0][1]); for (const [x, y] of points.slice(1)) ctx.lineTo(x, y); ctx.stroke(); }
+    ctx.strokeStyle = "#ffdf64"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, 0, 8, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = "#fff4a6"; ctx.beginPath(); ctx.arc(0, 0, 4.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(-1.2, -1.4, 1.25, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
   else if (type === "lightning") drawLightningBolt(ctx, "#b86cff");
   else if (type === "blackHole") { ctx.fillStyle = "#080414"; ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#d0b0ff"; ctx.lineWidth = 1.6; for (const [radius, start] of [[9, .2], [12, 2.3]]) { ctx.beginPath(); ctx.arc(0, 0, radius, start, start + 4.3); ctx.stroke(); } ctx.fillStyle = "#fff0ff"; ctx.beginPath(); ctx.arc(-2, -2, 1.5, 0, Math.PI * 2); ctx.fill(); }
   else if (type === "flameCrossbow") {
@@ -181,10 +190,42 @@ function drawSpecial(ctx, module) {
     "special-zero": { accent: "#a9f4ff", fill: "#123e61" },
     "special-overclock": { accent: "#ffbd55", fill: "#482116" },
     "special-polarity-reverse": { accent: "#d3a8ff", fill: "#27184d" },
+    "fusion-photon-chorus": { accent: "#ffe98a", fill: "#4d3a18" },
+    "fusion-cryo-hive": { accent: "#a5f6ec", fill: "#123f4a" },
+    "fusion-abyss-bloom": { accent: "#d09aff", fill: "#241044" },
+    "fusion-mirage-anchor": { accent: "#8efff1", fill: "#123c43" },
+    "fusion-polar-saw": { accent: "#ffdf64", fill: "#4d3a18" },
+    "fusion-overflow-drive": { accent: "#32eaff", fill: "#123b67" },
   };
   const palette = palettes[module?.id] ?? { accent: "#72f1c0", fill: "#123d3e" };
   const accent = palette.accent; drawFrame(ctx, module, accent, palette.fill); setModuleGlow(ctx, accent, 6);
-  if (module?.id === "special-optical") {
+  if (module?.id === "fusion-abyss-bloom") {
+    ctx.save(); setModuleGlow(ctx, "#d09aff", 12); ctx.strokeStyle = "#d09aff"; ctx.lineWidth = 1.15;
+    for (let i = 0; i < 4; i += 1) { const angle = i * Math.PI / 2; const x = Math.cos(angle) * 8; const y = Math.sin(angle) * 8; ctx.save(); ctx.translate(x, y); ctx.rotate(angle + Math.PI / 2); ctx.fillStyle = i % 2 ? "#6f2d9b" : "#b96cff"; ctx.beginPath(); ctx.moveTo(0, -8); ctx.quadraticCurveTo(6, -1, 0, 8); ctx.quadraticCurveTo(-6, -1, 0, -8); ctx.fill(); ctx.stroke(); ctx.restore(); }
+    ctx.fillStyle = "#180d2e"; ctx.beginPath(); ctx.arc(0, 0, 4.5, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#f0ddff"; ctx.beginPath(); ctx.arc(0, 0, 4.5, 0, Math.PI * 2); ctx.stroke(); ctx.restore();
+  }
+  else if (module?.id === "fusion-photon-chorus") {
+    ctx.save(); setModuleGlow(ctx, "#ffe98a", 10); ctx.strokeStyle = "#ffe98a"; ctx.lineWidth = 1.1;
+    for (let i = 0; i < 6; i += 1) { const angle = i * Math.PI / 3; const x = Math.cos(angle) * 9; const y = Math.sin(angle) * 9; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(x, y); ctx.stroke(); ctx.fillStyle = i % 2 ? "#7ef8ff" : "#fff1a8"; ctx.beginPath(); ctx.arc(x, y, 2.15, 0, Math.PI * 2); ctx.fill(); }
+    ctx.fillStyle = "#fffbe0"; ctx.beginPath(); ctx.arc(0, 0, 4.2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
+  else if (module?.id === "fusion-cryo-hive") {
+    ctx.save(); setModuleGlow(ctx, "#a5f6ec", 10); ctx.strokeStyle = "#dffeff"; ctx.lineWidth = 1;
+    for (let i = 0; i < 3; i += 1) { const angle = -Math.PI / 2 + i * Math.PI * 2 / 3; const x = Math.cos(angle) * 9; const y = Math.sin(angle) * 9; drawDiamond(ctx, x, y, 4.1, "#56c9cf", "#eaffff"); ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(x, y); ctx.stroke(); }
+    ctx.fillStyle = "#bffeff"; ctx.beginPath(); ctx.arc(0, 0, 3.2, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
+  else if (module?.id === "fusion-mirage-anchor") {
+    ctx.save(); setModuleGlow(ctx, "#8efff1", 10); ctx.strokeStyle = "#8efff1"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.arc(0, 0, 10, .2, Math.PI * 1.85); ctx.stroke(); ctx.beginPath(); ctx.arc(0, 0, 6, Math.PI * 1.2, Math.PI * 2.9); ctx.stroke();
+    ctx.fillStyle = "#d9ffff"; polygon(ctx, [[0, -8], [4, 0], [0, 8], [-4, 0]]); ctx.fill(); ctx.strokeStyle = "#ffffff"; ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(-5, 0); ctx.moveTo(5, 0); ctx.lineTo(12, 0); ctx.stroke(); ctx.restore();
+  }
+  else if (module?.id === "fusion-polar-saw") {
+    ctx.save(); setModuleGlow(ctx, "#ffdf64", 10); ctx.strokeStyle = "#ffdf64"; ctx.lineWidth = 1.25; ctx.setLineDash([2, 1.4]); ctx.beginPath(); ctx.moveTo(-11, -6); ctx.lineTo(11, 6); ctx.moveTo(-11, 6); ctx.lineTo(11, -6); ctx.stroke(); ctx.setLineDash([]); drawSawDisc(ctx, -8, 0, 4.5, "#70f5ff", -.3); drawSawDisc(ctx, 8, 0, 4.5, "#ffdf64", .3); ctx.fillStyle = "#fff6bb"; ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
+  else if (module?.id === "fusion-overflow-drive") {
+    ctx.save(); setModuleGlow(ctx, "#32eaff", 11); ctx.strokeStyle = "#32eaff"; ctx.lineWidth = 1.2; for (const radius of [5, 9, 12]) { ctx.beginPath(); ctx.arc(0, 0, radius, -1.15, 1.15); ctx.stroke(); }
+    ctx.fillStyle = "#a8fbff"; polygon(ctx, [[0, -9], [4, -1], [1.5, 8], [-4, 1]]); ctx.fill(); ctx.strokeStyle = "#ffffff"; ctx.lineWidth = .9; ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(-6, 0); ctx.moveTo(6, 0); ctx.lineTo(12, 0); ctx.stroke(); ctx.restore();
+  }
+  else if (module?.id === "special-optical") {
     ctx.save(); setModuleGlow(ctx, "#9ee9ff", 9);
     ctx.strokeStyle = "#c9fbff"; ctx.lineWidth = 1.15; ctx.beginPath(); ctx.ellipse(0, 0, 11, 6.8, 0, 0, Math.PI * 2); ctx.stroke();
     const iris = ctx.createRadialGradient(-1, -1, 1, 0, 0, 5); iris.addColorStop(0, "#ffffff"); iris.addColorStop(.35, "#74f4ff"); iris.addColorStop(1, "#5267ff");

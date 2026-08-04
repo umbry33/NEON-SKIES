@@ -24,6 +24,12 @@ export class SkillSystem {
     else if (skill.id === "freeze") game.freezeTimer = Math.max(game.freezeTimer, skill.duration);
     else if (skill.id === "overclock") game.startOverclock(skill.duration);
     else if (skill.id === "polarityReverse") game.startPolarityReverse(skill.duration);
+    else if (skill.id === "photonChoir") game.startPhotonChoir();
+    else if (skill.id === "cryoHive") game.startCryoHive(skill.duration, skill.instanceId);
+    else if (skill.id === "mirageAnchor") game.startMirageAnchor(skill.duration);
+    else if (skill.id === "polarTether") game.startPolarTether(skill.duration);
+    else if (skill.id === "overflowDrive") game.startOverflowDrive(skill.duration);
+    else if (skill.id === "abyssBloom") game.startAbyssBloom(skill.duration, skill.instanceId);
     return true;
   }
 

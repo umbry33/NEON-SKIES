@@ -29,7 +29,7 @@ export const UNRELEASED_ENEMY_CONFIG = [
   { id: "enemy-petal-minelayer", name: "\u7efd\u653e\u7684\u82b1\u857e", type: "petal", visualType: "petal", flipY: true, hp: 26, speed: 88, radius: 21, score: 520, color: "#ff91b7", mechanic: "\u6295\u4e0b\u4e00\u4e2a\u82b1\u857e\u6838\uff0c\u77ed\u6682\u540e\u5411\u56db\u4e2a\u5bf9\u89d2\u65b9\u5411\u5c55\u5f00\u82b1\u74e3\u5f39\u3002" },
 ];
 
-export function createBossDefinition(level = 5) {
+export function createBossDefinition(level = 5, variantId = null) {
   const summonPool = level >= 20
     ? level >= 35
       ? ["enemy-bulwark", "enemy-striker", "enemy-rammer", "enemy-phantom"]
@@ -37,13 +37,25 @@ export function createBossDefinition(level = 5) {
     : level >= 10
       ? ["enemy-swift", "enemy-guardian", "enemy-orbit"]
       : ["enemy-scout", "enemy-swift", "enemy-guardian"];
+  const variants = {
+    "storm-warden": { name: "雷暴监守", color: "#89ddff", attackPattern: "spiral", bossShape: "storm", bossSkills: ["spiral", "summon"] },
+    "nest-matriarch": { name: "覆巢母舰", color: "#ff6b84", attackPattern: "fan", bossShape: "nest", bossSkills: ["fan", "summon"] },
+    "prism-oracle": { name: "棱镜先知", color: "#f0c5ff", attackPattern: "cross", bossShape: "prism", bossSkills: ["cross", "charge"] },
+    "zero-archon": { name: "零度执政官", color: "#baf6ff", attackPattern: "ring", bossShape: "cryo", bossSkills: ["ring", "charge", "summon"] },
+    "lattice-leviathan": { name: "晶格利维坦", color: "#d7a5ff", attackPattern: "radial", bossShape: "lattice", bossSkills: ["radial", "charge", "summon"] },
+    "abyss-gardener": { name: "深渊园丁", color: "#c47cff", attackPattern: "lance", bossShape: "abyss", bossSkills: ["lance", "summon"] },
+    "chorus-conductor": { name: "合唱指挥舰", color: "#fff0a8", attackPattern: "ring", bossShape: "chorus", bossSkills: ["ring", "summon"] },
+    "cryo-hive-queen": { name: "寒潮蜂后", color: "#a5f6ec", attackPattern: "cross", bossShape: "hive", bossSkills: ["cross", "charge", "summon"] },
+  };
+  const variant = variants[variantId] ?? {};
   return {
-    id: `boss-${level}`, name: `Boss ${level}`, type: "boss", boss: true,
+    id: `boss-${variantId ?? level}`, name: variant.name ?? `Boss ${level}`, type: "boss", boss: true, variantId,
     hp: 170 + level * 34, speed: 0, radius: 48, score: 2600 + level * 240,
-    color: "#ff3c70", spawnWeight: 0, shootInterval: Math.max(0.7, 1.5 - level * 0.02), movement: "boss",
+    color: variant.color ?? "#ff3c70", spawnWeight: 0, shootInterval: Math.max(0.7, 1.5 - level * 0.02), movement: "boss",
+    bossShape: variant.bossShape ?? "default",
     summon: { interval: Math.max(2.8, 5.8 - level * 0.07), maxActive: 3 + Math.floor(level / 8), count: level >= 15 ? 2 : 1, pool: summonPool },
-    attackPattern: level >= 40 ? "radial" : "fan",
-    bossSkills: level >= 45 ? ["radial", "charge", "summon"] : level >= 30 ? ["fan", "charge", "summon"] : ["fan", "summon"],
+    attackPattern: variant.attackPattern ?? (level >= 40 ? "radial" : "fan"),
+    bossSkills: variant.bossSkills ?? (level >= 45 ? ["radial", "charge", "summon"] : level >= 30 ? ["fan", "charge", "summon"] : ["fan", "summon"]),
     dashInterval: level >= 30 ? Math.max(3.4, 6.4 - level * 0.05) : 0,
     dashDuration: 0.5,
   };

@@ -61,7 +61,63 @@ export const MODULE_CONFIG = {
   ],
 };
 
+// 光锥之外的合成产物：常规模式默认可用，但航程内只能依配方获取。
+// recipe 中的坐标是合成台 3×3 内的固定锚点；允许整体平移，不允许旋转或镜像。
+const fusion = (data) => ({ ...data, beyondFusionOnly: true, fusionRecipe: data.fusionRecipe.map((item) => ({ ...item })) });
+export const PLAYER_DISABLED_MODULE_IDS = new Set(["fusion-mirage-anchor", "fusion-overflow-drive", "fusion-photon-chorus"]);
+export const FUSION_MODULES = [
+  fusion(special({ id: "fusion-abyss-bloom", shareCode: 22, name: "深渊花冠", type: "special", description: "合成模块。2×2 格，展开四枚绕体旋转的深渊花瓣；花瓣会依次向外射出穿透花针，形成不断变换的四向火力。", rarity: "legendary", icon: "AB", footprint: square2, skill: { id: "abyssBloom", name: "深渊花冠", cooldown: 15, duration: 6.2 }, fusionRecipe: [{ moduleId: "weapon-ricochet", x: 0, y: 0 }, { moduleId: "weapon-psionic", x: 1, y: 0 }, { moduleId: "weapon-ball-lightning", x: 0, y: 1 }, { moduleId: "weapon-lightning-generator", x: 1, y: 1 }] })),
+  fusion(special({ id: "fusion-photon-chorus", shareCode: 23, name: "光子合唱", type: "special", description: "合成模块。横向三格，放出六枚会自行分配目标的光子音符；命中后在目标周围奏出小范围爆裂。", rarity: "legendary", icon: "PC", footprint: horizontal3, skill: { id: "photonChoir", name: "光子合唱", cooldown: 12, duration: 0 }, fusionRecipe: [{ moduleId: "weapon-psionic", x: 0, y: 1 }, { moduleId: "weapon-ricochet", x: 1, y: 1 }, { moduleId: "special-energy-aggregator", x: 2, y: 1 }] })),
+  fusion(special({ id: "fusion-cryo-hive", shareCode: 24, name: "冰凌", type: "special", description: "合成模块。横向三格，召唤三枚环绕模块的冰凌；冰凌弹命中敌人造成 2 点伤害，并使其全部行为减速 33%，持续 3 秒，重复命中只刷新持续时间。", rarity: "legendary", icon: "CH", footprint: horizontal3, skill: { id: "cryoHive", name: "冰凌", cooldown: 15, duration: 6.6 }, fusionRecipe: [{ moduleId: "weapon-water-shot", x: 0, y: 1 }, { moduleId: "weapon-ball-lightning", x: 1, y: 1 }, { moduleId: "weapon-flame-crossbow", x: 2, y: 1 }] })),
+  special({ id: "fusion-mirage-anchor", shareCode: 28, name: "时空锚点", type: "special", description: "纵向两格。主动放置时空锚点，短暂航行后折返锚点，并清除锚点附近的敌方弹幕。", rarity: "epic", icon: "MA", footprint: vertical2, skill: { id: "mirageAnchor", name: "时空锚点", cooldown: 17, duration: 3.8 } }),
+  fusion(special({ id: "fusion-polar-saw", shareCode: 29, name: "惊雷", type: "special", description: "合成模块。占 2×2 格，主动展开双极雷环，锁定远处目标并建立会跳切邻近敌机的雷链。", rarity: "epic", icon: "SR", footprint: square2, skill: { id: "polarTether", name: "惊雷", cooldown: 14, duration: 4.8 }, fusionRecipe: [{ moduleId: "weapon-lightning-generator", x: 0, y: 1 }, { moduleId: "weapon-lightning-generator", x: 1, y: 1 }] })),
+  fusion(special({ id: "fusion-overflow-drive", shareCode: 30, name: "溢流驱动", type: "special", description: "合成模块。2×2 格，启动同步脉冲：立刻重置全部武器节奏，并在持续期间周期性齐射。", rarity: "epic", icon: "OD", footprint: square2, skill: { id: "overflowDrive", name: "溢流驱动", cooldown: 16, duration: 3.4 }, fusionRecipe: [{ moduleId: "weapon-ricochet", x: 0, y: 0 }, { moduleId: "weapon-water-shot", x: 1, y: 0 }, { moduleId: "weapon-flame-crossbow", x: 0, y: 1 }, { moduleId: "special-energy-aggregator", x: 1, y: 1 }] })),
+];
+
+// 现有传说模块同样可在光锥之外合成；稀有事件与指定首领可作为例外直接奖励它们。
+export const LEGENDARY_FUSION_RECIPES = {
+  "weapon-electric-whirlwind": [{ moduleId: "weapon-water-shot", x: 1, y: 0 }, { moduleId: "weapon-ball-lightning", x: 1, y: 1 }, { moduleId: "weapon-ricochet", x: 1, y: 2 }],
+  "weapon-nest": [{ moduleId: "weapon-ricochet", x: 0, y: 1 }, { moduleId: "weapon-flame-crossbow", x: 1, y: 1 }, { moduleId: "weapon-water-shot", x: 2, y: 1 }],
+  "special-optical": [{ moduleId: "weapon-psionic", x: 1, y: 0 }, { moduleId: "weapon-ricochet", x: 1, y: 1 }],
+  "special-zero": [{ moduleId: "weapon-water-shot", x: 0, y: 1 }, { moduleId: "weapon-ball-lightning", x: 1, y: 1 }, { moduleId: "weapon-psionic", x: 2, y: 1 }],
+};
+MODULE_CONFIG.weapons.push(...FUSION_MODULES.filter((module) => module.type === "weapon"));
+MODULE_CONFIG.specials.push(...FUSION_MODULES.filter((module) => module.type === "special"));
+
+const abyssBloomModule = FUSION_MODULES.find((module) => module.id === "fusion-abyss-bloom");
+if (abyssBloomModule) { abyssBloomModule.element = "dark"; abyssBloomModule.description = "合成模块。占 2 × 2 格，技能持续 6.2 秒；每次同时向四个方向发射穿透花针，形成持续变化的四向暗属性火力。"; }
+
+// 惊雷是闪电生成器的自动强化形态，不再占用主动技能槽。
+const polarSawModule = FUSION_MODULES.find((module) => module.id === "fusion-polar-saw");
+if (polarSawModule) {
+  delete polarSawModule.skill;
+  Object.assign(polarSawModule, {
+    type: "weapon",
+    slotTypes: ["weapon"],
+    combat: true,
+    rarity: "legendary",
+    description: "合成模块。占 2 × 2 格，闪电生成器的超级强化型自动模块；每 1.15 秒释放一道主雷击，并在更大范围内连续跳跃，形成多段雷暴链。",
+    behavior: {
+      type: "lightning",
+      fireInterval: 0.7,
+      projectile: { damage: 12, speed: 0, radius: 1, chainRadius: 300, chainLife: 0.36, flashDuration: 0.07, color: "#ffdf64" },
+    },
+  });
+  MODULE_CONFIG.specials = MODULE_CONFIG.specials.filter((module) => module.id !== polarSawModule.id);
+  if (!MODULE_CONFIG.weapons.includes(polarSawModule)) MODULE_CONFIG.weapons.push(polarSawModule);
+}
+MODULE_CONFIG.weapons = MODULE_CONFIG.weapons.filter((module) => !PLAYER_DISABLED_MODULE_IDS.has(module.id));
+MODULE_CONFIG.specials = MODULE_CONFIG.specials.filter((module) => !PLAYER_DISABLED_MODULE_IDS.has(module.id));
+
 const blackHoleModule = MODULE_CONFIG.weapons.find((module) => module.id === "weapon-black-hole");
+const electricWhirlwindModule = MODULE_CONFIG.weapons.find((module) => module.id === "weapon-electric-whirlwind");
+if (electricWhirlwindModule) electricWhirlwindModule.behavior.projectile.damage = 2;
+const cryoHiveModule = FUSION_MODULES.find((module) => module.id === "fusion-cryo-hive");
+if (cryoHiveModule?.skill) cryoHiveModule.skill.duration = 3.5;
+const chainsawModule = MODULE_CONFIG.specials.find((module) => module.id === "special-chainsaw");
+if (chainsawModule) chainsawModule.description = "横向两格。技能持续 5 秒，在机体两侧展开高频离子链锯；持续切割近距离敌机，并切除触碰范围内的敌方弹幕。";
+if (cryoHiveModule) cryoHiveModule.description = "合成模块。横向三格，技能持续 3.5 秒；召唤三枚环绕模块旋转的冰凌，命中敌人造成 2 点冰属性伤害，并使其全部行为减速 33%，持续 3 秒，重复命中只刷新持续时间。";
+if (polarSawModule) polarSawModule.description = "合成模块。占 2 × 2 格，是闪电生成器的超级强化型自动模块；每 0.7 秒释放一道主雷击，并在 300px 范围内连续跳跃，形成多段雷暴链。";
 if (blackHoleModule) {
   blackHoleModule.description = "\u6bcf 7 \u79d2\u53d1\u5c04\u4e00\u679a\u7f13\u6162\u79fb\u52a8\u7684\u9ed1\u6d1e\uff0c\u6700\u591a\u5b58\u5728 5 \u79d2\u3002\u7b2c\u4e00\u6b21\u5438\u5230\u654c\u4eba\u540e 1 \u79d2\u7206\u70b8\uff0c\u5012\u8ba1\u65f6\u5185\u8303\u56f4\u6269\u5927 75\uff05\u3002";
   Object.assign(blackHoleModule.behavior.projectile, { damage: 0, speed: 165, radius: 8, life: 5 });
@@ -90,14 +146,19 @@ const RARITY_OVERRIDES = {
   "weapon-water-shot": "epic",
 };
 for (const module of [...MODULE_CONFIG.weapons, ...MODULE_CONFIG.specials]) if (RARITY_OVERRIDES[module.id]) module.rarity = RARITY_OVERRIDES[module.id];
+for (const [id, recipe] of Object.entries(LEGENDARY_FUSION_RECIPES)) {
+  const module = [...MODULE_CONFIG.weapons, ...MODULE_CONFIG.specials].find((item) => item.id === id);
+  if (module) Object.assign(module, { beyondFusionOnly: true, fusionRecipe: recipe.map((item) => ({ ...item })) });
+}
 
-export const ALL_MODULES = [CORE_MODULE, ...MODULE_CONFIG.weapons, ...MODULE_CONFIG.specials];
+export const ALL_MODULES = [CORE_MODULE, ...MODULE_CONFIG.weapons, ...MODULE_CONFIG.specials, ...FUSION_MODULES.filter((module) => PLAYER_DISABLED_MODULE_IDS.has(module.id))];
 export function getModuleById(id) { return ALL_MODULES.find((module) => module.id === id) ?? null; }
 export function getModuleByShareCode(shareCode) { return ALL_MODULES.find((module) => module.shareCode === shareCode) ?? null; }
 export const MODULE_ELEMENT_CONFIG = {
   "weapon-ricochet": "neutral", "special-energy-aggregator": "neutral", "special-chainsaw": "neutral", "special-wingman": "neutral", "special-overclock": "neutral",
   "weapon-ball-lightning": "electric", "weapon-lightning-generator": "electric", "special-sonic": "electric", "special-polarity-reverse": "electric", "weapon-electric-whirlwind": "electric",
   "weapon-psionic": "light", "special-optical": "light", "weapon-black-hole": "dark", "weapon-nest": "dark", "special-zero": "ice", "weapon-water-shot": "water", "weapon-flame-crossbow": "fire",
+  "fusion-abyss-bloom": "dark", "fusion-photon-chorus": "light", "fusion-cryo-hive": "ice", "fusion-mirage-anchor": "light", "fusion-polar-saw": "electric", "fusion-overflow-drive": "neutral",
 };
 export function getModuleElement(moduleOrId) { const id = typeof moduleOrId === "string" ? moduleOrId : moduleOrId?.id; return moduleOrId?.element ?? MODULE_ELEMENT_CONFIG[id] ?? "neutral"; }
 export function getFootprintCells(module, anchorX, anchorY) { return (module?.footprint?.cells ?? [[0, 0]]).map(([x, y]) => ({ x: anchorX + x, y: anchorY + y })); }

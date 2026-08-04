@@ -1,9 +1,18 @@
 import { BEYOND_LIGHT_CONE_CONFIG, getBeyondChapterCount, getBeyondDifficulty } from "../config/beyond-light-cone-config.js";
-import { MODULE_CONFIG, createLoadout, getModuleById } from "../config/module-config.js";
+import { MODULE_CONFIG, createLoadout, getInstalledEntries, getModuleById } from "../config/module-config.js";
 import { BEYOND_EVENTS, getBeyondEventById } from "../config/beyond-events-config.js";
 
 const allModules = [...MODULE_CONFIG.weapons, ...MODULE_CONFIG.specials].filter((module) => module.id !== "special-energy-aggregator" || true);
 const FIRST_CHAPTER_OPENING_EVENT_IDS = ["orphan-wingman", "zero-maintenance", "gravity-post"];
+const BOSS_VARIANTS = [
+  { id: "storm-warden", name: "雷暴监守", rewardId: "weapon-electric-whirlwind", color: "#89ddff" },
+  { id: "nest-matriarch", name: "覆巢母舰", rewardId: "weapon-nest", color: "#ff6b84" },
+  { id: "prism-oracle", name: "棱镜先知", rewardId: "special-optical", color: "#f0c5ff" },
+  { id: "zero-archon", name: "零度执政官", rewardId: "special-zero", color: "#baf6ff" },
+  { id: "abyss-gardener", name: "深渊园丁", rewardId: "fusion-abyss-bloom", color: "#c47cff" },
+  { id: "chorus-conductor", name: "合唱指挥舰", rewardId: "fusion-photon-chorus", color: "#fff0a8" },
+  { id: "cryo-hive-queen", name: "寒潮蜂后", rewardId: "fusion-cryo-hive", color: "#a5f6ec" },
+];
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
 const CODE_KEY = [39, 113, 201, 86, 157, 18, 245, 92, 67, 180, 23, 141];
@@ -44,7 +53,7 @@ export class BeyondLightConeSystem {
     const chapterSeed = `${seed}:chapter:${chapter}`;
     const map = this.generateMap(chapterSeed, chapter);
     return {
-      version: 3,
+      version: 4,
       seed,
       difficulty: selectedDifficulty.level,
       chapter,
@@ -81,7 +90,11 @@ export class BeyondLightConeSystem {
         ...(openingEvents && layer < 3 ? { eventId: FIRST_CHAPTER_OPENING_EVENT_IDS[layer] } : {}),
       }));
       if (layer === layers - 2) types[0].type = "rest";
-      if (layer === layers - 1) types[0].type = "boss";
+      if (layer === layers - 1) {
+        types[0].type = "boss";
+        const variant = choose(rng, BOSS_VARIANTS);
+        Object.assign(types[0], { bossVariant: variant.id, bossName: variant.name, bossRewardId: variant.rewardId });
+      }
       result.push(types); previousTypes = types.map((node) => node.type);
     }
     // Random weighting may miss elites entirely. Fill the configured minimum
@@ -136,10 +149,19 @@ export class BeyondLightConeSystem {
     if (!this.canEnterNode(run, id)) throw new Error("该路线当前不可抵达");
     const node = this.findNode(run, id); node.cleared = true; run.currentNodeId = node.id; run.visited.push(node.id); run.log.push(`抵达 ${node.type}`); return node;
   }
-  rewardModules(run, count = 1, { elite = false, boss = false } = {}) {
+  getBossVariant(id) { return BOSS_VARIANTS.find((item) => item.id === id) ?? BOSS_VARIANTS[0]; }
+  getLegendaryModules() { return allModules.filter((module) => module.rarity === "legendary"); }
+  getBeyondRewardModules({ elite = false } = {}) { return allModules.filter((module) => !module.beyondFusionOnly && module.rarity !== "legendary" && (!elite || ["epic", "rare", "uncommon"].includes(module.rarity))); }
+  rewardModules(run, count = 1, { elite = false, boss = false, bossVariant = null } = {}) {
+    if (boss) {
+      const rewardId = this.getBossVariant(bossVariant ?? this.findNode(run, run.currentNodeId)?.bossVariant ?? run.map?.at(-1)?.[0]?.bossVariant).rewardId;
+      run.inventory[rewardId] = (run.inventory[rewardId] ?? 0) + 1;
+      run.stats ??= {}; run.stats.modulesGained = (run.stats.modulesGained ?? 0) + 1;
+      return [rewardId];
+    }
     const rng = rngFrom(`${run.seed}:${run.visited.length}:${run.gold}:${count}`);
-    const preferred = allModules.filter((module) => boss ? module.rarity === "legendary" : elite ? ["epic", "legendary", "rare"].includes(module.rarity) : true);
-    const candidates = preferred.length ? preferred : allModules;
+    const preferred = this.getBeyondRewardModules({ elite });
+    const candidates = preferred.length ? preferred : allModules.filter((module) => !module.beyondFusionOnly && module.rarity !== "legendary");
     const rewards = Array.from({ length: count }, () => choose(rng, candidates).id);
     rewards.forEach((id) => { run.inventory[id] = (run.inventory[id] ?? 0) + 1; });
     run.stats ??= {};
@@ -149,8 +171,8 @@ export class BeyondLightConeSystem {
   getShopOffers(run, count = 3) {
     const rng = rngFrom(`${run.seed}:shop:${run.visited.length}`);
     return Array.from({ length: count }, () => {
-      const module = choose(rng, allModules);
-      const cost = module.rarity === "legendary" ? 92 : module.rarity === "epic" ? 68 : module.rarity === "rare" ? 45 : 28;
+      const module = choose(rng, this.getBeyondRewardModules());
+      const cost = module.rarity === "epic" ? 68 : module.rarity === "rare" ? 45 : 28;
       return { id: module.id, cost };
     });
   }
@@ -165,16 +187,19 @@ export class BeyondLightConeSystem {
     const retained = run.activeEvent?.nodeId === node.id ? getBeyondEventById(run.activeEvent.eventId) : null;
     const history = new Set(run.eventHistory ?? []);
     const candidates = BEYOND_EVENTS.filter((event) => !history.has(event.id));
-    const pool = candidates.length ? candidates : BEYOND_EVENTS;
-    const event = retained ?? getBeyondEventById(node.eventId) ?? choose(rngFrom(`${run.seed}:event:${run.visited.length}:${node.id}`), pool);
+    const regular = candidates.filter((event) => !event.rareLegendary);
+    const rare = candidates.filter((event) => event.rareLegendary);
+    const rng = rngFrom(`${run.seed}:event:${run.visited.length}:${node.id}`);
+    const pool = rng() < .08 && rare.length ? rare : (regular.length ? regular : candidates);
+    const event = retained ?? getBeyondEventById(node.eventId) ?? choose(rng, pool);
     run.activeEvent = { nodeId: node.id, eventId: event.id };
     return { nodeId: node.id, event, choices: event.choices.map((item) => ({ ...item, ...this.getEventChoiceState(run, item) })) };
   }
   grantEventModules(run, count = 1, rarity = "any") {
     const pools = {
-      any: allModules,
-      rare: allModules.filter((module) => ["rare", "epic", "legendary"].includes(module.rarity)),
-      high: allModules.filter((module) => ["epic", "legendary"].includes(module.rarity)),
+      any: this.getBeyondRewardModules(),
+      rare: this.getBeyondRewardModules().filter((module) => ["rare", "epic"].includes(module.rarity)),
+      high: this.getBeyondRewardModules().filter((module) => module.rarity === "epic"),
     };
     const candidates = pools[rarity]?.length ? pools[rarity] : allModules;
     const rng = rngFrom(`${run.seed}:event-reward:${run.visited.length}:${run.eventHistory?.length ?? 0}:${rarity}`);
@@ -200,6 +225,10 @@ export class BeyondLightConeSystem {
         if (change < 0) result.damageAmount += Math.abs(change);
       } else if (effect.type === "module") {
         result.rewardIds.push(...this.grantEventModules(run, effect.count ?? 1, effect.rarity ?? "any"));
+      } else if (effect.type === "legendary") {
+        const candidates = this.getLegendaryModules();
+        const module = choose(rng, candidates);
+        if (module) { run.inventory[module.id] = (run.inventory[module.id] ?? 0) + 1; run.stats.modulesGained = (run.stats.modulesGained ?? 0) + 1; result.rewardIds.push(module.id); result.variants.push(`获得传说模块：${module.name}`); }
       } else if (effect.type === "duplicate") {
         const candidates = Object.entries(run.inventory ?? {}).filter(([id, amount]) => amount > 0 && getModuleById(id));
         if (candidates.length) {
@@ -322,6 +351,7 @@ export class BeyondLightConeSystem {
       nodeType: node.type, level: 5 + globalDepth * 3 + diff.level * 2,
       targetScore: boss ? Math.round(1000 + globalDepth * 140) : Math.round((260 + globalDepth * 95) * (elite ? 1.5 : 1)),
       boss,
+      bossVariant: boss ? this.getBossVariant(node.bossVariant).id : null,
       hpMultiplier: +(diff.hpMultiplier * hpProgression * (1 + globalDepth * .065) * (elite ? 1.28 : 1)).toFixed(2),
       damageMultiplier: +(diff.damageMultiplier * damageProgression).toFixed(2),
       speedMultiplier: +(1 + (diff.level - 1) * .035 + globalDepth * .018).toFixed(2),
@@ -347,7 +377,7 @@ export class BeyondLightConeSystem {
     const point = (id) => { const node = this.findNode(run, id); return node ? [node.layer, run.map[node.layer].findIndex((item) => item.id === node.id)] : null; };
     const entries = run.loadout?.modules ?? []; const instanceToIndex = new Map(entries.map((entry, index) => [entry.instanceId, index]));
     return {
-      v: 3, s: run.seed, d: run.difficulty, k: run.chapter ?? 1, u: run.totalChapters ?? getBeyondChapterCount(run.difficulty), m: run.chapterSeed ?? `${run.seed}:chapter:${run.chapter ?? 1}`, c: point(run.currentNodeId), p: run.visited.map(point).filter(Boolean),
+      v: 4, s: run.seed, d: run.difficulty, k: run.chapter ?? 1, u: run.totalChapters ?? getBeyondChapterCount(run.difficulty), m: run.chapterSeed ?? `${run.seed}:chapter:${run.chapter ?? 1}`, c: point(run.currentNodeId), p: run.visited.map(point).filter(Boolean),
       g: Math.round(run.gold), h: Math.round(run.hp), i: Object.entries(run.inventory ?? {}).map(([id, count]) => [moduleCode(id), count]).filter(([code]) => code >= 0),
       b: entries.map((entry) => [moduleCode(entry.moduleId), entry.x, entry.y, entry.rotation ?? 0]),
       y: (run.loadout?.synergies ?? []).map((synergy) => [synergy.id, (synergy.moduleInstanceIds ?? []).map((id) => instanceToIndex.get(id)).filter(Number.isInteger)]),
@@ -372,5 +402,48 @@ export class BeyondLightConeSystem {
     const stats = data.q ?? { nodes: { combat: 0, elite: 0, boss: 0, shop: 0, rest: 0, event: 0 }, routeLength: visited.length, battles: 0, totalElapsed: 0, modulesGained: 0, goldGained: 0, goldSpent: 0, healing: 0 };
     return { version: data.v ?? 1, seed: data.s, difficulty, chapter, totalChapters, chapterSeed, map, currentNodeId: nodeAt(data.c), visited, gold: Math.round(data.g ?? 0), hp: Math.round(data.h ?? BEYOND_LIGHT_CONE_CONFIG.maxPlayerHp), inventory, loadout: createLoadout({ modules, synergies }), stats, eventState: data.e ?? { combatStreak: 0, peacefulStreak: 0 }, eventHistory: Array.isArray(data.r) ? data.r.filter((id) => getBeyondEventById(id)) : [], activeEvent, currentBattle: data.t ? { score: data.t[0], elapsed: data.t[1], nodeId: nodeAt(data.t[2]) } : null, log: ["已从存档继续航程"], completed: false };
   }
-  getInventoryRows(run) { return Object.entries(run?.inventory ?? {}).filter(([, count]) => count > 0).map(([id, count]) => ({ id, name: getModuleById(id)?.name ?? id, count })); }
+  getFusionRecipes() { return allModules.filter((module) => Array.isArray(module.fusionRecipe) && module.fusionRecipe.length); }
+  getFreeInventory(run) {
+    const installed = new Map();
+    getInstalledEntries(run?.loadout).forEach(({ module }) => { if (module?.id && module.type !== "core") installed.set(module.id, (installed.get(module.id) ?? 0) + 1); });
+    return Object.fromEntries(Object.entries(run?.inventory ?? {}).map(([id, count]) => [id, Math.max(0, count - (installed.get(id) ?? 0))]));
+  }
+  matchFusionRecipe(slots = []) {
+    const grid = Array.from({ length: 9 }, (_, index) => slots[index] ?? null);
+    for (const product of this.getFusionRecipes()) {
+      const recipe = product.fusionRecipe;
+      const maxX = Math.max(...recipe.map((item) => item.x)); const maxY = Math.max(...recipe.map((item) => item.y));
+      for (let offsetY = 0; offsetY <= 2 - maxY; offsetY += 1) for (let offsetX = 0; offsetX <= 2 - maxX; offsetX += 1) {
+        const expected = Array(9).fill(null);
+        recipe.forEach((item) => { expected[(item.y + offsetY) * 3 + item.x + offsetX] = item.moduleId; });
+        if (expected.every((id, index) => id === grid[index])) return product;
+      }
+    }
+    return null;
+  }
+  synthesize(run, slots = []) {
+    if (!run) throw new Error("航程不存在");
+    const product = this.matchFusionRecipe(slots);
+    if (!product) throw new Error("当前摆放不符合任何合成配方");
+    const required = slots.filter(Boolean).reduce((map, id) => map.set(id, (map.get(id) ?? 0) + 1), new Map());
+    const free = this.getFreeInventory(run);
+    for (const [id, count] of required) if ((free[id] ?? 0) < count) throw new Error(`${getModuleById(id)?.name ?? id} 的未装配库存不足`);
+    for (const [id, count] of required) run.inventory[id] -= count;
+    run.inventory[product.id] = (run.inventory[product.id] ?? 0) + 1;
+    run.stats ??= {}; run.stats.modulesGained = (run.stats.modulesGained ?? 0) + 1;
+    run.log?.push(`合成 ${product.name}`);
+    return { product, consumed: [...required.entries()].map(([id, count]) => ({ id, count })) };
+  }
+  decompose(run, moduleId) {
+    const module = getModuleById(moduleId);
+    if (!run || !module?.fusionRecipe?.length) throw new Error("只能分解已合成模块");
+    const free = this.getFreeInventory(run);
+    if ((free[moduleId] ?? 0) < 1) throw new Error("该合成模块已装配或库存不足");
+    run.inventory[moduleId] -= 1;
+    const returned = module.fusionRecipe.reduce((map, item) => map.set(item.moduleId, (map.get(item.moduleId) ?? 0) + 1), new Map());
+    for (const [id, count] of returned) run.inventory[id] = (run.inventory[id] ?? 0) + count;
+    run.log?.push(`分解 ${module.name}`);
+    return { module, returned: [...returned.entries()].map(([id, count]) => ({ id, count })) };
+  }
+  getInventoryRows(run) { const free = this.getFreeInventory(run); return Object.entries(run?.inventory ?? {}).filter(([, count]) => count > 0).map(([id, count]) => ({ id, name: getModuleById(id)?.name ?? id, count, free: free[id] ?? 0 })); }
 }
