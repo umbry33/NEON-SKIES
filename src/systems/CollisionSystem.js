@@ -94,9 +94,18 @@ export class CollisionSystem {
       }
     }
     for (const laser of lasers) if (laser.life > 0) for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && !enemy.isPhased && !laser.hitIds.has(enemy.id) && Math.abs(enemy.y - laser.y) <= enemy.radius + laser.thickness) { laser.hitIds.add(enemy.id); addDamage(enemy, laser.damage, laser.element ?? "electric"); }
-    if (ionSaw?.active && ionSaw.damageTimer <= 0) for (const enemy of enemies) { const nearBlade = Math.hypot(enemy.x - (player.x - 34), enemy.y - player.y) <= enemy.radius + 15 || Math.hypot(enemy.x - (player.x + 34), enemy.y - player.y) <= enemy.radius + 15; if (nearBlade) addDamage(enemy, ionSaw.damage); }
+    let sawHitCount = 0;
+    if (ionSaw?.active && ionSaw.damageTimer <= 0) {
+      const reach = ionSaw.reach ?? 42;
+      const radius = ionSaw.radius ?? 26;
+      for (const enemy of enemies) {
+        if (destroyedEnemies.has(enemy) || enemy.isPhased || enemy.hp <= 0) continue;
+        const nearBlade = Math.hypot(enemy.x - (player.x - reach), enemy.y - player.y) <= enemy.radius + radius || Math.hypot(enemy.x - (player.x + reach), enemy.y - player.y) <= enemy.radius + radius;
+        if (nearBlade) { addDamage(enemy, ionSaw.damage); sawHitCount += 1; }
+      }
+    }
     // 机体碰撞只造成接触伤害，敌机仍然留在场上；只有玩家武器造成的伤害才能销毁敌机。
     if (!freezeActive) for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && intersectsPlayer(enemy)) playerDamage += GAME_CONFIG.projectile.enemyContactDamage;
-    return { removedProjectiles, destroyedEnemies, score, playerDamage, playerHealing, damageEvents, explosionEvents, sawTriggered: Boolean(ionSaw?.active && ionSaw.damageTimer <= 0) };
+    return { removedProjectiles, destroyedEnemies, score, playerDamage, playerHealing, damageEvents, explosionEvents, sawHitCount, sawTriggered: Boolean(ionSaw?.active && ionSaw.damageTimer <= 0) };
   }
 }

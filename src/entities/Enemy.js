@@ -118,6 +118,26 @@ export class Enemy {
       ctx.rect(-22, -20, 44, 40);
     } else if (type === "rammer") {
       ctx.moveTo(0, 26); ctx.lineTo(18, -18); ctx.lineTo(0, -12); ctx.lineTo(-18, -18);
+    } else if (type === "prism") {
+      ctx.moveTo(0, -24); ctx.lineTo(21, 0); ctx.lineTo(0, 24); ctx.lineTo(-21, 0);
+    } else if (type === "anchor") {
+      ctx.moveTo(-18, -17); ctx.lineTo(18, -17); ctx.lineTo(12, 9); ctx.lineTo(0, 23); ctx.lineTo(-12, 9);
+    } else if (type === "echo") {
+      ctx.moveTo(0, 22); ctx.lineTo(19, -15); ctx.lineTo(4, -9); ctx.lineTo(0, -23); ctx.lineTo(-4, -9); ctx.lineTo(-19, -15);
+    } else if (type === "loom") {
+      ctx.moveTo(0, -23); ctx.lineTo(19, -10); ctx.lineTo(19, 12); ctx.lineTo(0, 23); ctx.lineTo(-19, 12); ctx.lineTo(-19, -10);
+    } else if (type === "lantern") {
+      ctx.rect(-15, -14, 30, 31);
+    } else if (type === "comet") {
+      ctx.moveTo(0, -25); ctx.lineTo(17, -4); ctx.lineTo(7, 21); ctx.lineTo(0, 13); ctx.lineTo(-7, 21); ctx.lineTo(-17, -4);
+    } else if (type === "pendulum") {
+      ctx.moveTo(0, -22); ctx.lineTo(15, -5); ctx.lineTo(12, 16); ctx.lineTo(0, 24); ctx.lineTo(-12, 16); ctx.lineTo(-15, -5);
+    } else if (type === "ribbon") {
+      ctx.moveTo(0, -22); ctx.quadraticCurveTo(28, -10, 19, 6); ctx.quadraticCurveTo(10, 22, 0, 14); ctx.quadraticCurveTo(-10, 22, -19, 6); ctx.quadraticCurveTo(-28, -10, 0, -22);
+    } else if (type === "drum") {
+      ctx.arc(0, 0, 21, 0, Math.PI * 2);
+    } else if (type === "petal") {
+      ctx.moveTo(0, -23); ctx.quadraticCurveTo(19, -18, 11, -2); ctx.quadraticCurveTo(24, 7, 7, 11); ctx.quadraticCurveTo(0, 25, -7, 11); ctx.quadraticCurveTo(-24, 7, -11, -2); ctx.quadraticCurveTo(-19, -18, 0, -23);
     } else {
       ctx.moveTo(0, 21); ctx.lineTo(16, -8); ctx.lineTo(6, -5); ctx.lineTo(0, -18); ctx.lineTo(-6, -5); ctx.lineTo(-16, -8);
     }
@@ -129,6 +149,16 @@ export class Enemy {
     if (this.boss) {
       ctx.shadowBlur = 12; ctx.strokeStyle = "#ff496e"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 57 + Math.sin(this.age * 5) * 3, 0, Math.PI * 2); ctx.stroke();
     }
+    if (type === "prism") { ctx.strokeStyle = "#f0ffff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, -19); ctx.lineTo(0, 19); ctx.moveTo(-16, 0); ctx.lineTo(16, 0); ctx.stroke(); }
+    if (type === "anchor") { ctx.strokeStyle = "#fff0b8"; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(0, -26); ctx.lineTo(0, 17); ctx.moveTo(-14, 9); ctx.quadraticCurveTo(0, 27, 14, 9); ctx.stroke(); }
+    if (type === "echo") { ctx.globalAlpha = .42; ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-14, 18); ctx.lineTo(-25, -10); ctx.moveTo(14, 18); ctx.lineTo(25, -10); ctx.stroke(); ctx.globalAlpha = 1; }
+    if (type === "loom") { ctx.strokeStyle = "#fff1fb"; ctx.lineWidth = 1.6; ctx.beginPath(); ctx.moveTo(-16, -9); ctx.lineTo(16, 12); ctx.moveTo(16, -9); ctx.lineTo(-16, 12); ctx.stroke(); }
+    if (type === "lantern") { ctx.strokeStyle = "#efffd0"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, -16, 8, Math.PI, 0); ctx.moveTo(-11, 17); ctx.lineTo(11, 17); ctx.stroke(); }
+    if (type === "comet") { ctx.globalAlpha = .55; ctx.strokeStyle = "#d9f7ff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, 19); ctx.lineTo(0, 34); ctx.moveTo(-5, 19); ctx.lineTo(-12, 29); ctx.moveTo(5, 19); ctx.lineTo(12, 29); ctx.stroke(); ctx.globalAlpha = 1; }
+    if (type === "pendulum") { ctx.strokeStyle = "#fff2df"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, -17); ctx.lineTo(0, 18); ctx.arc(0, 18, 6, 0, Math.PI * 2); ctx.stroke(); }
+    if (type === "ribbon") { ctx.strokeStyle = "#d8fff8"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-22, -9); ctx.quadraticCurveTo(0, 0, 22, -9); ctx.stroke(); }
+    if (type === "drum") { ctx.strokeStyle = "#e5e8ff"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(-28, -4); ctx.lineTo(-17, 5); ctx.moveTo(28, -4); ctx.lineTo(17, 5); ctx.stroke(); }
+    if (type === "petal") { ctx.strokeStyle = "#fff2f8"; ctx.lineWidth = 1.8; ctx.beginPath(); ctx.moveTo(0, -17); ctx.lineTo(0, 17); ctx.moveTo(-15, 0); ctx.lineTo(15, 0); ctx.stroke(); }
     if (this.shieldActive) {
       ctx.globalAlpha = 0.72; ctx.strokeStyle = "#a8d8ff"; ctx.shadowColor = "#78b8ff"; ctx.shadowBlur = 16; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(0, 0, this.radius + 8, 0, Math.PI * 2); ctx.stroke();

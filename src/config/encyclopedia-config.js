@@ -1,5 +1,5 @@
 import { MODULE_CONFIG, ASSEMBLY_BOARD, getFootprintBounds } from "./module-config.js";
-import { ENEMY_CONFIG, ADVANCED_ENEMY_CONFIG, createBossDefinition } from "./enemy-config.js";
+import { ENEMY_CONFIG, ADVANCED_ENEMY_CONFIG, UNRELEASED_ENEMY_CONFIG, createBossDefinition } from "./enemy-config.js";
 import { ENVIRONMENT_CONFIG } from "./environment-config.js";
 import { BEYOND_LIGHT_CONE_CONFIG } from "./beyond-light-cone-config.js";
 import { BEYOND_EVENTS } from "./beyond-events-config.js";
@@ -18,8 +18,15 @@ export function getEncyclopediaSections() {
     tag: enemy.type.toUpperCase(),
     description: enemy.ability === "shield" ? "周期性展开护盾，护盾期间受到的伤害大幅降低。" : enemy.ability === "dash" ? "锁定航线后会短暂高速突进。" : enemy.ability === "burst" ? "发射三发扇形弹幕，覆盖更宽的躲避区域。" : enemy.ability === "phase" ? "会间歇性进入相位状态，常规子弹无法命中。" : enemy.ability === "orbit" ? "沿横向轨道移动，提升远距离射击压力。" : "基础敌机，会依据自身移动方式和射击节奏压迫玩家。",
     meta: `生命 ${enemy.hp} · 速度 ${enemy.speed} · 积分 ${enemy.score}`,
-    enemyVisual: { type: enemy.type, color: enemy.color },
+    enemyVisual: { type: enemy.visualType ?? enemy.type, color: enemy.color, flipY: enemy.flipY === true },
   }));
+  enemies.push({
+    title: "\u672a\u542f\u7528\u7684\u654c\u673a",
+    tag: `UNRELEASED / ${UNRELEASED_ENEMY_CONFIG.length}`,
+    description: "\u8fd9\u4e9b\u654c\u673a\u5df2\u5b8c\u6210\u6982\u5ff5\u8bbe\u8ba1\u4e0e\u5916\u5f62\u5efa\u6a21\uff0c\u6682\u4e0d\u4f1a\u51fa\u73b0\u5728\u4efb\u4f55\u6e38\u620f\u6a21\u5f0f\u4e2d\u3002",
+    meta: "\u70b9\u51fb\u67e5\u770b\u672a\u542f\u7528\u7684\u654c\u673a",
+    action: "unreleased-enemies",
+  });
   const environments = ENVIRONMENT_CONFIG.map((environment) => ({
     title: environment.name, tag: `第 ${environment.minLevel} 关起`, description: environment.description, meta: `持续 ${environment.duration}s` }));
   const bosses = [5, 25, 50].map((level) => {
@@ -104,5 +111,15 @@ export function getBeyondEventArchiveEntries() {
     tag: event.tag,
     description: event.description,
     meta: event.choices.map((choice) => `${choice.label}：${choice.hint}`).join("　/　"),
+  }));
+}
+
+export function getUnreleasedEnemyArchiveEntries() {
+  return UNRELEASED_ENEMY_CONFIG.map((enemy) => ({
+    title: enemy.name,
+    tag: `${enemy.type.toUpperCase()} / UNRELEASED`,
+    description: enemy.mechanic,
+    meta: `\u751f\u547d ${enemy.hp} \u00b7 \u901f\u5ea6 ${enemy.speed} \u00b7 \u9884\u8ba1\u79ef\u5206 ${enemy.score}`,
+    enemyVisual: { type: enemy.visualType ?? enemy.type, color: enemy.color, flipY: enemy.flipY === true },
   }));
 }

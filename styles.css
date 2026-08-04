@@ -335,7 +335,7 @@ body { background: #050a14; }
 .battle-hud .hud-time { text-align: left; }
 .battle-hud .hud-attack-speed { text-align: center; }
 .battle-hud .hud-level { text-align: right; }
-.environment-button { position: absolute; top: 74px; left: 50%; z-index: 12; display: inline-flex; align-items: center; gap: 8px; max-width: 190px; padding: 5px 9px; border: 1px solid currentColor; border-radius: 8px; color: #78f7db; background: rgba(5,18,31,.86); box-shadow: 0 0 14px currentColor; font: inherit; transform: translateX(-50%); touch-action: manipulation; }
+.environment-button { position: absolute; top: calc(83px + 36px + 8px); left: 50%; z-index: 12; display: inline-flex; align-items: center; gap: 8px; max-width: 190px; padding: 5px 9px; border: 1px solid currentColor; border-radius: 8px; color: #78f7db; background: rgba(5,18,31,.86); box-shadow: 0 0 14px currentColor; font: inherit; transform: translateX(-50%); touch-action: manipulation; }
 .environment-button.is-hidden { display: none; }
 .environment-button span { overflow: hidden; font-size: .65rem; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
 .environment-button small { color: var(--text); font: .56rem ui-monospace, monospace; white-space: nowrap; }
@@ -1912,7 +1912,7 @@ body { background: #02050c; }
 .beyond-result-rewards { display: grid; gap: 8px; margin: 16px 0; }
 .beyond-result-reward { display: grid; grid-template-columns: 42px 1fr; align-items: center; gap: 10px; padding: 9px 11px; border: 1px solid rgba(116, 231, 255, .6); border-radius: 12px; background: rgba(31, 74, 125, .28); box-shadow: 0 0 14px rgba(77, 224, 255, .16); }
 .beyond-result-reward.rarity-legendary, .beyond-result-reward.rarity-epic { border-color: rgba(255, 154, 230, .9); background: rgba(154, 45, 134, .3); box-shadow: 0 0 18px rgba(255, 89, 214, .24); }
-.beyond-result-reward-icon { display: grid; place-items: center; min-height: 34px; color: #eafcff; font-size: 1.45rem; text-shadow: 0 0 12px currentColor; }
+.beyond-result-reward-icon { display: block; width: 36px; height: 36px; }
 .beyond-result-reward-copy { display: grid; gap: 3px; }
 .beyond-result-reward-copy strong { color: #f5fbff; font-size: 1rem; }
 .beyond-result-reward-copy small { color: #ffb9eb; font-size: .72rem; letter-spacing: .12em; }
@@ -1948,7 +1948,7 @@ body { background: #02050c; }
 .beyond-complete-reward > span:last-child { display: grid; gap: 2px; }
 .beyond-complete-reward strong { color: #f8fbff; font-size: .88rem; }
 .beyond-complete-reward small { color: #ffb8e9; font-size: .66rem; letter-spacing: .1em; }
-.beyond-complete-reward-icon { display: grid; place-items: center; color: #edfbff; font-size: 1.35rem; text-shadow: 0 0 10px currentColor; }
+.beyond-complete-reward-icon { display: block; width: 36px; height: 36px; }
 .beyond-complete-card > .primary-button { width: 100%; margin-top: 8px; }
 .beyond-complete-modal.is-opening > .beyond-complete-card { animation: popup-card-in .24s cubic-bezier(.2, .8, .2, 1) both; }
 .beyond-complete-modal.is-closing > .beyond-complete-card { animation: popup-card-out .18s ease both; }
@@ -1958,7 +1958,7 @@ body { background: #02050c; }
 .beyond-reward-grid { display: grid; gap: 7px; }
 .beyond-reward-item { display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 8px; padding: 7px 9px; border: 1px solid rgba(125, 230, 255, .6); border-radius: 10px; background: rgba(45, 93, 154, .3); }
 .beyond-reward-item.rarity-legendary, .beyond-reward-item.rarity-epic { border-color: rgba(255, 151, 228, .9); background: rgba(147, 45, 130, .34); box-shadow: 0 0 13px rgba(255, 91, 213, .22); }
-.beyond-reward-icon { display: grid; place-items: center; color: #edfbff; font-size: 1.2rem; text-shadow: 0 0 10px currentColor; }
+.beyond-reward-icon { display: block; width: 34px; height: 34px; }
 .beyond-reward-copy { display: grid; gap: 2px; }
 .beyond-reward-copy strong { color: #f8fbff; font-size: .86rem; }
 .beyond-reward-copy small { color: #ffb8e9; font-size: .65rem; letter-spacing: .1em; }

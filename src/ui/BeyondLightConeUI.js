@@ -2,6 +2,7 @@ import { createLoadout, getModuleById } from "../config/module-config.js";
 import { decodeLoadoutCode } from "../systems/LoadoutCodec.js";
 import { validateLoadout } from "../systems/ModuleSystem.js";
 import { BEYOND_LIGHT_CONE_CONFIG } from "../config/beyond-light-cone-config.js";
+import { paintModuleCanvas } from "../rendering/ModuleRenderer.js";
 
 // 以“松开”作为唯一触发时机。移动端直接处理 pointerup，随后拦截浏览器补发的
 // click，避免弹窗刚出现后，延迟 click 被重新命中到节点图或下一层界面。
@@ -89,6 +90,15 @@ export function installBeyondLightConeUI(ui) {
   const startPanel = $("#beyond-start-panel"); const runPanel = $("#beyond-run-panel"); const grid = $("#beyond-difficulty-grid"); const map = $("#beyond-map"); const nodePanel = $("#beyond-node-panel"); const saveModal = $("#beyond-save-modal"); const saveCopy = $("#beyond-save-copy"); const saveImport = $("#beyond-save-import"); const resultTag = $("#beyond-result-tag"); const resultTitle = $("#beyond-result-title"); const resultMessage = $("#beyond-result-message"); const resultDetails = $("#beyond-result-details"); const resultRewards = $("#beyond-result-rewards"); const resultContinue = $("#beyond-result-continue"); const eventTag = $("#beyond-event-tag"); const eventTitle = $("#beyond-event-title"); const eventDescription = $("#beyond-event-description"); const eventChoices = $("#beyond-event-choices"); const eventMessage = $("#beyond-event-message"); const completeStats = $("#beyond-complete-stats"); const completeRewards = $("#beyond-complete-rewards"); const completeExit = $("#beyond-complete-exit"); const completeEyebrow = completeModal.querySelector(".eyebrow"); const completeTitle = completeModal.querySelector("h3"); const completeMessage = completeModal.querySelector(".beyond-complete-message");
   const setArchiveAction = (action) => { saveCopy?.classList.toggle("is-hidden", action !== "copy"); saveImport?.classList.toggle("is-hidden", action !== "import"); };
   const rarityNames = { common: "普通", uncommon: "非凡", rare: "稀有", epic: "史诗", legendary: "传说" };
+  const createModuleRewardIcon = (module, className, size = 36) => {
+    const canvas = document.createElement("canvas");
+    canvas.className = className;
+    canvas.width = size;
+    canvas.height = size;
+    canvas.setAttribute("aria-hidden", "true");
+    paintModuleCanvas(canvas, module, size);
+    return canvas;
+  };
   const hideComplete = () => { completeModal.classList.add("is-hidden"); completeModal.classList.remove("is-closing", "is-opening"); };
   const formatBeyondTime = (seconds = 0) => { const total = Math.max(0, Math.floor(seconds)); return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`; };
   const renderCompletionRewards = (rewardIds = []) => {
@@ -96,7 +106,9 @@ export function installBeyondLightConeUI(ui) {
     rewardIds.map((id) => getModuleById(id)).filter(Boolean).forEach((module) => {
       const item = document.createElement("div");
       item.className = `beyond-complete-reward rarity-${module.rarity ?? "common"}`;
-      item.innerHTML = `<span class="beyond-complete-reward-icon">${module.icon ?? "✦"}</span><span><strong>${module.name}</strong><small>${rarityNames[module.rarity] ?? "模块"}</small></span>`;
+      const copy = document.createElement("span");
+      copy.innerHTML = `<strong>${module.name}</strong><small>${rarityNames[module.rarity] ?? "模块"}</small>`;
+      item.append(createModuleRewardIcon(module, "beyond-complete-reward-icon"), copy);
       completeRewards.append(item);
     });
   };
@@ -149,9 +161,6 @@ export function installBeyondLightConeUI(ui) {
     rewardIds.map((id) => getModuleById(id)).filter(Boolean).forEach((module) => {
       const item = document.createElement("div");
       item.className = `beyond-result-reward rarity-${module.rarity ?? "common"}`;
-      const icon = document.createElement("span");
-      icon.className = "beyond-result-reward-icon";
-      icon.textContent = module.icon ?? "◆";
       const copy = document.createElement("span");
       copy.className = "beyond-result-reward-copy";
       const name = document.createElement("strong");
@@ -159,7 +168,7 @@ export function installBeyondLightConeUI(ui) {
       const rarity = document.createElement("small");
       rarity.textContent = rarityNames[module.rarity] ?? "模块";
       copy.append(name, rarity);
-      item.append(icon, copy);
+      item.append(createModuleRewardIcon(module, "beyond-result-reward-icon"), copy);
       resultRewards.append(item);
     });
   };
@@ -205,9 +214,6 @@ export function installBeyondLightConeUI(ui) {
     rewardIds.map((id) => getModuleById(id)).filter(Boolean).forEach((module) => {
       const item = document.createElement("div");
       item.className = `beyond-reward-item rarity-${module.rarity ?? "common"}`;
-      const icon = document.createElement("span");
-      icon.className = "beyond-reward-icon";
-      icon.textContent = module.icon ?? "◆";
       const copy = document.createElement("span");
       copy.className = "beyond-reward-copy";
       const name = document.createElement("strong");
@@ -215,7 +221,7 @@ export function installBeyondLightConeUI(ui) {
       const rarity = document.createElement("small");
       rarity.textContent = rarityNames[module.rarity] ?? "模块";
       copy.append(name, rarity);
-      item.append(icon, copy);
+      item.append(createModuleRewardIcon(module, "beyond-reward-icon", 34), copy);
       grid.append(item);
     });
     panel.append(grid);

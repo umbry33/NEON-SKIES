@@ -53,7 +53,7 @@ export class Game {
     this.polarityWindow = 0;
     this.whiteHoleActive = false;
     this.whiteHoleHealing = null;
-    this.ionSaw = { active: false, damage: 1, damageTimer: 0 };
+    this.ionSaw = { active: false, damage: 2, damageTimer: 0, damageInterval: 0.12, reach: 42, radius: 26, hitFlash: 0 };
     this.sonicWaves = [];
     this.damageNumbers = [];
     this.damageNumbersEnabled = true;
@@ -354,7 +354,7 @@ export class Game {
     this.polarityWindow = 0;
     this.whiteHoleActive = hasActiveSynergy(loadout, "synergy-white-hole");
     this.whiteHoleHealing = null;
-    this.ionSaw = { active: false, damage: 1, damageTimer: 0 };
+    this.ionSaw = { active: false, damage: 2, damageTimer: 0, damageInterval: 0.12, reach: 42, radius: 26, hitFlash: 0 };
     this.sonicWaves = [];
     this.damageNumbers = [];
     this.shakeTime = 0;
@@ -760,6 +760,7 @@ export class Game {
     this.ionSaw.duration = Math.max(0, (this.ionSaw.duration ?? 0) - dt);
     this.ionSaw.active = this.ionSaw.duration > 0;
     this.ionSaw.damageTimer -= dt;
+    this.ionSaw.hitFlash = Math.max(0, (this.ionSaw.hitFlash ?? 0) - dt);
     this.updateSonicWave(dt);
     this.player.environmentAttackSpeedMultiplier = environmentEffects.player.attackSpeed ?? 1;
     const wasOverclocked = this.player.overclockTimer > 0;
@@ -818,7 +819,8 @@ export class Game {
     }
 
     const collision = this.collisionSystem.resolve({ player: this.player, enemies: this.enemies, projectiles: this.projectiles, wingman: this.wingman, lasers: this.lasers, freezeActive: this.freezeTimer > 0, ionSaw: this.ionSaw, statusDamageEvents });
-    if (collision.sawTriggered) this.ionSaw.damageTimer = 1 / 6;
+    if (collision.sawTriggered) this.ionSaw.damageTimer = this.ionSaw.damageInterval ?? 0.12;
+    if ((collision.sawHitCount ?? 0) > 0) this.ionSaw.hitFlash = 0.16;
     this.score += collision.score;
     if (collision.playerHealing > 0) this.player.hp = Math.round(Math.min(this.player.stats.maxHp, this.player.hp + collision.playerHealing));
     if (this.tutorialMode && this.tutorialHasMoved && this.tutorialHasUsedSkill && this.score >= this.tutorialScoreGoal) { this.exitTutorialBattle(); return; }
@@ -875,12 +877,84 @@ export class Game {
   }
 
   drawIonSaw() {
+    const reach = this.ionSaw.reach ?? 42;
+    const bladeRadius = this.ionSaw.radius ?? 26;
+    const flash = Math.min(1, (this.ionSaw.hitFlash ?? 0) / 0.16);
+    const pulse = 1 + Math.sin(this.elapsed * 24) * 0.06;
     this.ctx.save();
+    this.ctx.globalCompositeOperation = "lighter";
     for (const side of [-1, 1]) {
-      this.ctx.translate(this.player.x + side * 34, this.player.y);
-      this.ctx.rotate(this.elapsed * 14 * side);
-      this.ctx.shadowBlur = 20; this.ctx.shadowColor = "#b6f7ff"; this.ctx.strokeStyle = "#b6f7ff"; this.ctx.lineWidth = 4;
-      this.ctx.beginPath(); this.ctx.moveTo(-4, -23); this.ctx.lineTo(6, 0); this.ctx.lineTo(-4, 23); this.ctx.stroke();
+      const bladeX = this.player.x + side * reach;
+      const bladeY = this.player.y;
+      const spin = this.elapsed * 16 * side;
+      this.ctx.save();
+      this.ctx.globalAlpha = 0.18 + flash * 0.24;
+      this.ctx.shadowBlur = 18 + flash * 12;
+      this.ctx.shadowColor = "#54efff";
+      this.ctx.strokeStyle = "#54efff";
+      this.ctx.lineWidth = 3 + flash * 2;
+      this.ctx.beginPath(); this.ctx.moveTo(this.player.x, bladeY); this.ctx.lineTo(bladeX, bladeY); this.ctx.stroke();
+      this.ctx.restore();
+
+      this.ctx.save();
+      this.ctx.translate(bladeX, bladeY);
+      this.ctx.rotate(spin);
+      this.ctx.scale(pulse, pulse);
+      const halo = this.ctx.createRadialGradient(0, 0, 4, 0, 0, bladeRadius + 8);
+      halo.addColorStop(0, `rgba(220, 255, 255, ${0.32 + flash * 0.28})`);
+      halo.addColorStop(0.5, `rgba(66, 232, 255, ${0.14 + flash * 0.12})`);
+      halo.addColorStop(1, "rgba(66, 232, 255, 0)");
+      this.ctx.fillStyle = halo;
+      this.ctx.beginPath(); this.ctx.arc(0, 0, bladeRadius + 8, 0, Math.PI * 2); this.ctx.fill();
+
+      this.ctx.shadowBlur = 16 + flash * 14;
+      this.ctx.shadowColor = flash > 0 ? "#ffffff" : "#42eaff";
+      this.ctx.strokeStyle = flash > 0 ? "#f7ffff" : "#9cfaff";
+      this.ctx.lineWidth = 2.5 + flash * 1.5;
+      this.ctx.beginPath();
+      const teeth = 14;
+      for (let tooth = 0; tooth < teeth; tooth += 1) {
+        const a = tooth / teeth * Math.PI * 2;
+        const next = (tooth + 0.5) / teeth * Math.PI * 2;
+        const outer = bladeRadius + (tooth % 2 === 0 ? 2 : 0);
+        const inner = bladeRadius - 8;
+        this.ctx.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
+        this.ctx.lineTo(Math.cos(next) * outer, Math.sin(next) * outer);
+        this.ctx.lineTo(Math.cos((tooth + 1) / teeth * Math.PI * 2) * inner, Math.sin((tooth + 1) / teeth * Math.PI * 2) * inner);
+      }
+      this.ctx.stroke();
+
+      this.ctx.globalAlpha = 0.9;
+      this.ctx.strokeStyle = side < 0 ? "#00f0ff" : "#c5ffff";
+      this.ctx.lineWidth = 4;
+      this.ctx.beginPath(); this.ctx.arc(0, 0, bladeRadius - 4, 0.2, Math.PI * 1.15); this.ctx.stroke();
+      this.ctx.strokeStyle = "#9d00ff";
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath(); this.ctx.arc(0, 0, bladeRadius - 6, Math.PI * 1.18, Math.PI * 1.86); this.ctx.stroke();
+
+      this.ctx.shadowBlur = 10;
+      this.ctx.shadowColor = "#d7ffff";
+      this.ctx.fillStyle = "#eaffff";
+      this.ctx.beginPath(); this.ctx.arc(0, 0, 6 + flash * 2, 0, Math.PI * 2); this.ctx.fill();
+      this.ctx.strokeStyle = "#39dfff";
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath(); this.ctx.arc(0, 0, 10, 0, Math.PI * 2); this.ctx.stroke();
+
+      if (flash > 0) {
+        this.ctx.globalAlpha = flash;
+        this.ctx.strokeStyle = "#ffffff";
+        this.ctx.lineWidth = 2;
+        for (let spark = 0; spark < 7; spark += 1) {
+          const a = spark / 7 * Math.PI * 2 + this.elapsed * 5;
+          const inner = bladeRadius - 2;
+          const outer = bladeRadius + 9 + (spark % 3) * 4;
+          this.ctx.beginPath();
+          this.ctx.moveTo(Math.cos(a) * inner, Math.sin(a) * inner);
+          this.ctx.lineTo(Math.cos(a) * outer, Math.sin(a) * outer);
+          this.ctx.stroke();
+        }
+      }
+      this.ctx.restore();
     }
     this.ctx.restore();
   }

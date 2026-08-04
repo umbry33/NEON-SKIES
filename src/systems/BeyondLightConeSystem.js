@@ -73,12 +73,12 @@ export class BeyondLightConeSystem {
     const eliteState = { target: eliteTarget, current: 0 };
     const result = []; let previousTypes = [];
     for (let layer = 0; layer < layers; layer += 1) {
-      const count = openingEvents && layer === 0 ? 3 : layer === 0 || layer >= layers - 2 ? 1 : 2 + Math.floor(rng() * 2);
+      const count = openingEvents && layer < 3 ? 1 : layer === 0 || layer >= layers - 2 ? 1 : 2 + Math.floor(rng() * 2);
       const usedLanes = shuffled(rng, Array.from({ length: lanes }, (_, i) => i)).slice(0, count).sort((a, b) => a - b);
-      const types = usedLanes.map((lane, index) => openingEvents && layer === 0 ? "event" : pickNodeType({ layer, layers, rng, elites: eliteState, previousTypes })).map((type, index) => ({
+      const types = usedLanes.map((lane, index) => openingEvents && layer < 3 ? "event" : pickNodeType({ layer, layers, rng, elites: eliteState, previousTypes })).map((type, index) => ({
         id: `${layer}-${usedLanes[index]}-${Math.floor(rng() * 9999).toString(36)}`,
         layer, lane: usedLanes[index], type, edges: [], cleared: false,
-        ...(openingEvents && layer === 0 ? { eventId: FIRST_CHAPTER_OPENING_EVENT_IDS[index] } : {}),
+        ...(openingEvents && layer < 3 ? { eventId: FIRST_CHAPTER_OPENING_EVENT_IDS[layer] } : {}),
       }));
       if (layer === layers - 2) types[0].type = "rest";
       if (layer === layers - 1) types[0].type = "boss";
