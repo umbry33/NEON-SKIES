@@ -28,12 +28,27 @@ export class Enemy {
     this.burn = null;
     this.slowTimer = 0;
     this.slowMultiplier = 1;
+    this.azureShrinkTimer = 0;
+    this.azureShrinkScale = 1;
+    this.azureSpeedMultiplier = 1;
+    this.azureShootMultiplier = 1;
+    this.azureDamageMultiplier = 1;
+    this.featherMarkTimer = 0;
+    this.featherMarkHits = 0;
+    this.featherBurstTimer = 0;
+    this.obsidianCuts = [];
+    this.darkErosionMarks = 0;
   }
 
   update(dt, bounds = { width: 480 }) {
     this.slowTimer = Math.max(0, this.slowTimer - dt);
+    this.azureShrinkTimer = Math.max(0, this.azureShrinkTimer - dt);
+    this.featherMarkTimer = Math.max(0, this.featherMarkTimer - dt);
+    this.featherBurstTimer = Math.max(0, this.featherBurstTimer - dt);
+    if (this.featherMarkTimer <= 0) this.featherMarkHits = 0;
+    if (this.azureShrinkTimer <= 0) { this.azureShrinkScale = 1; this.azureSpeedMultiplier = 1; this.azureShootMultiplier = 1; this.azureDamageMultiplier = 1; }
     if (this.frozen) return;
-    const behaviorDt = dt * (this.slowTimer > 0 ? this.slowMultiplier : 1);
+    const behaviorDt = dt * (this.slowTimer > 0 ? this.slowMultiplier : 1) * this.azureSpeedMultiplier;
     this.age += behaviorDt;
     if (this.boss) {
       this.bossChargeTimer -= behaviorDt;
@@ -69,7 +84,7 @@ export class Enemy {
 
   canShoot() {
     if (this.shootTimer > 0 || this.silenceTimer > 0 || this.frozen) return false;
-    this.shootTimer = this.definition.shootInterval * this.environmentShootIntervalMultiplier;
+    this.shootTimer = this.definition.shootInterval * this.environmentShootIntervalMultiplier * this.azureShootMultiplier;
     return true;
   }
 
@@ -81,6 +96,47 @@ export class Enemy {
   applySlow({ multiplier = .67, duration = 3 } = {}) {
     this.slowMultiplier = Math.max(0.01, Math.min(1, multiplier));
     this.slowTimer = Math.max(0, duration);
+  }
+
+  applyAzureShrink({ duration = 3.2 } = {}) {
+    if (this.boss) return false;
+    const bossScale = 0.55;
+    const lift = 96;
+    this.y = Math.max(this.radius + 6, this.y - lift);
+    this.azureShrinkTimer = Math.max(this.azureShrinkTimer, duration);
+    this.azureShrinkScale = bossScale;
+    this.azureSpeedMultiplier = 0.75;
+    this.azureShootMultiplier = 1.35;
+    this.azureDamageMultiplier = 0.5;
+    return true;
+  }
+
+  applyFeatherHit({ duration = 3, knockback = 58 } = {}) {
+    if (this.featherMarkTimer <= 0) this.featherMarkHits = 0;
+    this.featherMarkTimer = duration;
+    this.featherMarkHits += 1;
+    if (this.featherMarkHits < 2) return false;
+    this.featherMarkHits = 0;
+    this.featherMarkTimer = 0;
+    this.y = Math.max(this.radius + 6, this.y - (this.boss ? knockback * 0.45 : knockback));
+    this.featherBurstTimer = 0.34;
+    return true;
+  }
+
+  applyObsidianCut({ delay = 0.65, damage = 8, element = "dark" } = {}) {
+    this.obsidianCuts.push({ remaining: delay, damage, element });
+  }
+
+  updateObsidianCuts(dt) {
+    if (!this.obsidianCuts.length) return [];
+    const events = [];
+    this.obsidianCuts = this.obsidianCuts.filter((cut) => {
+      cut.remaining -= dt;
+      if (cut.remaining > 0) return true;
+      events.push({ enemy: this, amount: cut.damage, element: cut.element });
+      return false;
+    });
+    return events;
   }
 
   applyBurn(effect = {}) {
@@ -106,6 +162,7 @@ export class Enemy {
     ctx.save();
     ctx.translate(this.x, this.y);
     ctx.globalAlpha = this.isPhased ? 0.28 : 1;
+    if (this.azureShrinkTimer > 0) ctx.scale(this.azureShrinkScale, this.azureShrinkScale);
     ctx.rotate(type === "swift" ? Math.sin(this.age * 4) * 0.18 : 0);
     if (["comet", "pendulum", "ribbon", "petal"].includes(type)) ctx.rotate(Math.PI);
     ctx.shadowBlur = 18;
@@ -187,6 +244,18 @@ export class Enemy {
       ctx.globalAlpha = 0.72; ctx.strokeStyle = "#a8d8ff"; ctx.shadowColor = "#78b8ff"; ctx.shadowBlur = 16; ctx.lineWidth = 2;
       ctx.beginPath(); ctx.arc(0, 0, this.radius + 8, 0, Math.PI * 2); ctx.stroke();
     }
+    if (this.slowTimer > 0) {
+      const pulse = 1 + Math.sin(this.age * 11) * 0.08;
+      ctx.globalAlpha = 0.9; ctx.globalCompositeOperation = "lighter"; ctx.shadowColor = "#a5f6ec"; ctx.shadowBlur = 18; ctx.strokeStyle = "#bafcff"; ctx.lineWidth = 2;
+      ctx.setLineDash([5, 4]); ctx.beginPath(); ctx.arc(0, 0, (this.radius + 9) * pulse, -this.age * 2.2, -this.age * 2.2 + Math.PI * 1.7); ctx.stroke(); ctx.setLineDash([]);
+      ctx.strokeStyle = "#6de4e8"; ctx.lineWidth = 1.4;
+      for (let index = 0; index < 4; index += 1) {
+        const angle = this.age * 1.6 + index * Math.PI / 2;
+        const x = Math.cos(angle) * (this.radius + 11); const y = Math.sin(angle) * (this.radius + 11);
+        ctx.save(); ctx.translate(x, y); ctx.rotate(angle + Math.PI / 4); ctx.beginPath(); ctx.moveTo(0, -4); ctx.lineTo(4, 0); ctx.lineTo(0, 4); ctx.lineTo(-4, 0); ctx.closePath(); ctx.stroke(); ctx.restore();
+      }
+      ctx.globalCompositeOperation = "source-over";
+    }
     if (this.dashTime > 0 || this.bossChargeTime > 0) {
       ctx.globalAlpha = 0.5; ctx.strokeStyle = "#ffb6cf"; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, this.radius + 8); ctx.lineTo(0, this.radius + 26); ctx.stroke();
     }
@@ -206,6 +275,31 @@ export class Enemy {
       ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.9; ctx.shadowColor = "#ff2f25"; ctx.shadowBlur = 16; ctx.strokeStyle = "#ff4632"; ctx.fillStyle = "#ffd05a"; ctx.lineWidth = 2;
       for (const side of [-1, 1]) { const x = side * (this.radius * .56); ctx.beginPath(); ctx.moveTo(x, this.radius * .55); ctx.quadraticCurveTo(x + side * 5, this.radius * .05, x, -this.radius * .9); ctx.quadraticCurveTo(x - side * 5, -this.radius * .35, x, -this.radius * 1.35); ctx.stroke(); ctx.beginPath(); ctx.arc(x, -this.radius * .9, 2.5 + Math.sin(this.age * 12 + side) * 1.2, 0, Math.PI * 2); ctx.fill(); }
       ctx.globalCompositeOperation = "source-over";
+    }
+    if (this.azureShrinkTimer > 0) {
+      ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.9; ctx.shadowColor = "#78dfff"; ctx.shadowBlur = 16; ctx.strokeStyle = "#baf7ff"; ctx.lineWidth = 1.8;
+      ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(0, 0, this.radius + 10 + Math.sin(this.age * 10) * 2, -this.age * 1.5, -this.age * 1.5 + Math.PI * 1.55); ctx.stroke(); ctx.setLineDash([]);
+      ctx.globalCompositeOperation = "source-over";
+    }
+    if (this.featherMarkHits > 0) {
+      ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.88; ctx.shadowColor = "#ff8a42"; ctx.shadowBlur = 12; ctx.strokeStyle = "#ffd06a"; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(0, 0, this.radius + 7, this.age * 3, this.age * 3 + Math.PI * 1.3); ctx.stroke();
+      ctx.fillStyle = "#ff9a45"; ctx.beginPath(); ctx.arc(0, -this.radius - 7, 2.6, 0, Math.PI * 2); ctx.fill(); ctx.globalCompositeOperation = "source-over";
+    }
+    if (this.featherBurstTimer > 0) {
+      const progress = 1 - this.featherBurstTimer / 0.34;
+      ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 1 - progress; ctx.shadowColor = "#ffca63"; ctx.shadowBlur = 18; ctx.strokeStyle = "#ff8a42"; ctx.lineWidth = 2.2;
+      ctx.beginPath(); ctx.arc(0, 0, this.radius + 8 + progress * 20, 0, Math.PI * 2); ctx.stroke(); ctx.globalCompositeOperation = "source-over";
+    }
+    if (this.obsidianCuts.length > 0) {
+      ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.85; ctx.shadowColor = "#8e72ff"; ctx.shadowBlur = 14; ctx.strokeStyle = "#d8d0ff"; ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.moveTo(-this.radius * .72, -this.radius * .8); ctx.lineTo(this.radius * .72, this.radius * .8); ctx.moveTo(this.radius * .6, -this.radius * .9); ctx.lineTo(-this.radius * .6, this.radius * .9); ctx.stroke(); ctx.globalCompositeOperation = "source-over";
+    }
+    if (this.darkErosionMarks > 0) {
+      ctx.globalCompositeOperation = "lighter"; ctx.globalAlpha = 0.92; ctx.shadowColor = "#9d2639"; ctx.shadowBlur = 16; ctx.strokeStyle = "#d55b78"; ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]); ctx.beginPath(); ctx.arc(0, 0, this.radius + 8 + Math.sin(this.age * 9) * 1.5, this.age * 2.6, this.age * 2.6 + Math.PI * 1.35); ctx.stroke(); ctx.setLineDash([]);
+      for (let index = 0; index < Math.min(3, this.darkErosionMarks); index += 1) { const angle = this.age * 1.8 + index * Math.PI * 2 / 3; ctx.fillStyle = index % 2 ? "#ff8aa0" : "#9d2639"; ctx.beginPath(); ctx.arc(Math.cos(angle) * (this.radius + 8), Math.sin(angle) * (this.radius + 8), 2.2, 0, Math.PI * 2); ctx.fill(); }
+      ctx.fillStyle = "#ffd6e0"; ctx.font = "800 8px system-ui"; ctx.textAlign = "center"; ctx.fillText(String(this.darkErosionMarks), 0, -this.radius - 12); ctx.globalCompositeOperation = "source-over";
     }
     if (this.summoned) {
       ctx.globalAlpha = 0.72; ctx.strokeStyle = "#ff5c92"; ctx.shadowColor = "#ff3c70"; ctx.shadowBlur = 12; ctx.lineWidth = 1.2;

@@ -30,6 +30,16 @@ export const SYNERGY_CONFIG = [
     requirements: ["weapon-water-shot", "weapon-flame-crossbow"],
     behavior: { type: "waterFire" },
   },
+  {
+    id: "synergy-dark-erosion",
+    name: "\u6697\u8680",
+    type: "automatic",
+    rarity: "legendary",
+    icon: "DE",
+    description: "\u9ed1\u66dc\u6ce2\u675f\u547d\u4e2d\u654c\u4eba\u65f6\u53e0\u52a0\u6697\u8000\u5370\u8bb0\uff1b\u661f\u8680\u8109\u51b2\u547d\u4e2d\u5e26\u6709\u5370\u8bb0\u7684\u654c\u4eba\u65f6\uff0c\u89e6\u53d1\u5927\u8303\u56f4\u6697\u5c5e\u6027\u7206\u70b8\uff0c\u9020\u6210 15 \u70b9\u4f24\u5bb3\u5e76\u6e05\u9664\u5168\u90e8\u6697\u8000\u5370\u8bb0\u3002",
+    requirements: ["weapon-obsidian-beam", "weapon-eclipse-pulse"],
+    behavior: { type: "darkErosion" },
+  },
 ];
 
 export function getSynergyById(id) {

@@ -104,8 +104,8 @@ function drawNestPod(ctx, x) {
 
 function drawWeapon(ctx, module) {
   const type = module?.behavior?.type; const id = module?.id;
-  const accent = id === "fusion-polar-saw" ? "#ffdf64" : id === "special-energy-aggregator" ? "#5fe8ff" : type === "electricWhirlwind" ? "#ffd84a" : type === "ricochet" ? "#ffd36e" : type === "psionic" ? "#72f1c0" : type === "nest" ? "#ff294d" : type === "flameCrossbow" ? "#ff3b32" : type === "waterShot" ? "#2468ff" : type === "ballLightning" ? "#b7a1ff" : type === "lightning" ? "#b86cff" : type === "blackHole" ? "#b57bff" : "#ffd27a";
-  const fill = id === "fusion-polar-saw" ? "#3a2b08" : id === "special-energy-aggregator" ? "#092d3d" : type === "electricWhirlwind" ? "#3e2b0d" : type === "ricochet" ? "#3a2a13" : type === "psionic" ? "#123d3e" : type === "nest" || type === "flameCrossbow" ? "#090b13" : type === "waterShot" ? "#071b3c" : "#142d46";
+  const accent = id === "fusion-polar-saw" ? "#ffdf64" : id === "special-energy-aggregator" ? "#5fe8ff" : type === "obsidianBeam" ? "#9c84ff" : type === "eclipseBeam" ? "#e4f1ff" : type === "fireFeather" ? "#ff8a42" : type === "waterMoon" ? "#8de8ff" : type === "electricWhirlwind" ? "#ffd84a" : type === "ricochet" ? "#ffd36e" : type === "psionic" ? "#72f1c0" : type === "nest" ? "#ff294d" : type === "flameCrossbow" ? "#ff3b32" : type === "waterShot" ? "#2468ff" : type === "ballLightning" ? "#b7a1ff" : type === "lightning" ? "#b86cff" : type === "blackHole" ? "#b57bff" : "#ffd27a";
+  const fill = id === "fusion-polar-saw" ? "#3a2b08" : id === "special-energy-aggregator" ? "#092d3d" : type === "obsidianBeam" ? "#110d2e" : type === "eclipseBeam" ? "#111a2d" : type === "fireFeather" ? "#4a2011" : type === "waterMoon" ? "#092b42" : type === "electricWhirlwind" ? "#3e2b0d" : type === "ricochet" ? "#3a2a13" : type === "psionic" ? "#123d3e" : type === "nest" || type === "flameCrossbow" ? "#090b13" : type === "waterShot" ? "#071b3c" : "#142d46";
   drawFrame(ctx, module, accent, fill);
   setModuleGlow(ctx, accent, 5);
   if (type === "single") drawBarrel(ctx, 0);
@@ -156,6 +156,54 @@ function drawWeapon(ctx, module) {
     ctx.fillStyle = "#fff4a6"; ctx.beginPath(); ctx.arc(0, 0, 4.2, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(-1.2, -1.4, 1.25, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
+  else if (type === "obsidianBeam") {
+    ctx.save(); setModuleGlow(ctx, "#9c84ff", 14); ctx.lineJoin = "round";
+    polygon(ctx, [[0, -12], [7, -8], [8, 4], [4, 11], [-4, 11], [-8, 4], [-7, -8]]); ctx.fillStyle = "#120c2b"; ctx.fill(); ctx.strokeStyle = "#9c84ff"; ctx.lineWidth = 1.15; ctx.stroke();
+    ctx.fillStyle = "#24134f"; polygon(ctx, [[-5, -6], [0, -9], [5, -6], [4, 4], [0, 8], [-4, 4]]); ctx.fill();
+    ctx.strokeStyle = "#5d47a7"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(-5, 5); ctx.moveTo(5, -5); ctx.lineTo(5, 5); ctx.stroke();
+    ctx.fillStyle = "#070511"; ctx.fillRect(-2.4, -10.5, 4.8, 18); ctx.strokeStyle = "#d8d1ff"; ctx.lineWidth = .9; ctx.strokeRect(-2.4, -10.5, 4.8, 18);
+    ctx.fillStyle = "#b49aff"; ctx.fillRect(-1.05, -10, 2.1, 15); ctx.fillStyle = "#ffffff"; ctx.fillRect(-.55, -9.5, 1.1, 8);
+    ctx.strokeStyle = "#f0eaff"; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(-6, -2); ctx.lineTo(-9, 1); ctx.lineTo(-6, 3); ctx.moveTo(6, 5); ctx.lineTo(9, 2); ctx.lineTo(6, 0); ctx.stroke();
+    ctx.fillStyle = "#d8d1ff"; ctx.beginPath(); ctx.arc(0, -11, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(0, -11, 1, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
+  else if (type === "eclipseBeam") {
+    ctx.save(); setModuleGlow(ctx, "#d9f4ff", 18); ctx.lineCap = "round"; ctx.lineJoin = "round";
+    // A layered vertical pulse lane makes the firing direction unmistakable.
+    ctx.shadowColor = "#8bc8ff"; ctx.shadowBlur = 16; ctx.strokeStyle = "rgba(92,178,255,.28)"; ctx.lineWidth = 5.2;
+    ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(0, 14); ctx.stroke();
+    ctx.shadowBlur = 8; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 2.4; ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(0, 14); ctx.stroke();
+    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = .9; ctx.beginPath(); ctx.moveTo(0, -14); ctx.lineTo(0, 14); ctx.stroke();
+    // Pulse nodes ride the beam like successive energy packets.
+    for (const [y, scale] of [[-10, .72], [10, .72], [-5, .46], [5, .46]]) {
+      ctx.save(); ctx.translate(0, y); ctx.rotate(Math.PI / 4); ctx.fillStyle = "#b7ecff"; ctx.strokeStyle = "#f5fdff"; ctx.lineWidth = .7;
+      ctx.fillRect(-3.2 * scale, -3.2 * scale, 6.4 * scale, 6.4 * scale); ctx.strokeRect(-3.2 * scale, -3.2 * scale, 6.4 * scale, 6.4 * scale); ctx.restore();
+    }
+    // Layered eclipse core: dark center, bright corona and offset pulse arcs.
+    ctx.shadowColor = "#f1fbff"; ctx.shadowBlur = 20; ctx.fillStyle = "#050817"; ctx.beginPath(); ctx.arc(0, 0, 6.3, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 10; ctx.strokeStyle = "#f5fdff"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, 7.8, -.78, 1.9); ctx.stroke();
+    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.arc(0, 0, 9.8, .32, 2.74); ctx.stroke();
+    ctx.strokeStyle = "#d5f5ff"; ctx.lineWidth = .8; ctx.beginPath(); ctx.arc(0, 0, 11.8, -2.65, -.55); ctx.stroke();
+    ctx.fillStyle = "#dff8ff"; ctx.beginPath(); ctx.arc(-2.5, -2.6, 1.45, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(-3, -3.1, .62, 0, Math.PI * 2); ctx.fill();
+    // Side resonators visually feed the central beam.
+    ctx.shadowBlur = 9; ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.1;
+    for (const side of [-1, 1]) { ctx.beginPath(); ctx.moveTo(side * 8.5, -4.5); ctx.lineTo(side * 12, -7.2); ctx.lineTo(side * 12, 7.2); ctx.lineTo(side * 8.5, 4.5); ctx.stroke(); ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(side * 12, 0, 1.5, 0, Math.PI * 2); ctx.fill(); }
+    ctx.strokeStyle = "#effcff"; ctx.lineWidth = .75; ctx.beginPath(); ctx.moveTo(-5, 0); ctx.lineTo(5, 0); ctx.stroke();
+    ctx.restore();
+  }
+  else if (type === "fireFeather") {
+    ctx.save(); setModuleGlow(ctx, "#ff8a42", 11); ctx.strokeStyle = "#ffb15c"; ctx.fillStyle = "#b9351f"; ctx.lineWidth = 1.1;
+    for (const x of [-8, 0, 8]) { ctx.save(); ctx.translate(x, 0); ctx.rotate(x * .035); ctx.beginPath(); ctx.moveTo(0, -11); ctx.quadraticCurveTo(6, -2, 3, 10); ctx.quadraticCurveTo(0, 6, -3, 10); ctx.quadraticCurveTo(-6, -2, 0, -11); ctx.fill(); ctx.stroke(); ctx.strokeStyle = "#ffe09a"; ctx.beginPath(); ctx.moveTo(0, -8); ctx.lineTo(0, 7); ctx.stroke(); ctx.restore(); }
+    ctx.fillStyle = "#fff1b0"; ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
+  else if (type === "waterMoon") {
+    ctx.save(); setModuleGlow(ctx, "#8de8ff", 15); ctx.lineCap = "round";
+    const drawCrescent = (rotation, radius, fill, stroke) => { ctx.save(); ctx.rotate(rotation); ctx.fillStyle = fill; ctx.strokeStyle = stroke; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.arc(0, 0, radius, -1.08, 1.08); ctx.arc(-radius * .26, 0, radius * .68, 1.05, -1.05, true); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.restore(); };
+    drawCrescent(-.48, 10.5, "#15567a", "#baf7ff"); drawCrescent(Math.PI + .42, 8.2, "#0d355e", "#66dfff");
+    ctx.strokeStyle = "#efffff"; ctx.lineWidth = .9; ctx.beginPath(); ctx.arc(0, 0, 12.5, -.55, .72); ctx.stroke();
+    ctx.fillStyle = "#d9fbff"; ctx.beginPath(); ctx.arc(0, 0, 2.1, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(-.7, -.7, .75, 0, Math.PI * 2); ctx.fill();
+    for (const [x, y, r] of [[-11, -7, 1.2], [11, 6, 1.4], [-8, 9, .8]]) { ctx.fillStyle = "#8de8ff"; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill(); }
+    ctx.restore();
+  }
   else if (type === "lightning") drawLightningBolt(ctx, "#b86cff");
   else if (type === "blackHole") { ctx.fillStyle = "#080414"; ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#d0b0ff"; ctx.lineWidth = 1.6; for (const [radius, start] of [[9, .2], [12, 2.3]]) { ctx.beginPath(); ctx.arc(0, 0, radius, start, start + 4.3); ctx.stroke(); } ctx.fillStyle = "#fff0ff"; ctx.beginPath(); ctx.arc(-2, -2, 1.5, 0, Math.PI * 2); ctx.fill(); }
   else if (type === "flameCrossbow") {
@@ -196,6 +244,9 @@ function drawSpecial(ctx, module) {
     "fusion-mirage-anchor": { accent: "#8efff1", fill: "#123c43" },
     "fusion-polar-saw": { accent: "#ffdf64", fill: "#4d3a18" },
     "fusion-overflow-drive": { accent: "#32eaff", fill: "#123b67" },
+    "special-sky-protocol": { accent: "#7deaff", fill: "#102b55" },
+    "special-azure-singularity": { accent: "#75dfff", fill: "#0c3152" },
+    "special-star-ring": { accent: "#ffe28a", fill: "#3c3216" },
   };
   const palette = palettes[module?.id] ?? { accent: "#72f1c0", fill: "#123d3e" };
   const accent = palette.accent; drawFrame(ctx, module, accent, palette.fill); setModuleGlow(ctx, accent, 6);
@@ -224,6 +275,26 @@ function drawSpecial(ctx, module) {
   else if (module?.id === "fusion-overflow-drive") {
     ctx.save(); setModuleGlow(ctx, "#32eaff", 11); ctx.strokeStyle = "#32eaff"; ctx.lineWidth = 1.2; for (const radius of [5, 9, 12]) { ctx.beginPath(); ctx.arc(0, 0, radius, -1.15, 1.15); ctx.stroke(); }
     ctx.fillStyle = "#a8fbff"; polygon(ctx, [[0, -9], [4, -1], [1.5, 8], [-4, 1]]); ctx.fill(); ctx.strokeStyle = "#ffffff"; ctx.lineWidth = .9; ctx.beginPath(); ctx.moveTo(-12, 0); ctx.lineTo(-6, 0); ctx.moveTo(6, 0); ctx.lineTo(12, 0); ctx.stroke(); ctx.restore();
+  }
+  else if (module?.id === "special-sky-protocol") {
+    ctx.save(); setModuleGlow(ctx, "#7deaff", 14); ctx.lineJoin = "round";
+    ctx.fillStyle = "rgba(55,168,214,.2)"; polygon(ctx, [[-13, 8], [13, 8], [9, -8], [-9, -8]]); ctx.fill();
+    ctx.strokeStyle = "#bdf7ff"; ctx.lineWidth = 1.15; ctx.stroke();
+    ctx.strokeStyle = "#67dfff"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(-12, 6); ctx.lineTo(12, 6); ctx.stroke();
+    ctx.strokeStyle = "#eaffff"; ctx.lineWidth = .8; ctx.beginPath(); ctx.moveTo(-11, 8); ctx.lineTo(-11, 11); ctx.moveTo(11, 8); ctx.lineTo(11, 11); ctx.stroke();
+    for (const [x, color] of [[-9, "#7deaff"], [-6, "#f3b4ff"], [-3, "#7deaff"], [0, "#f3b4ff"], [3, "#7deaff"], [6, "#f3b4ff"], [9, "#7deaff"]]) {
+      ctx.fillStyle = "#17273c"; ctx.strokeStyle = color; ctx.lineWidth = .75; ctx.beginPath(); ctx.moveTo(x, 4); ctx.lineTo(x + 1.2, 1.5); ctx.lineTo(x + 1.2, -3); ctx.lineTo(x - 1.2, -3); ctx.lineTo(x - 1.2, 1.5); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = "#f4ffff"; ctx.lineWidth = .65; ctx.beginPath(); ctx.moveTo(x, -3); ctx.lineTo(x, -9); ctx.stroke();
+    }
+    ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(-8, -11); ctx.lineTo(8, -11); ctx.stroke();
+    ctx.strokeStyle = "#7deaff"; ctx.lineWidth = .8; ctx.beginPath(); ctx.moveTo(-10, -13); ctx.lineTo(-5, -13); ctx.moveTo(5, -13); ctx.lineTo(10, -13); ctx.stroke(); ctx.restore();
+  }
+  else if (module?.id === "special-azure-singularity") {
+    ctx.save(); setModuleGlow(ctx, "#75dfff", 13); ctx.strokeStyle = "#b8f8ff"; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.ellipse(0, 0, 11, 6, -.35, 0, Math.PI * 2); ctx.stroke(); ctx.beginPath(); ctx.ellipse(0, 0, 6, 11, -.35, 0, Math.PI * 2); ctx.stroke(); ctx.fillStyle = "#4fc7ff"; ctx.beginPath(); ctx.arc(0, 0, 4.5, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#efffff"; ctx.beginPath(); ctx.arc(-1.3, -1.5, 1.3, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
+  else if (module?.id === "special-star-ring") {
+    ctx.save(); setModuleGlow(ctx, "#ffe28a", 12); ctx.strokeStyle = "#ffe28a"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(0, 0, 11, .1, Math.PI * 1.7); ctx.stroke(); ctx.strokeStyle = "#9deaff"; ctx.beginPath(); ctx.arc(0, 0, 8, Math.PI + .2, Math.PI * 2.8); ctx.stroke();
+    for (let i = 0; i < 4; i += 1) { const angle = i * Math.PI / 2 + .1; drawSpark(ctx, Math.cos(angle) * 11, Math.sin(angle) * 11, 3, i % 2 ? "#9deaff" : "#ffe28a"); } ctx.fillStyle = "#fff8d0"; ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
   }
   else if (module?.id === "special-optical") {
     ctx.save(); setModuleGlow(ctx, "#9ee9ff", 9);

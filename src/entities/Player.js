@@ -2,8 +2,6 @@ import { ASSEMBLY_BOARD, getFootprintBounds, getInstalledEntries } from "../conf
 import { GAME_CONFIG } from "../config/game-config.js";
 import { drawModuleIcon } from "../rendering/ModuleRenderer.js";
 
-const PLAYER_DRAW_SCALE = 0.85;
-
 export class Player {
   constructor({ x, y, stats, loadout }) {
     this.x = x;
@@ -24,6 +22,7 @@ export class Player {
     this.invulnerabilityTimer = 0;
     this.overclockTimer = 0;
     this.weaponSilenceTimer = 0;
+    this.lastMovementAngle = 0;
     // 避免大量自动模块在倒计时结束的同一帧同时开火，降低首帧弹幕峰值。
     this.weaponEntries.forEach((entry, index) => this.weaponTimers.set(entry.slotId, Math.min(0.45, (index % 10) * 0.045)));
   }
@@ -64,6 +63,7 @@ export class Player {
   }
 
   update(dt, input, bounds, movementMultiplier = 1) {
+    const previousX = this.x; const previousY = this.y;
     if (input.pointer.active) {
       const target = input.pointer;
       this.x += (target.x - this.x) * Math.min(1, dt * 15);
@@ -75,6 +75,8 @@ export class Player {
     }
     this.x = Math.max(5 - this.collisionBounds.minX, Math.min(bounds.width - 5 - this.collisionBounds.maxX, this.x));
     this.y = Math.max(45 - this.collisionBounds.minY, Math.min(bounds.height - 10 - this.collisionBounds.maxY, this.y));
+    const movementX = this.x - previousX; const movementY = this.y - previousY;
+    if (Math.hypot(movementX, movementY) > 0.2) this.lastMovementAngle = Math.atan2(movementX, -movementY);
     for (const [slotId, timer] of this.weaponTimers) this.weaponTimers.set(slotId, timer - dt);
     for (const [slotId, timer] of this.whirlwindCooldowns) {
       const next = timer - dt;
@@ -102,7 +104,7 @@ export class Player {
     ctx.save();
     ctx.translate(x, y);
     // 只缩小绘制结果；碰撞范围、移动边界和模块装配坐标保持原有规则。
-    ctx.scale(PLAYER_DRAW_SCALE, PLAYER_DRAW_SCALE);
+    ctx.scale(GAME_CONFIG.player.moduleDrawScale ?? 0.85, GAME_CONFIG.player.moduleDrawScale ?? 0.85);
     const blinking = this.invulnerabilityTimer > 0 && Math.floor(this.invulnerabilityTimer * 12) % 2 === 0;
     const blinkAlpha = blinking ? 0.28 : 1;
     ctx.globalAlpha = alpha * blinkAlpha;

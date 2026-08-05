@@ -16,8 +16,8 @@ function drawJaggedBolt(ctx, from, to, seed = 0) {
 }
 
 export class Projectile {
-  constructor({ x, y, vx = 0, vy = 0, damage, damageEnd, radius, color, life, chainLife = null, chainFlashDuration = 0.045, team, homing = false, homingDelay = 0, homingTurnRate = 2.4, target = null, playerTarget = null, homingPlayer = false, chainSource = null, kind = "bolt", pierce = false, bounce = false, explosionRadius = 0, explosionDamage = null, chainRadius = 0, growthRate = 2.2, boomerang = null, whirlwind = null, blackHole = null, polarityDelay = 0, dodgeMotion = null, whiteHoleHealState = null, element = "neutral", burn = null, slow = null }) {
-    Object.assign(this, { x, y, vx, vy, damage, damageEnd, radius, color, life, chainLife, chainFlashDuration, team, homing, homingDelay, homingTurnRate, target, playerTarget, homingPlayer, chainSource, kind, pierce, bounce, explosionRadius, explosionDamage, chainRadius, growthRate, boomerang, whirlwind, blackHole, polarityDelay, dodgeMotion, whiteHoleHealState, element, burn, slow });
+  constructor({ x, y, vx = 0, vy = 0, damage, damageEnd, radius, color, life, chainLife = null, chainFlashDuration = 0.045, team, homing = false, homingDelay = 0, homingTurnRate = 2.4, target = null, playerTarget = null, homingPlayer = false, chainSource = null, kind = "bolt", pierce = false, bounce = false, explosionRadius = 0, explosionDamage = null, chainRadius = 0, growthRate = 2.2, boomerang = null, whirlwind = null, blackHole = null, polarityDelay = 0, dodgeMotion = null, arcMotion = null, orbitMotion = null, moduleInstanceId = null, beam = null, hitLimit = 0, featherMarkDuration = 0, featherBurstDamage = 0, skyProtocolId = null, moonSide = 1, skyDamageMultiplier = 1, pulseDelay = 0, whiteHoleHealState = null, element = "neutral", burn = null, slow = null }) {
+    Object.assign(this, { x, y, vx, vy, damage, damageEnd, radius, color, life, chainLife, chainFlashDuration, team, homing, homingDelay, homingTurnRate, target, playerTarget, homingPlayer, chainSource, kind, pierce, bounce, explosionRadius, explosionDamage, chainRadius, growthRate, boomerang, whirlwind, blackHole, polarityDelay, dodgeMotion, arcMotion, orbitMotion, moduleInstanceId, beam, hitLimit, featherMarkDuration, featherBurstDamage, skyProtocolId, moonSide, skyDamageMultiplier, pulseDelay, whiteHoleHealState, element, burn, slow });
     this.age = 0;
     this.origin = { x, y };
     this.phase = 0;
@@ -45,8 +45,10 @@ export class Projectile {
   }
 
   update(dt, enemies = [], bounds = null) {
+    if (this.pulseDelay > 0) { this.pulseDelay = Math.max(0, this.pulseDelay - dt); return; }
     this.age += dt;
     this.life -= dt;
+    if (this.beam) this.beam.damageTimer = Math.max(0, (this.beam.damageTimer ?? 0) - dt);
     this.updateChainLinks();
     if (this.blackHoleCapturedBy) {
       const orbit = this.blackHoleOrbit;
@@ -156,6 +158,24 @@ export class Projectile {
       this.x = centerX + Math.cos(motion.angle) * radius;
       this.y = centerY + Math.sin(motion.angle) * radius;
     }
+    if (this.orbitMotion) {
+      const motion = this.orbitMotion;
+      motion.angle = (motion.angle ?? 0) + (motion.angularSpeed ?? 2) * dt;
+      const radius = motion.radius ?? 60;
+      const verticalScale = motion.verticalScale ?? 1;
+      const centerX = motion.centerX ?? this.origin.x;
+      const centerY = motion.centerY ?? this.origin.y;
+      this.x = centerX + Math.cos(motion.angle) * radius;
+      this.y = centerY + Math.sin(motion.angle) * radius * verticalScale;
+      this.vx = -Math.sin(motion.angle) * radius * (motion.angularSpeed ?? 2);
+      this.vy = Math.cos(motion.angle) * radius * verticalScale * (motion.angularSpeed ?? 2);
+    } else if (this.arcMotion) {
+      const motion = this.arcMotion;
+      const frequency = motion.frequency ?? 2;
+      const previous = Math.sin((this.age - dt) * frequency + (motion.phase ?? 0));
+      const current = Math.sin(this.age * frequency + (motion.phase ?? 0));
+      this.x += (current - previous) * (motion.amplitude ?? 0);
+    }
     if (this.bounce && bounds) {
       if (this.x <= this.radius || this.x >= bounds.width - this.radius) { this.vx *= -1; this.x = Math.max(this.radius, Math.min(bounds.width - this.radius, this.x)); }
       if (this.y <= this.radius || this.y >= bounds.height - this.radius) { this.vy *= -1; this.y = Math.max(this.radius, Math.min(bounds.height - this.radius, this.y)); }
@@ -206,6 +226,56 @@ export class Projectile {
       ctx.globalCompositeOperation = "lighter"; ctx.shadowBlur = 24; ctx.shadowColor = this.color;
       ctx.strokeStyle = "#fffce8"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, this.radius * 1.45, this.age * 7, this.age * 7 + Math.PI * 1.45); ctx.stroke();
       ctx.fillStyle = this.color; ctx.beginPath(); ctx.arc(0, 0, this.radius, 0, Math.PI * 2); ctx.fill(); ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(-1.3, -1.5, this.radius * .32, 0, Math.PI * 2); ctx.fill();
+    } else if (this.kind === "skyBullet") {
+      ctx.globalCompositeOperation = "lighter"; ctx.rotate(Math.atan2(this.vy, this.vx) + Math.PI / 2);
+      const length = this.radius * 4.2; const width = this.radius * 1.05;
+      ctx.shadowColor = this.color; ctx.shadowBlur = 20;
+      ctx.fillStyle = "#263247"; ctx.strokeStyle = this.color; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(0, -length / 2); ctx.quadraticCurveTo(width, -length * .28, width, length * .18); ctx.lineTo(width * .72, length / 2); ctx.lineTo(-width * .72, length / 2); ctx.lineTo(-width, length * .18); ctx.quadraticCurveTo(-width, -length * .28, 0, -length / 2); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#dbe9f5"; ctx.beginPath(); ctx.moveTo(0, -length / 2 + 1); ctx.lineTo(width * .7, -length * .15); ctx.lineTo(-width * .7, -length * .15); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-width * .88, length * .05); ctx.lineTo(width * .88, length * .05); ctx.stroke();
+      ctx.fillStyle = this.color; ctx.fillRect(-width * .34, length * .16, width * .68, length * .22);
+      ctx.globalAlpha = .34; ctx.fillStyle = this.color; ctx.fillRect(-width * .4, length / 2 + 2, width * .8, length * 1.15); ctx.globalAlpha = 1;
+    } else if (this.kind === "skyShard") {
+      ctx.globalCompositeOperation = "lighter"; ctx.rotate(Math.atan2(this.vy, this.vx) + Math.PI / 2); ctx.shadowColor = this.color; ctx.shadowBlur = 18; ctx.fillStyle = this.color; ctx.strokeStyle = "#f4ffff"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, -this.radius * 2.1); ctx.lineTo(this.radius, 0); ctx.lineTo(0, this.radius * 2.1); ctx.lineTo(-this.radius, 0); ctx.closePath(); ctx.fill(); ctx.stroke();
+    } else if (this.kind === "obsidianPulse") {
+      ctx.globalCompositeOperation = "lighter"; ctx.rotate(Math.atan2(this.vy, this.vx) + Math.PI / 2);
+      const length = this.radius * 5.2; const tail = length * 1.35;
+      ctx.shadowColor = this.color; ctx.shadowBlur = 22; ctx.strokeStyle = "#120b2c"; ctx.lineWidth = this.radius * 2.4; ctx.beginPath(); ctx.moveTo(0, tail * .42); ctx.lineTo(0, -length * .5); ctx.stroke();
+      ctx.strokeStyle = this.color; ctx.lineWidth = this.radius * 1.05; ctx.beginPath(); ctx.moveTo(0, tail * .34); ctx.lineTo(0, -length * .5); ctx.stroke();
+      ctx.strokeStyle = "#f2edff"; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(0, length * .2); ctx.lineTo(0, -length * .48); ctx.stroke();
+      ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(0, -length * .52, this.radius * .9, 0, Math.PI * 2); ctx.fill();
+    } else if (this.kind === "obsidianBeam") {
+      const length = this.beam?.length ?? this.y;
+      ctx.globalCompositeOperation = "lighter"; ctx.shadowColor = "#8e72ff"; ctx.shadowBlur = 24; ctx.strokeStyle = "#090513"; ctx.lineWidth = (this.beam?.width ?? 8) * 1.8; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -length); ctx.stroke();
+      ctx.shadowBlur = 14; ctx.strokeStyle = "#b9aaff"; ctx.lineWidth = this.beam?.width ?? 8; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -length); ctx.stroke();
+      ctx.strokeStyle = "#ffffff"; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -length); ctx.stroke();
+    } else if (this.kind === "eclipseBeam") {
+      const length = this.beam?.length ?? this.y;
+      ctx.globalCompositeOperation = "lighter"; ctx.shadowColor = "#dceaff"; ctx.shadowBlur = 26; ctx.strokeStyle = "#070b1b"; ctx.lineWidth = (this.beam?.width ?? 11) * 1.8; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -length); ctx.stroke();
+      ctx.strokeStyle = "#ecf5ff"; ctx.lineWidth = this.beam?.width ?? 11; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -length); ctx.stroke();
+      ctx.strokeStyle = "#28385c"; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(0, -length); ctx.stroke();
+    } else if (this.kind === "fireFeather") {
+      ctx.globalCompositeOperation = "lighter"; ctx.rotate(Math.atan2(this.vy, this.vx) + Math.PI / 2); ctx.shadowColor = this.color; ctx.shadowBlur = 22; ctx.fillStyle = this.color; ctx.strokeStyle = "#ffd6df"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, -this.radius * 2.8); ctx.quadraticCurveTo(this.radius * 1.8, -this.radius * .8, this.radius * .75, this.radius * 1.9); ctx.quadraticCurveTo(0, this.radius * 1.15, -this.radius * .75, this.radius * 1.9); ctx.quadraticCurveTo(-this.radius * 1.8, -this.radius * .8, 0, -this.radius * 2.8); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = "#fff6c2"; ctx.lineWidth = .8; ctx.beginPath(); ctx.moveTo(0, -this.radius * 2.1); ctx.lineTo(0, this.radius * 1.3); ctx.stroke();
+    } else if (this.kind === "moonCrescent") {
+      ctx.globalCompositeOperation = "lighter";
+      const direction = Math.atan2(this.vy, this.vx);
+      ctx.rotate(direction + (this.moonSide < 0 ? Math.PI : 0));
+      const length = this.radius * 4.6; const width = this.radius * 1.5;
+      ctx.shadowColor = this.color; ctx.shadowBlur = 28; ctx.fillStyle = "rgba(141,232,255,.34)"; ctx.strokeStyle = this.color; ctx.lineWidth = 2.2;
+      ctx.beginPath();
+      ctx.moveTo(-length * .58, 0);
+      ctx.quadraticCurveTo(-length * .14, -width * 1.08, length * .54, -width * .08);
+      ctx.quadraticCurveTo(length * .08, -width * .34, -length * .58, 0);
+      ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.strokeStyle = "#f2ffff"; ctx.lineWidth = 1.1; ctx.beginPath(); ctx.moveTo(-length * .53, -.5); ctx.quadraticCurveTo(-length * .1, -width * .83, length * .45, -width * .1); ctx.stroke();
+      ctx.globalAlpha = .28; ctx.strokeStyle = "#d7fbff"; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(-length * .42, width * .11); ctx.quadraticCurveTo(-length * .03, -width * .03, length * .39, -width * .1); ctx.stroke(); ctx.globalAlpha = 1;
+    } else if (this.kind === "starRingBolt") {
+      const pulse = 1 + Math.sin(this.age * 10) * .1;
+      ctx.globalCompositeOperation = "lighter"; ctx.shadowColor = "#ffe28a"; ctx.shadowBlur = 22; ctx.fillStyle = "#ffe28a"; ctx.beginPath(); ctx.arc(0, 0, this.radius * pulse, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#fff8d0"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(0, 0, this.radius * 1.7 * pulse, 0, Math.PI * 1.5); ctx.stroke();
     } else if (this.kind === "frostNeedle") {
       ctx.globalCompositeOperation = "lighter"; ctx.rotate(Math.atan2(this.vy, this.vx) + Math.PI / 2); ctx.shadowBlur = 18; ctx.shadowColor = "#a5f6ec"; ctx.fillStyle = "#7ee8e2";
       ctx.beginPath(); ctx.moveTo(0, -this.radius * 1.9); ctx.lineTo(this.radius, 0); ctx.lineTo(0, this.radius * 1.9); ctx.lineTo(-this.radius, 0); ctx.closePath(); ctx.fill(); ctx.strokeStyle = "#efffff"; ctx.lineWidth = 1; ctx.stroke();

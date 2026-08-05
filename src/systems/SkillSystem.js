@@ -25,6 +25,9 @@ export class SkillSystem {
     else if (skill.id === "overclock") game.startOverclock(skill.duration);
     else if (skill.id === "polarityReverse") game.startPolarityReverse(skill.duration);
     else if (skill.id === "photonChoir") game.startPhotonChoir();
+    else if (skill.id === "skyProtocol") game.startSkyProtocol(skill.duration, skill.instanceId);
+    else if (skill.id === "azureSingularity") game.startAzureSingularity(skill.duration, skill.instanceId);
+    else if (skill.id === "starRing") game.startStarRing(skill.duration, skill.instanceId);
     else if (skill.id === "cryoHive") game.startCryoHive(skill.duration, skill.instanceId);
     else if (skill.id === "mirageAnchor") game.startMirageAnchor(skill.duration);
     else if (skill.id === "polarTether") game.startPolarTether(skill.duration);

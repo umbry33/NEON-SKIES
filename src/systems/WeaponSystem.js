@@ -1,4 +1,4 @@
-import { ASSEMBLY_BOARD, getInstalledEntries, getModuleById, getModuleElement } from "../config/module-config.js";
+import { ASSEMBLY_BOARD, getFootprintBounds, getInstalledEntries, getModuleById, getModuleElement } from "../config/module-config.js";
 import { hasActiveSynergy } from "../config/synergy-config.js";
 import { Projectile } from "../entities/Projectile.js";
 import { GAME_CONFIG } from "../config/game-config.js";
@@ -15,13 +15,19 @@ function makePlayerProjectile(player, projectile, angle = 0, options = {}) {
     damage: projectile.damage * damageMultiplier, damageEnd: typeof projectile.damageEnd === "number" ? projectile.damageEnd * damageMultiplier : undefined,
     radius: projectile.radius, color: projectile.color, life: projectile.chainLife ?? projectile.life, team: "player", kind: options.kind ?? "bolt",
     homing: options.homing, homingDelay: projectile.homingDelay, homingTurnRate: projectile.homingTurnRate, target: options.target, pierce: options.pierce ?? projectile.pierce, bounce: options.bounce ?? projectile.bounce,
-    explosionRadius: projectile.explosionRadius, explosionDamage: projectile.explosionDamage, chainRadius: projectile.chainRadius, chainLife: projectile.chainLife, chainFlashDuration: projectile.flashDuration, chainSource: options.chainSource, growthRate: projectile.growthRate, boomerang: options.boomerang, whirlwind: options.whirlwind, blackHole: options.blackHole ?? projectile.blackHole, element: projectile.element ?? options.element ?? "neutral", burn: projectile.burn,
+    explosionRadius: projectile.explosionRadius, explosionDamage: projectile.explosionDamage, chainRadius: projectile.chainRadius, chainLife: projectile.chainLife, chainFlashDuration: projectile.flashDuration, chainSource: options.chainSource, growthRate: projectile.growthRate, boomerang: options.boomerang, whirlwind: options.whirlwind, blackHole: options.blackHole ?? projectile.blackHole, arcMotion: options.arcMotion, orbitMotion: options.orbitMotion, moduleInstanceId: options.moduleInstanceId, beam: options.beam, hitLimit: options.hitLimit ?? projectile.hitLimit, featherMarkDuration: projectile.featherMarkDuration, featherBurstDamage: projectile.featherBurstDamage, skyProtocolId: options.skyProtocolId, moonSide: options.moonSide, pulseDelay: options.pulseDelay, element: projectile.element ?? options.element ?? "neutral", burn: projectile.burn,
   });
 }
 
 function moduleOrigin(player, entry) {
   const core = ASSEMBLY_BOARD.corePosition;
   return { originX: player.x + (entry.x - core.x) * GAME_CONFIG.player.moduleSpacing, originY: player.y + (entry.y - core.y) * GAME_CONFIG.player.moduleSpacing };
+}
+
+function moduleCenterOrigin(player, entry) {
+  const origin = moduleOrigin(player, entry); const bounds = getFootprintBounds(entry.module);
+  const drawScale = GAME_CONFIG.player.moduleDrawScale ?? 0.85;
+  return { originX: player.x + (entry.x - ASSEMBLY_BOARD.corePosition.x + (bounds.minX + bounds.maxX) / 2) * GAME_CONFIG.player.moduleSpacing * drawScale, originY: player.y + (entry.y - ASSEMBLY_BOARD.corePosition.y + (bounds.minY + bounds.maxY) / 2) * GAME_CONFIG.player.moduleSpacing * drawScale };
 }
 
 function nearestEnemy(enemies, x, y) { return enemies.filter((enemy) => enemy.hp > 0).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0] ?? null; }
@@ -48,6 +54,21 @@ function distributedTargets(enemies, count, origin, spreadAngle) {
     if (target) unused.delete(target);
     return target;
   });
+}
+
+function densestEnemyAngle(enemies, origin) {
+  const candidates = enemies.filter((enemy) => enemy.hp > 0 && enemy.y < origin.originY + 40);
+  if (!candidates.length) return 0;
+  return candidates.map((candidate) => {
+    const angle = Math.atan2(candidate.x - origin.originX, -(candidate.y - origin.originY));
+    const score = candidates.reduce((total, enemy) => {
+      const enemyAngle = Math.atan2(enemy.x - origin.originX, -(enemy.y - origin.originY));
+      let delta = Math.abs(angle - enemyAngle) % (Math.PI * 2);
+      if (delta > Math.PI) delta = Math.PI * 2 - delta;
+      return total + (delta <= .32 ? 1 / Math.max(0.45, Math.hypot(enemy.x - origin.originX, enemy.y - origin.originY) / 260) : 0);
+    }, 0);
+    return { angle, score };
+  }).sort((a, b) => b.score - a.score)[0].angle;
 }
 
 function waterFireSynergyActive(player) {
@@ -110,6 +131,32 @@ const behaviors = {
     return [makePlayerProjectile(player, behavior.projectile, 0, { ...origin, kind: "chainLightning", target, chainSource, pierce: true, damageMultiplier })];
   },
   blackHole: (player, behavior, enemies, entry, damageMultiplier) => [makePlayerProjectile(player, behavior.projectile, 0, { ...moduleOrigin(player, entry), kind: "blackHole", blackHole: { ...behavior.projectile.blackHole }, damageMultiplier })],
+  obsidianBeam: (player, behavior, enemies, entry, damageMultiplier) => {
+    const origin = moduleCenterOrigin(player, entry);
+    const target = nearestForwardEnemy(enemies, origin.originX, origin.originY);
+    const count = behavior.projectile.burstCount ?? 7; const interval = behavior.projectile.burstInterval ?? .1;
+    return Array.from({ length: count }, (_, index) => makePlayerProjectile(player, behavior.projectile, 0, { ...origin, offsetY: 8, kind: "obsidianPulse", moduleInstanceId: entry.instanceId, homing: true, target, pierce: true, pulseDelay: index * interval, damageMultiplier }));
+  },
+  eclipseBeam: (player, behavior, enemies, entry, damageMultiplier) => {
+    const origin = moduleCenterOrigin(player, entry);
+    return [makePlayerProjectile(player, behavior.projectile, 0, { ...origin, offsetY: 8, kind: "eclipseBeam", moduleInstanceId: entry.instanceId, beam: { width: behavior.projectile.beamWidth, length: origin.originY, damageTimer: 0, damageInterval: behavior.projectile.damageInterval }, damageMultiplier })];
+  },
+  fireFeather: (player, behavior, enemies, entry, damageMultiplier) => {
+    const origin = moduleOrigin(player, entry); const baseAngle = densestEnemyAngle(enemies, origin);
+    return Array.from({ length: behavior.volley ?? 3 }, (_, index) => {
+      const angle = baseAngle + (index - ((behavior.volley ?? 3) - 1) / 2) * (behavior.spreadAngle ?? 0.16);
+      return makePlayerProjectile(player, behavior.projectile, angle, { ...origin, kind: "fireFeather", pierce: true, damageMultiplier });
+    });
+  },
+  waterMoon: (player, behavior, enemies, entry, damageMultiplier) => {
+    player.waterMoonPhases ??= new Map();
+    const shotIndex = (player.waterMoonPhases.get(entry.slotId) ?? 0) + 1;
+    player.waterMoonPhases.set(entry.slotId, shotIndex);
+    const origin = moduleCenterOrigin(player, entry); const fullMoon = shotIndex % 3 === 0;
+    const projectile = { ...behavior.projectile, damage: fullMoon ? behavior.projectile.damage * 1.55 : behavior.projectile.damage, radius: fullMoon ? behavior.projectile.radius * 1.35 : behavior.projectile.radius, color: fullMoon ? "#d9fbff" : behavior.projectile.color };
+    const angle = (shotIndex * Math.PI * 0.72) % (Math.PI * 2);
+    return [makePlayerProjectile(player, projectile, 0, { ...origin, offsetY: 8, kind: "moonCrescent", pierce: true, moduleInstanceId: entry.instanceId, orbitMotion: { centerX: origin.originX, centerY: origin.originY, radius: behavior.projectile.orbitRadius, verticalScale: behavior.projectile.orbitVerticalScale, angle, angularSpeed: behavior.projectile.orbitSpeed }, moonSide: shotIndex % 2 ? 1 : -1, hitLimit: fullMoon ? 3 : behavior.projectile.hitLimit, damageMultiplier })];
+  },
 };
 
 export class WeaponSystem {
@@ -152,7 +199,7 @@ export class WeaponSystem {
     const speed = GAME_CONFIG.projectile.enemySpeed * (enemy.environmentProjectileSpeedMultiplier ?? 1);
     const makeShot = (angle = base, kind = "enemyBolt") => new Projectile({
       x: enemy.x, y: enemy.y + enemy.radius * 0.7, vx: Math.sin(angle) * speed,
-      vy: -Math.cos(angle) * speed, damage: GAME_CONFIG.projectile.enemyDamage * (enemy.damageMultiplier ?? 1),
+      vy: -Math.cos(angle) * speed, damage: GAME_CONFIG.projectile.enemyDamage * (enemy.damageMultiplier ?? 1) * (enemy.azureDamageMultiplier ?? 1),
       radius: enemy.boss ? 7 : GAME_CONFIG.projectile.enemyRadius, color: enemy.boss ? (enemy.definition.color ?? "#ff3c70") : "#ff638c", life: GAME_CONFIG.projectile.enemyLife, team: "enemy", kind,
     });
     if (!enemy.boss) {

@@ -285,14 +285,11 @@ export class UI {
     this.assemblyBoard.addEventListener("pointercancel", (event) => { if (this.quickAssemblyPointer?.pointerId === event.pointerId) this.quickAssemblyPointer = null; this.cancelBoardGesture(event); }, { passive: false });
     this.assemblyBoard.addEventListener("lostpointercapture", (event) => this.cancelBoardGesture(event), { passive: false });
     this.assemblyBoard.addEventListener("click", (event) => {
-      const viewAction = event.target.closest("[data-board-view]");
-      if (viewAction) { this.handleBoardViewAction(viewAction.dataset.boardView); return; }
       if (this.suppressClick) return;
       if (consumeSyntheticTouchClick(this.assemblyBoard, event)) return;
       this.handleQuickAssemblyClick(event);
     });
     this.assemblyBoard.addEventListener("wheel", (event) => { event.preventDefault(); this.zoomBoardAt(event.deltaY < 0 ? 1.12 : 1 / 1.12, event.clientX, event.clientY); }, { passive: false });
-    document.querySelector("#assembly-view-controls")?.addEventListener("click", (event) => { const control = event.target.closest("[data-board-view]"); if (control) this.handleBoardViewAction(control.dataset.boardView); });
     window.addEventListener("pointermove", (event) => this.moveDrag(event), { passive: false }); window.addEventListener("pointerup", (event) => { this.endDrag(event); this.finishQuickAssemblyPointer(event); }, { passive: false }); window.addEventListener("pointercancel", (event) => this.endDrag(event));
     this.skillPanel.addEventListener("pointerup", (event) => {
       if (!isTouchLikePointer(event)) return;
@@ -623,9 +620,8 @@ export class UI {
     const cols = ASSEMBLY_BOARD.columns; const rows = ASSEMBLY_BOARD.rows; const core = ASSEMBLY_BOARD.corePosition;
     const cells = Array.from({ length: cols * rows }, (_, index) => `<span class="board-cell" data-cell-x="${index % cols}" data-cell-y="${Math.floor(index / cols)}" aria-hidden="true"></span>`).join("");
     const placed = this.loadout.modules.map((entry) => { const bounds = getFootprintBounds(entry.module); return `<button class="placed-module placed-${entry.module.type}" type="button" data-instance-id="${entry.instanceId}" data-module-id="${entry.moduleId}" style="left:${((entry.x + bounds.minX) / cols) * 100}%;top:${((entry.y + bounds.minY) / rows) * 100}%;width:${(bounds.width / cols) * 100}%;height:${(bounds.height / rows) * 100}%" title="拖动移动 / 点击查看详情"><canvas class="placed-icon-canvas" width="48" height="48" data-icon-module="${entry.moduleId}" aria-hidden="true"></canvas></button>`; }).join("");
-    const controls = `<div class="assembly-view-controls" aria-label="网格视图控制"><button type="button" data-board-view="zoom-out" aria-label="缩小">−</button><span data-board-view-label>100%</span><button type="button" data-board-view="zoom-in" aria-label="放大">+</button><button type="button" data-board-view="reset" aria-label="重置视图">↺</button></div>`;
     const world = `<div class="assembly-board-world"><div class="board-grid-lines" aria-hidden="true"></div><div class="board-cells" aria-hidden="true">${cells}</div><div class="board-core" style="left:${(core.x / cols) * 100}%;top:${(core.y / rows) * 100}%;width:${100 / cols}%;height:${100 / rows}%"><canvas class="board-icon-canvas" width="28" height="28" data-icon-module="core-stellar" aria-hidden="true"></canvas></div>${placed}</div>`;
-    this.assemblyBoard.innerHTML = `${controls}${world}`; this.quickPreview = null; this.paintIcons(this.assemblyBoard); this.applyBoardView(); this.updatePreview();
+    this.assemblyBoard.innerHTML = world; this.quickPreview = null; this.paintIcons(this.assemblyBoard); this.applyBoardView(); this.updatePreview();
   }
   handleQuickAssemblyClick(event) { if (!this.quickAssemblyEnabled || !this.quickAssemblyModuleId || this.dragState) return; const position = this.getGridPosition(event); if (!position) return; const module = getModuleById(this.quickAssemblyModuleId); const installed = this.placeModule(module, position.x, position.y); this.setStatus(installed ? `已装配${module.name}，可继续点击网络` : "此位置无法装配，请选择相邻空位"); }
   finishQuickAssemblyPointer(event) {

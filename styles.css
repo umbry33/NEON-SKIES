@@ -2169,3 +2169,29 @@ body { background: #02050c; }
   color: transparent !important;
   -webkit-text-fill-color: transparent !important;
 }
+
+/* Builder toolbar: the four utility actions stay together above the network. */
+#builder-screen .builder-board-title {
+  width: min(100%, 360px);
+  justify-content: center;
+  gap: 7px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+#builder-screen .builder-board-title::-webkit-scrollbar { display: none; }
+#builder-screen .builder-board-title > * { flex: 0 0 auto; }
+#builder-screen .builder-board-title .loadout-code-button { margin-left: 0; }
+#builder-screen .builder-board-title .loadout-code-button + .text-button { margin-left: 0; }
+#builder-screen .builder-stats {
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+}
+#builder-screen .builder-stats .synergy-config-button { margin-inline: 0; }
+@media (max-width: 520px) {
+  #builder-screen .builder-board-title {
+    width: 100%;
+    justify-content: center;
+    padding-inline: 3px;
+  }
+}

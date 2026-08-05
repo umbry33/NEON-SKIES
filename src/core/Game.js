@@ -56,14 +56,18 @@ export class Game {
     this.whiteHoleHealing = null;
     this.ionSaw = { active: false, damage: 2, damageTimer: 0, damageInterval: 0.12, reach: 42, radius: 26, hitFlash: 0 };
     this.sonicWaves = [];
-    this.cryoHive = null;
+    this.cryoHives = [];
+    this.skyProtocols = [];
+    this.skyProtocolSequence = 0;
+    this.azureSingularities = [];
+    this.starRings = [];
     this.mirageAnchor = null;
     this.polarTether = null;
     this.overflowDrive = null;
     this.abyssBlooms = [];
     this.damageNumbers = [];
     this.damageNumbersEnabled = true;
-    this.countdownEnabled = true;
+    this.countdownEnabled = false;
     this.vibrationEnabled = true;
     this.shakeTime = 0;
     this.shakeDuration = 0;
@@ -391,7 +395,11 @@ export class Game {
     this.whiteHoleHealing = null;
     this.ionSaw = { active: false, damage: 2, damageTimer: 0, damageInterval: 0.12, reach: 42, radius: 26, hitFlash: 0 };
     this.sonicWaves = [];
-    this.cryoHive = null;
+    this.cryoHives = [];
+    this.skyProtocols = [];
+    this.skyProtocolSequence = 0;
+    this.azureSingularities = [];
+    this.starRings = [];
     this.mirageAnchor = null;
     this.polarTether = null;
     this.overflowDrive = null;
@@ -534,28 +542,71 @@ export class Game {
     if (!entry) return { x: player.x, y: player.y };
     const bounds = getFootprintBounds(entry.module);
     const core = player.loadout?.corePosition ?? { x: 7, y: 7 };
-    return { x: player.x + (entry.x + (bounds.minX + bounds.maxX) / 2 - core.x) * GAME_CONFIG.player.moduleSpacing, y: player.y + (entry.y + (bounds.minY + bounds.maxY) / 2 - core.y) * GAME_CONFIG.player.moduleSpacing };
+    const drawScale = ["obsidianBeam", "eclipseBeam", "waterMoon"].includes(skillId) ? (GAME_CONFIG.player.moduleDrawScale ?? 0.85) : 1;
+    return { x: player.x + (entry.x + (bounds.minX + bounds.maxX) / 2 - core.x) * GAME_CONFIG.player.moduleSpacing * drawScale, y: player.y + (entry.y + (bounds.minY + bounds.maxY) / 2 - core.y) * GAME_CONFIG.player.moduleSpacing * drawScale };
   }
-  startCryoHive(duration, moduleInstanceId = null) { this.cryoHive = { duration, fireTimer: 0, pulse: 0, moduleInstanceId }; }
+  startSkyProtocol(duration, moduleInstanceId = null) {
+    this.skyProtocolSequence += 1;
+    this.skyProtocols.push({ id: `sky-protocol-${this.skyProtocolSequence}`, duration, fireTimer: 0, pulse: 0, waveIndex: 0, moduleInstanceId, zoneWidth: 448, zoneDepth: 220, damageMultiplier: 2 });
+  }
+  startAzureSingularity(duration, moduleInstanceId = null) {
+    const origin = this.getFusionSkillOrigin(moduleInstanceId, "azureSingularity");
+    const effectDuration = 1;
+    const shrinkDuration = 7;
+    const radius = 220;
+    const fixedOrigin = { x: origin.x, y: origin.y };
+    const targets = this.enemies.filter((enemy) => enemy.hp > 0 && !enemy.boss && !enemy.isPhased && Math.hypot(enemy.x - fixedOrigin.x, enemy.y - fixedOrigin.y) <= radius).sort((a, b) => Math.hypot(a.x - fixedOrigin.x, a.y - fixedOrigin.y) - Math.hypot(b.x - fixedOrigin.x, b.y - fixedOrigin.y));
+    const singularity = { duration: effectDuration, maxDuration: effectDuration, shrinkDuration, age: 0, pulse: 0, moduleInstanceId, origin: fixedOrigin, radius, targetIds: [] };
+    for (const enemy of targets) { if (enemy.applyAzureShrink?.({ duration: shrinkDuration }) !== false) singularity.targetIds.push(enemy.id); }
+    this.azureSingularities.push(singularity);
+  }
+  startStarRing(duration, moduleInstanceId = null) { this.starRings.push({ duration, pulse: 0, moduleInstanceId, radius: 84 }); }
+  startCryoHive(duration, moduleInstanceId = null) { this.cryoHives.push({ duration, fireTimer: 0, pulse: 0, moduleInstanceId }); }
   startMirageAnchor(duration) { this.mirageAnchor = { x: this.player.x, y: this.player.y, duration, maxDuration: duration }; }
   startPolarTether(duration) { this.polarTether = { duration, pulseTimer: 0 }; }
   startOverflowDrive(duration) { this.overflowDrive = { duration, pulseTimer: 0 }; this.player.weaponTimers.forEach((_, slotId) => this.player.weaponTimers.set(slotId, 0)); }
   startAbyssBloom(duration, moduleInstanceId = null) { this.abyssBlooms.push({ duration, pulse: 0, fireTimer: 0, moduleInstanceId }); }
 
   updateFusionSkills(dt) {
-    if (this.cryoHive) {
-      this.cryoHive.duration = Math.max(0, this.cryoHive.duration - dt); this.cryoHive.fireTimer -= dt; this.cryoHive.pulse += dt;
-      if (this.cryoHive.fireTimer <= 0) {
-        this.cryoHive.fireTimer += .58;
-        for (let index = 0; index < 3; index += 1) {
-          const angle = this.cryoHive.pulse * 1.6 + index * Math.PI * 2 / 3;
-          const origin = this.getFusionSkillOrigin(this.cryoHive.moduleInstanceId, "cryoHive");
-          const x = origin.x + Math.cos(angle) * 42; const y = origin.y + Math.sin(angle) * 28;
-          this.projectiles.push(new Projectile({ x, y, vx: 0, vy: -250, damage: 2, radius: 4.8, color: "#a5f6ec", life: 3.6, team: "player", kind: "frostNeedle", homing: true, homingTurnRate: 5.2, pierce: true, element: "ice", slow: { multiplier: .67, duration: 3 } }));
+    this.skyProtocols = this.skyProtocols.filter((protocol) => {
+      protocol.duration = Math.max(0, protocol.duration - dt); protocol.fireTimer -= dt; protocol.pulse += dt;
+      if (protocol.fireTimer <= 0) {
+        protocol.fireTimer += .45; protocol.waveIndex += 1;
+        const origin = this.getFusionSkillOrigin(protocol.moduleInstanceId, "skyProtocol");
+        const baseCount = protocol.waveIndex % 4 === 0 ? 15 : 11;
+        const count = Math.ceil(baseCount * 1.5);
+        const span = Math.min(protocol.zoneWidth * .84, this.bounds.width * .92);
+        const lineY = origin.y - 20;
+        for (let index = 0; index < count; index += 1) {
+          const x = origin.x - span / 2 + (count === 1 ? span / 2 : (span * index) / (count - 1));
+          this.projectiles.push(new Projectile({ x, y: lineY, vx: 0, vy: -360, damage: protocol.waveIndex % 4 === 0 ? 3.5 : 2.2, radius: protocol.waveIndex % 4 === 0 ? 6.2 : 5.2, color: protocol.waveIndex % 4 === 0 ? "#f3b4ff" : "#7deaff", life: 3.4, team: "player", kind: "skyShard", pierce: true, skyProtocolId: protocol.id, element: "light" }));
         }
       }
-      if (this.cryoHive.duration <= 0) this.cryoHive = null;
-    }
+      return protocol.duration > 0;
+    });
+    this.azureSingularities = this.azureSingularities.filter((singularity) => {
+      singularity.duration = Math.max(0, singularity.duration - dt); singularity.age = Math.min(singularity.maxDuration ?? 1, (singularity.age ?? 0) + dt); singularity.pulse += dt;
+      const origin = singularity.origin;
+      for (const enemy of this.enemies) {
+        if (enemy.hp <= 0 || enemy.boss || enemy.isPhased || singularity.targetIds.includes(enemy.id) || Math.hypot(enemy.x - origin.x, enemy.y - origin.y) > singularity.radius) continue;
+        if (enemy.applyAzureShrink?.({ duration: singularity.shrinkDuration ?? 7 }) !== false) singularity.targetIds.push(enemy.id);
+      }
+      return singularity.duration > 0;
+    });
+    this.starRings = this.starRings.filter((ring) => { ring.duration = Math.max(0, ring.duration - dt); ring.pulse += dt; return ring.duration > 0; });
+    this.cryoHives = this.cryoHives.filter((cryoHive) => {
+      cryoHive.duration = Math.max(0, cryoHive.duration - dt); cryoHive.fireTimer -= dt; cryoHive.pulse += dt;
+      if (cryoHive.fireTimer <= 0) {
+        cryoHive.fireTimer += .58;
+        for (let index = 0; index < 3; index += 1) {
+          const angle = cryoHive.pulse * 1.6 + index * Math.PI * 2 / 3;
+          const origin = this.getFusionSkillOrigin(cryoHive.moduleInstanceId, "cryoHive");
+          const x = origin.x + Math.cos(angle) * 42; const y = origin.y + Math.sin(angle) * 28;
+          this.projectiles.push(new Projectile({ x, y, vx: 0, vy: -250, damage: 2, radius: 4.8, color: "#a5f6ec", life: 3.6, team: "player", kind: "frostNeedle", homing: true, homingTurnRate: 5.2, element: "ice", slow: { multiplier: .67, duration: 3 } }));
+        }
+      }
+      return cryoHive.duration > 0;
+    });
     if (this.mirageAnchor) {
       this.mirageAnchor.duration = Math.max(0, this.mirageAnchor.duration - dt);
       if (this.mirageAnchor.duration <= 0) {
@@ -593,6 +644,65 @@ export class Game {
       }
       return bloom.duration > 0;
     });
+  }
+
+  syncModuleBoundProjectiles() {
+    for (const projectile of this.projectiles) {
+      if (!projectile.moduleInstanceId || !["eclipseBeam", "obsidianBeam", "moonCrescent"].includes(projectile.kind)) continue;
+      const origin = this.getFusionSkillOrigin(projectile.moduleInstanceId, projectile.kind === "eclipseBeam" ? "eclipseBeam" : projectile.kind === "obsidianBeam" ? "obsidianBeam" : "waterMoon");
+      if (projectile.orbitMotion) { projectile.orbitMotion.centerX = origin.x; projectile.orbitMotion.centerY = origin.y; continue; }
+      projectile.x = origin.x; projectile.y = origin.y + (projectile.kind === "eclipseBeam" ? 0 : -8);
+      if (projectile.beam) projectile.beam.length = projectile.y;
+    }
+  }
+
+  syncPendingModulePulses() {
+    for (const projectile of this.projectiles) {
+      if (projectile.kind !== "obsidianPulse" || !projectile.moduleInstanceId || projectile.pulseDelay <= 0) continue;
+      const origin = this.getFusionSkillOrigin(projectile.moduleInstanceId, "obsidianBeam");
+      projectile.x = origin.x; projectile.y = origin.y;
+    }
+  }
+
+  lockObsidianPulseDirections() {
+    for (const projectile of this.projectiles) {
+      if (projectile.kind !== "obsidianPulse" || projectile.pulseDelay > 0 || projectile.obsidianDirectionLocked) continue;
+      const target = projectile.target?.hp > 0 ? projectile.target : this.enemies.filter((enemy) => enemy.hp > 0 && !enemy.isPhased).sort((a, b) => Math.hypot(a.x - projectile.x, a.y - projectile.y) - Math.hypot(b.x - projectile.x, b.y - projectile.y))[0];
+      if (target) {
+        projectile.target = target;
+        const angle = Math.atan2(target.x - projectile.x, -(target.y - projectile.y));
+        const speed = Math.max(1, Math.hypot(projectile.vx, projectile.vy));
+        projectile.vx = Math.sin(angle) * speed; projectile.vy = -Math.cos(angle) * speed;
+      }
+      projectile.obsidianDirectionLocked = true;
+    }
+  }
+
+  updateSkyProtocolProjectiles() {
+    const protocols = new Map(this.skyProtocols.map((protocol) => [protocol.id, protocol]));
+    for (const projectile of this.projectiles) {
+      if (projectile.kind !== "skyBullet" && projectile.kind !== "skyShard") continue;
+      const protocol = protocols.get(projectile.skyProtocolId);
+      if (!protocol) { projectile.skyDamageMultiplier = 1; continue; }
+      const origin = this.getFusionSkillOrigin(protocol.moduleInstanceId, "skyProtocol");
+      const lineY = origin.y - 20;
+      const inZone = Math.abs(projectile.x - origin.x) <= protocol.zoneWidth / 2 && projectile.y <= lineY && projectile.y >= lineY - protocol.zoneDepth;
+      projectile.skyDamageMultiplier = inZone ? (protocol.damageMultiplier ?? 2) : 1;
+    }
+  }
+
+  processStarRings() {
+    if (!this.starRings.length) return;
+    for (const ring of this.starRings) {
+      const origin = this.getFusionSkillOrigin(ring.moduleInstanceId, "starRing");
+      for (const projectile of this.projectiles) {
+        if (projectile.team !== "enemy" || projectile.starRingConverted || projectile.blackHoleCapturedBy) continue;
+        if (Math.hypot(projectile.x - origin.x, projectile.y - origin.y) > ring.radius + (projectile.radius ?? 0)) continue;
+        projectile.team = "player"; projectile.starRingConverted = true; projectile.kind = "starRingBolt"; projectile.color = "#ffe28a";
+        projectile.damage = Math.max(1, projectile.damage * 1.6); projectile.vx *= 1.35; projectile.vy *= 1.35; projectile.life = Math.max(3, projectile.life); projectile.pierce = true; projectile.homing = true; projectile.homingDelay = 0.04; projectile.homingTurnRate = 5.2; projectile.target = this.enemies.filter((enemy) => enemy.hp > 0).sort((a, b) => Math.hypot(a.x - projectile.x, a.y - projectile.y) - Math.hypot(b.x - projectile.x, b.y - projectile.y))[0] ?? null; projectile.element = "neutral";
+        this.explosions.push({ x: origin.x, y: origin.y, radius: 18, color: "#ffe28a", kind: "starRing", life: .16, maxLife: .16 });
+      }
+    }
   }
 
   createDodgeBullet({ x, y, vx = 0, vy = 120, radius = 7, kind = "dodgeOrb", color = "#ff7fd1", damage = this.dodgeDifficulty.damage, life = 8, dodgeMotion = null, dodgeSplit = null }) {
@@ -920,6 +1030,7 @@ export class Game {
       current.environmentShootIntervalMultiplier = environmentEffects.enemy.shootInterval ?? 1;
       current.environmentProjectileSpeedMultiplier = environmentEffects.enemy.projectileSpeed ?? 1;
       statusDamageEvents.push(...(current.updateBurn?.(dt) ?? []));
+      statusDamageEvents.push(...(current.updateObsidianCuts?.(dt) ?? []));
       current.update(dt, this.bounds);
       if (current.canShoot()) {
         const shots = this.weaponSystem.fireEnemy(current, this.player);
@@ -927,12 +1038,17 @@ export class Game {
       }
     }
     if (this.polarityWindow > 0) for (const projectile of this.projectiles) this.markPolarityProjectile(projectile);
+    this.syncModuleBoundProjectiles();
+    this.syncPendingModulePulses();
+    this.lockObsidianPulseDirections();
+    this.processStarRings();
     this.applyBlackHolePull(dt);
     for (const projectile of this.projectiles) {
       if (projectile.polarityDelay > 0) { projectile.polarityDelay = Math.max(0, projectile.polarityDelay - dt); if (projectile.polarityDelay > 0) continue; this.convertPolarityProjectile(projectile); }
       if (this.freezeTimer > 0 && projectile.team === "enemy") continue;
       projectile.update(dt, this.enemies, this.bounds);
     }
+    this.updateSkyProtocolProjectiles();
 
     const collision = this.collisionSystem.resolve({ player: this.player, enemies: this.enemies, projectiles: this.projectiles, wingman: this.wingman, lasers: this.lasers, freezeActive: this.freezeTimer > 0, ionSaw: this.ionSaw, statusDamageEvents });
     if (collision.sawTriggered) this.ionSaw.damageTimer = this.ionSaw.damageInterval ?? 0.12;
@@ -995,10 +1111,54 @@ export class Game {
 
   drawFusionSkillEffects() {
     this.ctx.save(); this.ctx.globalCompositeOperation = "lighter";
-    if (this.cryoHive) {
-      const origin = this.getFusionSkillOrigin(this.cryoHive.moduleInstanceId, "cryoHive");
+    for (const protocol of this.skyProtocols) {
+      const origin = this.getFusionSkillOrigin(protocol.moduleInstanceId, "skyProtocol");
+      const pulse = 1 + Math.sin(protocol.pulse * 9) * .04;
+      this.ctx.globalAlpha = .16; this.ctx.fillStyle = "#7deaff"; this.ctx.shadowColor = "#7deaff"; this.ctx.shadowBlur = 22;
+      const halfWidth = protocol.zoneWidth / 2 * pulse;
+      const depth = protocol.zoneDepth;
+      this.ctx.beginPath(); this.ctx.moveTo(origin.x - halfWidth, origin.y - 8); this.ctx.lineTo(origin.x + halfWidth, origin.y - 8); this.ctx.lineTo(origin.x + halfWidth * .72, origin.y - depth); this.ctx.lineTo(origin.x - halfWidth * .72, origin.y - depth); this.ctx.closePath(); this.ctx.fill();
+      this.ctx.globalAlpha = .8; this.ctx.strokeStyle = "#d8fbff"; this.ctx.lineWidth = 1.5; this.ctx.beginPath(); this.ctx.moveTo(origin.x - halfWidth * .94, origin.y - 20); this.ctx.lineTo(origin.x + halfWidth * .94, origin.y - 20); this.ctx.stroke();
+      this.ctx.globalAlpha = .24; this.ctx.strokeStyle = "#7deaff"; this.ctx.lineWidth = 1; this.ctx.beginPath(); this.ctx.moveTo(origin.x - halfWidth * .72, origin.y - depth); this.ctx.lineTo(origin.x + halfWidth * .72, origin.y - depth); this.ctx.stroke();
+    }
+    for (const singularity of this.azureSingularities) {
+      const origin = singularity.origin;
+      const appear = Math.min(1, (singularity.age ?? 0) / .16);
+      const disappear = Math.min(1, singularity.duration / .16);
+      const visibility = Math.min(appear, disappear);
+      const pulse = 1 + Math.sin(singularity.pulse * 8) * .08;
+      const radius = singularity.radius * (0.72 + 0.28 * visibility) * (0.98 + Math.sin(singularity.pulse * 5) * .025);
+      const field = this.ctx.createRadialGradient(origin.x, origin.y, 8, origin.x, origin.y, radius);
+      field.addColorStop(0, "rgba(180,248,255,.28)"); field.addColorStop(.34, "rgba(79,199,255,.12)"); field.addColorStop(1, "rgba(24,84,155,0)");
+      this.ctx.globalAlpha = .9 * visibility; this.ctx.fillStyle = field; this.ctx.shadowColor = "#75dfff"; this.ctx.shadowBlur = 30;
+      this.ctx.beginPath(); this.ctx.arc(origin.x, origin.y, radius, 0, Math.PI * 2); this.ctx.fill();
+      this.ctx.globalAlpha = .58 * visibility; this.ctx.strokeStyle = "#b8f8ff"; this.ctx.lineWidth = 1.8; this.ctx.setLineDash([9, 7]);
+      this.ctx.beginPath(); this.ctx.arc(origin.x, origin.y, radius, singularity.pulse * .55, singularity.pulse * .55 + Math.PI * 1.45); this.ctx.stroke(); this.ctx.setLineDash([]);
+      this.ctx.globalAlpha = .42 * visibility; this.ctx.strokeStyle = "#4fc7ff"; this.ctx.lineWidth = 1.1;
+      for (let index = 0; index < 5; index += 1) {
+        const rotation = singularity.pulse * (index % 2 ? -0.32 : .32) + index * Math.PI * 2 / 5;
+        this.ctx.beginPath(); this.ctx.arc(origin.x, origin.y, radius * (.52 + index * .075), rotation, rotation + Math.PI * .62); this.ctx.stroke();
+      }
+      this.ctx.globalAlpha = .85 * visibility; this.ctx.fillStyle = "#a8f6ff"; this.ctx.beginPath(); this.ctx.arc(origin.x, origin.y, 9 * pulse * (0.75 + visibility * .25), 0, Math.PI * 2); this.ctx.fill();
+      this.ctx.fillStyle = "#efffff"; this.ctx.beginPath(); this.ctx.arc(origin.x - 2, origin.y - 2, 2.2, 0, Math.PI * 2); this.ctx.fill();
+      for (const enemy of this.enemies.filter((candidate) => singularity.targetIds.includes(candidate.id) && candidate.hp > 0)) {
+        this.ctx.globalAlpha = .7 * visibility; this.ctx.strokeStyle = "#8ceaff"; this.ctx.lineWidth = 1.6;
+        this.ctx.beginPath(); this.ctx.ellipse(enemy.x, enemy.y, (enemy.radius + 8) * pulse, (enemy.radius + 14) * pulse, singularity.pulse * 1.4, 0, Math.PI * 2); this.ctx.stroke();
+        this.ctx.globalAlpha = .45 * visibility; this.ctx.beginPath(); this.ctx.moveTo(enemy.x, enemy.y + 8); this.ctx.lineTo(enemy.x, enemy.y - 30); this.ctx.stroke();
+      }
+    }
+    for (const ring of this.starRings) {
+      const origin = this.getFusionSkillOrigin(ring.moduleInstanceId, "starRing");
+      const rotation = ring.pulse * 1.9;
+      this.ctx.globalAlpha = .82; this.ctx.shadowColor = "#ffe28a"; this.ctx.shadowBlur = 20; this.ctx.strokeStyle = "#ffe28a"; this.ctx.lineWidth = 2.2;
+      this.ctx.beginPath(); this.ctx.arc(origin.x, origin.y, ring.radius, rotation, rotation + Math.PI * 1.75); this.ctx.stroke();
+      this.ctx.strokeStyle = "#9deaff"; this.ctx.lineWidth = 1.2; this.ctx.beginPath(); this.ctx.arc(origin.x, origin.y, ring.radius - 7, rotation + Math.PI, rotation + Math.PI * 2.7); this.ctx.stroke();
+      for (let index = 0; index < 4; index += 1) { const angle = rotation + index * Math.PI / 2; const x = origin.x + Math.cos(angle) * ring.radius; const y = origin.y + Math.sin(angle) * ring.radius; this.ctx.fillStyle = index % 2 ? "#9deaff" : "#ffe28a"; this.ctx.beginPath(); this.ctx.arc(x, y, 4.2, 0, Math.PI * 2); this.ctx.fill(); }
+    }
+    for (const cryoHive of this.cryoHives) {
+      const origin = this.getFusionSkillOrigin(cryoHive.moduleInstanceId, "cryoHive");
       for (let index = 0; index < 3; index += 1) {
-        const angle = this.cryoHive.pulse * 1.6 + index * Math.PI * 2 / 3;
+        const angle = cryoHive.pulse * 1.6 + index * Math.PI * 2 / 3;
         const x = origin.x + Math.cos(angle) * 42; const y = origin.y + Math.sin(angle) * 28;
         this.ctx.shadowColor = "#a5f6ec"; this.ctx.shadowBlur = 15; this.ctx.fillStyle = "#a5f6ec";
         this.ctx.beginPath(); this.ctx.arc(x, y, 6, 0, Math.PI * 2); this.ctx.fill(); this.ctx.strokeStyle = "#eaffff"; this.ctx.lineWidth = 1.3; this.ctx.beginPath(); this.ctx.arc(x, y, 10, angle, angle + Math.PI * 1.25); this.ctx.stroke();
@@ -1203,6 +1363,11 @@ export class Game {
         this.ctx.restore();
         continue;
       }
+      if (explosion.kind === "darkErosion") {
+        this.drawDarkErosionExplosion(radius, fade, progress);
+        this.ctx.restore();
+        continue;
+      }
       if (explosion.kind !== "nestMissile") {
         this.drawGenericExplosion(radius, fade, explosion.color ?? "#8ff5ff");
         this.ctx.restore();
@@ -1273,6 +1438,25 @@ export class Game {
     this.ctx.globalAlpha = fade;
     this.ctx.fillStyle = "#ffffff"; this.ctx.shadowBlur = 18; this.ctx.shadowColor = "#f1ddff";
     this.ctx.beginPath(); this.ctx.arc(0, 0, Math.max(3, radius * (0.2 - progress * 0.08)), 0, Math.PI * 2); this.ctx.fill();
+  }
+
+  drawDarkErosionExplosion(radius, fade, progress) {
+    this.ctx.globalAlpha = fade * 0.3;
+    this.ctx.fillStyle = "#6e102b"; this.ctx.shadowBlur = 30; this.ctx.shadowColor = "#c43b61";
+    this.ctx.beginPath(); this.ctx.arc(0, 0, radius, 0, Math.PI * 2); this.ctx.fill();
+    this.ctx.globalAlpha = fade * 0.95;
+    this.ctx.strokeStyle = "#f08aa4"; this.ctx.lineWidth = 2.8; this.ctx.shadowBlur = 20;
+    this.ctx.beginPath(); this.ctx.arc(0, 0, radius * (0.42 + progress * 0.58), this.elapsed * 4, this.elapsed * 4 + Math.PI * 1.55); this.ctx.stroke();
+    this.ctx.globalAlpha = fade * 0.76;
+    this.ctx.strokeStyle = "#9d2639"; this.ctx.lineWidth = 2;
+    for (let index = 0; index < 8; index += 1) {
+      const angle = index * Math.PI / 4 - this.elapsed * 3.2;
+      const inner = radius * 0.34; const outer = radius * (0.92 + (index % 2) * 0.16);
+      this.ctx.beginPath(); this.ctx.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner); this.ctx.lineTo(Math.cos(angle) * outer, Math.sin(angle) * outer); this.ctx.stroke();
+    }
+    this.ctx.globalAlpha = fade;
+    this.ctx.fillStyle = "#210713"; this.ctx.shadowBlur = 14; this.ctx.shadowColor = "#ff7d9b";
+    this.ctx.beginPath(); this.ctx.arc(0, 0, Math.max(4, radius * (0.16 + progress * 0.08)), 0, Math.PI * 2); this.ctx.fill();
   }
 
   drawGenericExplosion(radius, fade, color) {

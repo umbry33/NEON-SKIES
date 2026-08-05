@@ -1,4 +1,5 @@
 import { GAME_CONFIG } from "../config/game-config.js";
+import { hasActiveSynergy } from "../config/synergy-config.js";
 
 export function circleIntersects(a, b) { return Math.hypot(a.x - b.x, a.y - b.y) <= (a.radius ?? 0) + (b.radius ?? 0); }
 export function circleRectIntersects(circle, rect) { const closestX = Math.max(rect.x, Math.min(circle.x, rect.x + rect.width)); const closestY = Math.max(rect.y, Math.min(circle.y, rect.y + rect.height)); return Math.hypot(circle.x - closestX, circle.y - closestY) <= circle.radius; }
@@ -6,9 +7,27 @@ export function circleRectIntersects(circle, rect) { const closestX = Math.max(r
 export class CollisionSystem {
   resolve({ player, enemies, projectiles, wingman = null, lasers = [], freezeActive = false, ionSaw = null, statusDamageEvents = [] }) {
     const removedProjectiles = new Set(); const destroyedEnemies = new Set(); const damageEvents = []; const explosionEvents = []; let score = 0; let playerDamage = 0; let playerHealing = 0;
+    const darkErosionActive = hasActiveSynergy(player?.loadout, "synergy-dark-erosion");
     const playerParts = typeof player?.getCollisionParts === "function" ? player.getCollisionParts() : [player];
     const intersectsPlayer = (entity) => playerParts.some((part) => circleIntersects(entity, part));
     const addDamage = (enemy, amount, element = "neutral") => { if (!enemy || destroyedEnemies.has(enemy)) return; damageEvents.push({ x: enemy.x, y: enemy.y, amount, element }); if (enemy.takeDamage(amount)) { destroyedEnemies.add(enemy); score += enemy.definition.score; } };
+    const applyExplosionDamage = ({ x, y, radius, damage, element = "neutral", exclude = null }) => {
+      const explosionRadius = Math.max(0, Number(radius) || 0);
+      const explosionDamage = Math.max(0, Number(damage) || 0);
+      if (!explosionRadius || !explosionDamage) return;
+      for (const nearby of enemies) {
+        if (nearby === exclude || destroyedEnemies.has(nearby) || nearby.hp <= 0 || nearby.isPhased) continue;
+        if (Math.hypot(nearby.x - x, nearby.y - y) <= explosionRadius + (nearby.radius ?? 0)) addDamage(nearby, explosionDamage, element);
+      }
+    };
+    const triggerDarkErosion = (enemy) => {
+      if (!darkErosionActive || !enemy || (enemy.darkErosionMarks ?? 0) <= 0) return false;
+      enemy.darkErosionMarks = 0;
+      const radius = 86;
+      explosionEvents.push({ x: enemy.x, y: enemy.y, radius, color: "#9d2639", kind: "darkErosion", life: 0.46, maxLife: 0.46 });
+      applyExplosionDamage({ x: enemy.x, y: enemy.y, radius, damage: 15, element: "dark" });
+      return true;
+    };
     const pointOf = (entity) => ({ x: entity.x, y: entity.y });
     const isVisibleEnemy = (enemy) => enemy?.x >= 0 && enemy.x <= GAME_CONFIG.canvas.width && enemy.y >= 0 && enemy.y <= GAME_CONFIG.canvas.height;
     const chainFrom = (projectile, first, sourceEntity) => {
@@ -31,6 +50,7 @@ export class CollisionSystem {
     for (const statusEvent of statusDamageEvents) addDamage(statusEvent.enemy, statusEvent.amount, statusEvent.element ?? "fire");
 
     for (const projectile of projectiles) {
+      if ((projectile.pulseDelay ?? 0) > 0) continue;
       if (projectile.blackHoleCapturedBy) continue;
       if ((projectile.polarityDelay ?? 0) > 0) continue;
       if (projectile.team === "player") {
@@ -42,7 +62,7 @@ export class CollisionSystem {
             for (const capturedProjectile of captured) {
               removedProjectiles.add(capturedProjectile);
               const damage = Math.max(0, capturedProjectile.damage ?? 0);
-              for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && !enemy.isPhased && Math.hypot(enemy.x - projectile.x, enemy.y - projectile.y) <= radius) addDamage(enemy, damage, capturedProjectile.element ?? "neutral");
+              applyExplosionDamage({ x: projectile.x, y: projectile.y, radius, damage, element: capturedProjectile.element ?? "neutral" });
             }
             removedProjectiles.add(projectile);
           }
@@ -63,20 +83,42 @@ export class CollisionSystem {
           }
           continue;
         }
+        if (projectile.kind === "obsidianBeam" || projectile.kind === "eclipseBeam") {
+          const beam = projectile.beam ?? {};
+          beam.damageTimer ??= 0;
+          if (beam.damageTimer <= 0) {
+            for (const enemy of enemies) {
+              if (destroyedEnemies.has(enemy) || enemy.isPhased || enemy.hp <= 0 || enemy.y > projectile.y + enemy.radius || Math.abs(enemy.x - projectile.x) > (beam.width ?? 10) + enemy.radius) continue;
+              if (projectile.kind === "obsidianBeam") {
+                if (beam.hitIds?.has(enemy.id)) continue;
+                beam.hitIds ??= new Set(); beam.hitIds.add(enemy.id);
+                addDamage(enemy, projectile.currentDamage, projectile.element);
+                enemy.applyObsidianCut?.({ delay: beam.closureDelay ?? .65, damage: beam.delayedDamage ?? 8, element: projectile.element });
+              } else {
+                triggerDarkErosion(enemy);
+                addDamage(enemy, projectile.currentDamage, projectile.element);
+              }
+            }
+            beam.damageTimer = beam.damageInterval ?? .2;
+          }
+          continue;
+        }
         for (const enemy of enemies) {
           if (destroyedEnemies.has(enemy) || enemy.isPhased || removedProjectiles.has(projectile) || !projectile.canHit(enemy) || !circleIntersects(projectile, enemy)) continue;
-          projectile.registerHit(enemy); addDamage(enemy, projectile.currentDamage, projectile.element);
+          projectile.registerHit(enemy); addDamage(enemy, projectile.currentDamage * (projectile.skyDamageMultiplier ?? 1), projectile.element);
+          if (darkErosionActive && projectile.kind === "obsidianPulse") enemy.darkErosionMarks = (enemy.darkErosionMarks ?? 0) + 1;
           if (projectile.burn) enemy.applyBurn(projectile.burn);
           if (projectile.slow) enemy.applySlow(projectile.slow);
+          if (projectile.kind === "fireFeather") enemy.applyFeatherHit?.({ duration: projectile.featherMarkDuration ?? 3, knockback: 58 }) && addDamage(enemy, projectile.featherBurstDamage ?? 4, projectile.element);
           if (projectile.explosionRadius) {
             explosionEvents.push({ x: enemy.x, y: enemy.y, radius: projectile.explosionRadius, color: projectile.color, kind: projectile.kind, life: 0.38, maxLife: 0.38 });
             const explosionDamage = projectile.explosionDamage ?? projectile.currentDamage;
-            for (const nearby of enemies) if (nearby !== enemy && !destroyedEnemies.has(nearby) && Math.hypot(nearby.x - enemy.x, nearby.y - enemy.y) <= projectile.explosionRadius) addDamage(nearby, explosionDamage, projectile.element);
+            applyExplosionDamage({ x: enemy.x, y: enemy.y, radius: projectile.explosionRadius, damage: explosionDamage, element: projectile.element, exclude: enemy });
           }
           if (projectile.chainRadius) chainFrom(projectile, enemy, player);
           if (projectile.kind === "ball") enemy.silence(1.5);
           if (projectile.bounce) { projectile.vx *= -1; projectile.vy *= 0.96; }
-          if (!projectile.pierce && !projectile.bounce && !projectile.boomerang) removedProjectiles.add(projectile);
+          if ((!projectile.pierce && !projectile.bounce && !projectile.boomerang) || (projectile.hitLimit > 0 && projectile.hitKeys.size >= projectile.hitLimit)) removedProjectiles.add(projectile);
         }
         if (projectile.whiteHoleHealState && intersectsPlayer(projectile)) {
           removedProjectiles.add(projectile);
@@ -113,7 +155,7 @@ export class CollisionSystem {
       }
     }
     // 机体碰撞只造成接触伤害，敌机仍然留在场上；只有玩家武器造成的伤害才能销毁敌机。
-    if (!freezeActive) for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && intersectsPlayer(enemy)) playerDamage += GAME_CONFIG.projectile.enemyContactDamage;
+    if (!freezeActive) for (const enemy of enemies) if (!destroyedEnemies.has(enemy) && intersectsPlayer(enemy)) playerDamage += GAME_CONFIG.projectile.enemyContactDamage * (enemy.azureDamageMultiplier ?? 1);
     return { removedProjectiles, destroyedEnemies, score, playerDamage, playerHealing, damageEvents, explosionEvents, sawHitCount, sawProjectileCount, sawTriggered: Boolean(ionSaw?.active && ionSaw.damageTimer <= 0) };
   }
 }

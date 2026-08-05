@@ -7,6 +7,7 @@ export const GAME_CONFIG = {
     maxAttackSpeed: 3,
     radius: 18,
     moduleSpacing: 13,
+    moduleDrawScale: 0.85,
     autoFireGrace: 0.12,
   },
   projectile: {
