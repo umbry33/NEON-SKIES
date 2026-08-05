@@ -1,8 +1,11 @@
 import { BEYOND_LIGHT_CONE_CONFIG, getBeyondChapterCount, getBeyondDifficulty } from "../config/beyond-light-cone-config.js";
-import { MODULE_CONFIG, createLoadout, getInstalledEntries, getModuleById } from "../config/module-config.js";
+import { getBeyondEnvironmentPool } from "../config/environment-config.js";
+import { ENEMY_CONFIG, ADVANCED_ENEMY_CONFIG, ENABLED_PROTOTYPE_ENEMY_CONFIG } from "../config/enemy-config.js";
+import { ALL_MODULES, FUSION_MODULES, PLAYER_DISABLED_MODULE_IDS, createLoadout, getInstalledEntries, getModuleById } from "../config/module-config.js";
 import { BEYOND_EVENTS, getBeyondEventById } from "../config/beyond-events-config.js";
 
-const allModules = [...MODULE_CONFIG.weapons, ...MODULE_CONFIG.specials].filter((module) => module.id !== "special-energy-aggregator" || true);
+const allModules = ALL_MODULES.filter((module) => module.type !== "core");
+const fusionModuleIds = new Set(FUSION_MODULES.map((module) => module.id));
 const FIRST_CHAPTER_OPENING_EVENT_IDS = ["orphan-wingman", "zero-maintenance", "gravity-post"];
 const BOSS_VARIANTS = [
   { id: "storm-warden", name: "雷暴监守", rewardId: "weapon-electric-whirlwind", color: "#89ddff" },
@@ -150,18 +153,27 @@ export class BeyondLightConeSystem {
     const node = this.findNode(run, id); node.cleared = true; run.currentNodeId = node.id; run.visited.push(node.id); run.log.push(`抵达 ${node.type}`); return node;
   }
   getBossVariant(id) { return BOSS_VARIANTS.find((item) => item.id === id) ?? BOSS_VARIANTS[0]; }
-  getLegendaryModules() { return allModules.filter((module) => module.rarity === "legendary"); }
-  getBeyondRewardModules({ elite = false } = {}) { return allModules.filter((module) => !module.beyondFusionOnly && module.rarity !== "legendary" && (!elite || ["epic", "rare", "uncommon"].includes(module.rarity))); }
+  getLegendaryModules() { return allModules.filter((module) => !PLAYER_DISABLED_MODULE_IDS.has(module.id) && module.rarity === "legendary"); }
+  getBeyondRewardModules({ elite = false } = {}) {
+    const normal = allModules.filter((module) => !PLAYER_DISABLED_MODULE_IDS.has(module.id) && !fusionModuleIds.has(module.id) && !module.beyondFusionOnly && module.rarity !== "legendary" && (!elite || ["epic", "rare", "uncommon"].includes(module.rarity)));
+    const fusion = allModules.filter((module) => !PLAYER_DISABLED_MODULE_IDS.has(module.id) && (module.beyondFusionOnly || fusionModuleIds.has(module.id)));
+    return [...normal, ...fusion];
+  }
   rewardModules(run, count = 1, { elite = false, boss = false, bossVariant = null } = {}) {
     if (boss) {
-      const rewardId = this.getBossVariant(bossVariant ?? this.findNode(run, run.currentNodeId)?.bossVariant ?? run.map?.at(-1)?.[0]?.bossVariant).rewardId;
+      const variantRewardId = this.getBossVariant(bossVariant ?? this.findNode(run, run.currentNodeId)?.bossVariant ?? run.map?.at(-1)?.[0]?.bossVariant).rewardId;
+      const enabledLegendary = this.getLegendaryModules();
+      const rewardId = PLAYER_DISABLED_MODULE_IDS.has(variantRewardId)
+        ? choose(rngFrom(`${run.seed}:boss-reward:${run.visited.length}`), enabledLegendary)?.id
+        : variantRewardId;
+      if (!rewardId) return [];
       run.inventory[rewardId] = (run.inventory[rewardId] ?? 0) + 1;
       run.stats ??= {}; run.stats.modulesGained = (run.stats.modulesGained ?? 0) + 1;
       return [rewardId];
     }
     const rng = rngFrom(`${run.seed}:${run.visited.length}:${run.gold}:${count}`);
     const preferred = this.getBeyondRewardModules({ elite });
-    const candidates = preferred.length ? preferred : allModules.filter((module) => !module.beyondFusionOnly && module.rarity !== "legendary");
+    const candidates = preferred.length ? preferred : this.getBeyondRewardModules();
     const rewards = Array.from({ length: count }, () => choose(rng, candidates).id);
     rewards.forEach((id) => { run.inventory[id] = (run.inventory[id] ?? 0) + 1; });
     run.stats ??= {};
@@ -198,10 +210,10 @@ export class BeyondLightConeSystem {
   grantEventModules(run, count = 1, rarity = "any") {
     const pools = {
       any: this.getBeyondRewardModules(),
-      rare: this.getBeyondRewardModules().filter((module) => ["rare", "epic"].includes(module.rarity)),
-      high: this.getBeyondRewardModules().filter((module) => module.rarity === "epic"),
+      rare: this.getBeyondRewardModules().filter((module) => ["rare", "epic", "legendary"].includes(module.rarity)),
+      high: this.getBeyondRewardModules().filter((module) => ["epic", "legendary"].includes(module.rarity)),
     };
-    const candidates = pools[rarity]?.length ? pools[rarity] : allModules;
+    const candidates = pools[rarity]?.length ? pools[rarity] : this.getBeyondRewardModules();
     const rng = rngFrom(`${run.seed}:event-reward:${run.visited.length}:${run.eventHistory?.length ?? 0}:${rarity}`);
     const rewards = Array.from({ length: count }, () => choose(rng, candidates).id);
     rewards.forEach((id) => { run.inventory[id] = (run.inventory[id] ?? 0) + 1; });
@@ -347,6 +359,9 @@ export class BeyondLightConeSystem {
     const hpProgression = 1 + globalDepth * (diff.chapterHpStep ?? 0) / BEYOND_LIGHT_CONE_CONFIG.layers;
     const damageProgression = 1 + globalDepth * (diff.chapterDamageStep ?? 0) / BEYOND_LIGHT_CONE_CONFIG.layers;
     const spawnProgression = 1 + globalDepth * (diff.chapterSpawnStep ?? 0) / BEYOND_LIGHT_CONE_CONFIG.layers;
+    const specialEnemyCount = elite || boss
+      ? diff.level >= 4 ? (boss ? 8 : 6) : diff.level >= 3 ? 3 : 2
+      : 0;
     return {
       nodeType: node.type, level: 5 + globalDepth * 3 + diff.level * 2,
       targetScore: boss ? Math.round(1000 + globalDepth * 140) : Math.round((260 + globalDepth * 95) * (elite ? 1.5 : 1)),
@@ -357,8 +372,13 @@ export class BeyondLightConeSystem {
       speedMultiplier: +(1 + (diff.level - 1) * .035 + globalDepth * .018).toFixed(2),
       spawnInterval: Math.max(.42, 1.28 / (diff.spawnMultiplier * spawnProgression) - globalDepth * .025 - (elite ? .1 : 0)),
       minimumSpawnInterval: Math.max(.34, .7 / (diff.spawnMultiplier * spawnProgression)),
+      enemyPool: [...ENEMY_CONFIG, ...ADVANCED_ENEMY_CONFIG],
+      specialEnemyPool: ENABLED_PROTOTYPE_ENEMY_CONFIG,
+      specialEnemyCount,
       chapter,
       totalChapters: run.totalChapters ?? 1,
+      environmentPool: getBeyondEnvironmentPool(),
+      environment: { firstDelay: elite || boss ? 4.5 : 7, interval: boss ? 10 : elite ? 12 : 15 },
     };
   }
   encode(run) {

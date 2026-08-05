@@ -14,8 +14,8 @@ export const ADVANCED_ENEMY_CONFIG = [
   { id: "enemy-rammer", name: "Rammer", type: "rammer", hp: 38, speed: 108, radius: 20, score: 640, color: "#ff587b", spawnWeight: 1, shootInterval: 2.7, movement: "dash", ability: "dash", dashInterval: 3.4, dashDuration: 0.62, dashMultiplier: 3.2 },
 ];
 
-// Archive-only prototypes. They are intentionally excluded from every spawn
-// pool and getEnemyById(), so no current mode can generate them.
+// Prototype enemies are kept as a separate source list so modes can opt into
+// them without making them available to endless mode by accident.
 export const UNRELEASED_ENEMY_CONFIG = [
   { id: "enemy-prism-splitter", name: "\u68f1\u955c\u5206\u88c2\u8005", type: "prism", hp: 18, speed: 104, radius: 18, score: 360, color: "#7ef8ff", mechanic: "\u53d1\u5c04\u4e00\u679a\u68f1\u955c\u5f39\uff0c\u77ed\u6682\u6ed1\u884c\u540e\u5206\u88c2\u4e3a\u5de6\u53f3\u4e24\u679a\u659c\u5411\u5b50\u5f39\u3002" },
   { id: "enemy-anchor-layer", name: "\u951a\u94fe\u6295\u653e\u8005", type: "anchor", hp: 30, speed: 68, radius: 22, score: 540, color: "#ffc66d", mechanic: "\u901a\u8fc7\u540e\u4f1a\u6295\u4e0b\u4e00\u679a\u7f13\u901f\u7684\u951a\u70b9\uff0c\u951a\u70b9\u5ef6\u8fdf\u7206\u5f00\u4e3a\u5c0f\u5706\u73af\u5f39\u5e55\u3002" },
@@ -28,6 +28,36 @@ export const UNRELEASED_ENEMY_CONFIG = [
   { id: "enemy-polar-drummer", name: "\u6781\u6027\u9f13\u624b", type: "drum", hp: 32, speed: 82, radius: 23, score: 590, color: "#9fa9ff", mechanic: "\u6bcf\u4e24\u6b21\u5c04\u51fb\u4ea4\u66ff\u4e3a\u5feb\u901f\u7a7f\u523a\u5f39\u4e0e\u7f13\u901f\u9f13\u70b9\u5f39\uff0c\u5f62\u6210\u5bb9\u6613\u8bb0\u5fc6\u7684\u5feb\u6162\u8282\u594f\u3002" },
   { id: "enemy-petal-minelayer", name: "\u7efd\u653e\u7684\u82b1\u857e", type: "petal", visualType: "petal", flipY: true, hp: 26, speed: 88, radius: 21, score: 520, color: "#ff91b7", mechanic: "\u6295\u4e0b\u4e00\u4e2a\u82b1\u857e\u6838\uff0c\u77ed\u6682\u540e\u5411\u56db\u4e2a\u5bf9\u89d2\u65b9\u5411\u5c55\u5f00\u82b1\u74e3\u5f39\u3002" },
 ];
+
+const prototypeRuntimeDefaults = {
+  prism: { movement: "zigzag", shootInterval: 2.2, spawnWeight: 1 },
+  anchor: { movement: "straight", shootInterval: 2.8, spawnWeight: 1 },
+  echo: { movement: "phase", ability: "phase", shootInterval: 2.4, spawnWeight: 1 },
+  loom: { movement: "sine", shootInterval: 2.3, spawnWeight: 1 },
+  lantern: { movement: "orbit", ability: "orbit", shootInterval: 2.7, spawnWeight: 1 },
+  comet: { movement: "dash", shootInterval: 2.9, dashInterval: 3.8, dashDuration: 0.55, dashMultiplier: 2.5, spawnWeight: 1 },
+  pendulum: { movement: "sine", shootInterval: 2.5, spawnWeight: 1 },
+  ribbon: { movement: "zigzag", shootInterval: 2.35, spawnWeight: 1 },
+  drum: { movement: "straight", shootInterval: 2.1, spawnWeight: 1 },
+  petal: { movement: "orbit", ability: "orbit", shootInterval: 2.8, spawnWeight: 1 },
+};
+
+export const ENABLED_PROTOTYPE_ENEMY_CONFIG = UNRELEASED_ENEMY_CONFIG.map((enemy) => ({
+  ...enemy,
+  ...(prototypeRuntimeDefaults[enemy.type] ?? { movement: "straight", shootInterval: 2.5, spawnWeight: 1 }),
+}));
+
+export const BOSS_VARIANT_IDS = [
+  "storm-warden", "nest-matriarch", "prism-oracle", "zero-archon",
+  "lattice-leviathan", "abyss-gardener", "chorus-conductor", "cryo-hive-queen",
+];
+
+export function getBossVariantForLevel(level) {
+  const number = Number(level) || 1;
+  if (number <= 50) return null;
+  const bossIndex = Math.max(0, Math.floor((number - 51) / 5));
+  return BOSS_VARIANT_IDS[bossIndex % BOSS_VARIANT_IDS.length];
+}
 
 export function createBossDefinition(level = 5, variantId = null) {
   const summonPool = level >= 20
@@ -61,4 +91,9 @@ export function createBossDefinition(level = 5, variantId = null) {
   };
 }
 
-export function getEnemyById(id) { return [...ENEMY_CONFIG, ...ADVANCED_ENEMY_CONFIG].find((enemy) => enemy.id === id) ?? null; }
+export function getEnemyById(id, { includePrototypes = false } = {}) {
+  const pool = includePrototypes
+    ? [...ENEMY_CONFIG, ...ADVANCED_ENEMY_CONFIG, ...ENABLED_PROTOTYPE_ENEMY_CONFIG]
+    : [...ENEMY_CONFIG, ...ADVANCED_ENEMY_CONFIG];
+  return pool.find((enemy) => enemy.id === id) ?? null;
+}

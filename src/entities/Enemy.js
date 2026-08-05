@@ -107,6 +107,7 @@ export class Enemy {
     ctx.translate(this.x, this.y);
     ctx.globalAlpha = this.isPhased ? 0.28 : 1;
     ctx.rotate(type === "swift" ? Math.sin(this.age * 4) * 0.18 : 0);
+    if (["comet", "pendulum", "ribbon", "petal"].includes(type)) ctx.rotate(Math.PI);
     ctx.shadowBlur = 18;
     ctx.shadowColor = color;
     ctx.fillStyle = color;

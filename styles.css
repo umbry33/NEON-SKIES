@@ -1829,6 +1829,92 @@ body { background: #02050c; }
 /* 光锥之外：独立的章节式航程界面。 */
 .beyond-screen { overflow: hidden; background: radial-gradient(circle at 50% 15%, rgba(83, 116, 255, .27), transparent 38%), linear-gradient(160deg, #0b0b2a, #24114a 56%, #080f2c); color: #ecf8ff; }
 .beyond-shell { position: relative; box-sizing: border-box; width: min(100%, 560px); min-height: 100%; margin: 0 auto; padding: max(18px, env(safe-area-inset-top)) 20px 30px; }
+
+/* 改装界面统一工具栏：连携配置位于核心网络下方，与攻速和缩放控制同排。 */
+#builder-screen .assembly-board-frame {
+  position: relative;
+  width: min(100%, var(--assembly-size, 260px));
+  margin: 0 auto;
+}
+
+#builder-screen .assembly-board-frame > .assembly-board {
+  width: 100%;
+  margin: 0;
+}
+
+#builder-screen .builder-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: min(100%, 360px);
+  margin-top: 6px;
+}
+
+#builder-screen .builder-stats .synergy-config-button {
+  position: static !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: auto !important;
+  min-width: 0 !important;
+  height: auto !important;
+  min-height: 0 !important;
+  padding: 5px 7px !important;
+  border-radius: 7px !important;
+  transform: none !important;
+  gap: 5px;
+  border: 1px solid rgba(255, 160, 232, .82) !important;
+  color: #fff4ff !important;
+  background: linear-gradient(135deg, #b937ed, #7d5aff 52%, #ed58b8) !important;
+  box-shadow: 0 0 15px rgba(239, 78, 211, .28), inset 0 1px 0 rgba(255, 255, 255, .2) !important;
+  font: inherit;
+  font-size: .58rem;
+  letter-spacing: .04em;
+  text-align: center;
+  white-space: nowrap;
+}
+
+#builder-screen .builder-stats .synergy-config-button span {
+  font-size: inherit;
+  letter-spacing: inherit;
+  text-shadow: 0 0 8px rgba(255, 210, 250, .34);
+}
+
+#builder-screen .builder-stats .synergy-config-button small {
+  color: rgba(255, 244, 255, .76);
+  font-size: .5rem;
+  letter-spacing: 0;
+}
+
+#builder-screen .builder-stats .synergy-config-button:hover,
+#builder-screen .builder-stats .synergy-config-button:focus-visible {
+  border-color: #ffd2f5 !important;
+  background: linear-gradient(135deg, #ca4ff2, #8a6bff 52%, #f56ac4) !important;
+  box-shadow: 0 0 20px rgba(255, 102, 222, .48), inset 0 1px 0 rgba(255, 255, 255, .28) !important;
+  outline: none;
+}
+
+/* 两行工具按钮先统一排布，再以整组为单位居中。 */
+#builder-screen .builder-board-title {
+  justify-content: center;
+  gap: 7px;
+}
+
+#builder-screen .builder-board-title .loadout-code-button,
+#builder-screen .builder-board-title .text-button {
+  margin-left: 0;
+}
+
+#builder-screen .builder-stats {
+  justify-content: center;
+  gap: 8px;
+}
+
+#builder-screen .builder-stats #assembly-view-controls {
+  margin-left: 0;
+  gap: 8px;
+}
 .beyond-header { display: grid; grid-template-columns: 48px 1fr auto; align-items: center; gap: 12px; }
 .beyond-header h2 { margin: 1px 0 0; font-size: clamp(1.55rem, 7vw, 2.3rem); letter-spacing: .12em; text-shadow: 2px 1px #6a45d8, -1px 0 #6ce9ff, 0 0 18px rgba(155, 142, 255, .65); }
 .beyond-header .eyebrow { margin: 0; }

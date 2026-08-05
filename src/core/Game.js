@@ -1,6 +1,6 @@
 import { GAME_CONFIG, IMPACT_CONFIG, PLAYER_BASE_STATS, SONIC_WAVE_CONFIG } from "../config/game-config.js";
 import { LEVEL_CONFIG, getLevelConfig } from "../config/level-config.js";
-import { createBossDefinition, getEnemyById } from "../config/enemy-config.js";
+import { createBossDefinition, getEnemyById, getBossVariantForLevel } from "../config/enemy-config.js";
 import { getEnvironmentPool } from "../config/environment-config.js";
 import { ModuleSystem } from "../systems/ModuleSystem.js";
 import { getPlayerAttackSpeed, WeaponSystem } from "../systems/WeaponSystem.js";
@@ -73,7 +73,7 @@ export class Game {
       size: 0.6 + Math.random() * 1.8, speed: GAME_CONFIG.stars.speedMin + Math.random() * (GAME_CONFIG.stars.speedMax - GAME_CONFIG.stars.speedMin),
       alpha: 0.25 + Math.random() * 0.65,
     }));
-    this.ui.bind({ onStart: (spec) => this.start(spec), onMenu: () => this.toMenu(), onPause: () => this.pause(), onResume: () => this.resume(), onSkill: (index) => this.activateSkill(index), onDamageNumbersChanged: (enabled) => { this.damageNumbersEnabled = enabled; if (!enabled) this.damageNumbers = []; }, onVibrationChanged: (enabled) => { this.vibrationEnabled = enabled; }, onCountdownChanged: (enabled) => { this.countdownEnabled = enabled; }, onMusicVolumeChanged: (value) => this.sound.setMusicVolume(value), onSoundVolumeChanged: (value) => this.sound.setSoundVolume(value), onNextLevel: () => this.start({ ...this.ui.getSelectedIds(), mode: "levels", level: Math.min(50, this.levelNumber + 1) }), onBeyondStageContinue: () => this.continueBeyondStage(), onLevelSelect: () => this.toLevelSelect(), onModeSelect: () => this.toModeSelect(), onTutorialBattleExit: () => this.exitTutorialBattle(), onEnvironmentPause: () => this.pauseForEnvironment(), onEnvironmentResume: () => this.resumeFromEnvironment() });
+    this.ui.bind({ onStart: (spec) => this.start(spec), onMenu: () => this.toMenu(), onPause: () => this.pause(), onResume: () => this.resume(), onSkill: (index) => this.activateSkill(index), onDamageNumbersChanged: (enabled) => { this.damageNumbersEnabled = enabled; if (!enabled) this.damageNumbers = []; }, onVibrationChanged: (enabled) => { this.vibrationEnabled = enabled; }, onCountdownChanged: (enabled) => { this.countdownEnabled = enabled; }, onMusicVolumeChanged: (value) => this.sound.setMusicVolume(value), onSoundVolumeChanged: (value) => this.sound.setSoundVolume(value), onNextLevel: () => this.start({ ...this.ui.getSelectedIds(), mode: "levels", level: Math.min(100, this.levelNumber + 1) }), onBeyondStageContinue: () => this.continueBeyondStage(), onLevelSelect: () => this.toLevelSelect(), onModeSelect: () => this.toModeSelect(), onTutorialBattleExit: () => this.exitTutorialBattle(), onEnvironmentPause: () => this.pauseForEnvironment(), onEnvironmentResume: () => this.resumeFromEnvironment() });
     this.bindBeyondLightConeEvents();
     this.ui.onBeyondPauseReturn = () => {
       if (this.mode !== "beyond") return false;
@@ -331,6 +331,26 @@ export class Game {
     this.ui.showBeyondBattleRewards?.(rewards, goldReward);
   }
 
+  createBeyondSpecialEnemies() {
+    const count = Math.max(0, Number(this.levelConfig?.specialEnemyCount ?? 0));
+    const pool = this.levelConfig?.specialEnemyPool ?? [];
+    if (this.mode !== "beyond" || count === 0 || pool.length === 0) return [];
+    const difficultyScale = this.beyondRun?.difficulty >= 4 ? 0.52 : 0.62;
+    const speedScale = this.beyondRun?.difficulty >= 4 ? 0.82 : 0.88;
+    return Array.from({ length: count }, (_, index) => {
+      const definition = pool[index % pool.length];
+      const margin = definition.radius + 10;
+      const x = margin + ((index * 97 + this.levelNumber * 31) % Math.max(1, this.bounds.width - margin * 2));
+      return new Enemy(definition, x, {
+        level: this.levelNumber,
+        spawnY: 66 + (index % 3) * 54,
+        hpMultiplier: (this.levelConfig?.hpMultiplier ?? 1) * difficultyScale,
+        speedMultiplier: (this.levelConfig?.speedMultiplier ?? 1) * speedScale,
+        damageMultiplier: (this.levelConfig?.damageMultiplier ?? 1) * 0.72,
+      });
+    });
+  }
+
   start(spec) {
     this.stopLoop();
     this.ui.hideBeyondBattleRewards?.();
@@ -352,12 +372,13 @@ export class Game {
     this.tutorialHasUsedSkill = false;
     this.tutorialScoreGoal = this.tutorialMode ? 800 : 0;
     this.levelNumber = Number(spec?.level ?? 1);
-    this.levelConfig = this.mode === "levels" ? getLevelConfig(this.levelNumber) : this.mode === "beyond" && this.beyondConfig ? { number: this.beyondConfig.level, targetScore: this.beyondConfig.targetScore, boss: this.beyondConfig.boss, spawnInterval: this.beyondConfig.spawnInterval, minimumSpawnInterval: this.beyondConfig.minimumSpawnInterval, speedMultiplier: this.beyondConfig.speedMultiplier, hpMultiplier: this.beyondConfig.hpMultiplier, damageMultiplier: this.beyondConfig.damageMultiplier } : null;
+    this.levelConfig = this.mode === "levels" ? getLevelConfig(this.levelNumber) : this.mode === "beyond" && this.beyondConfig ? { number: this.beyondConfig.level, targetScore: this.beyondConfig.targetScore, boss: this.beyondConfig.boss, spawnInterval: this.beyondConfig.spawnInterval, minimumSpawnInterval: this.beyondConfig.minimumSpawnInterval, speedMultiplier: this.beyondConfig.speedMultiplier, hpMultiplier: this.beyondConfig.hpMultiplier, damageMultiplier: this.beyondConfig.damageMultiplier, enemyPool: this.beyondConfig.enemyPool, specialEnemyPool: this.beyondConfig.specialEnemyPool, specialEnemyCount: this.beyondConfig.specialEnemyCount, environmentPool: this.beyondConfig.environmentPool, environment: this.beyondConfig.environment } : null;
     const spawnerConfig = this.levelConfig
-      ? { fixed: true, spawnInterval: this.levelConfig.spawnInterval, minimumSpawnInterval: this.levelConfig.minimumSpawnInterval, speedMultiplier: this.levelConfig.speedMultiplier, hpMultiplier: this.levelConfig.hpMultiplier }
+      ? { fixed: true, spawnInterval: this.levelConfig.spawnInterval, minimumSpawnInterval: this.levelConfig.minimumSpawnInterval, speedMultiplier: this.levelConfig.speedMultiplier, hpMultiplier: this.levelConfig.hpMultiplier, damageMultiplier: this.levelConfig.damageMultiplier }
       : { ...LEVEL_CONFIG.difficulty, hpMultiplierStep: LEVEL_CONFIG.difficulty.hpMultiplierStep ?? 0.06 };
     this.spawner = this.mode === "dodge" ? null : new EnemySpawner({ width: this.bounds.width, config: spawnerConfig, pool: this.levelConfig?.enemyPool });
     this.enemies = [];
+    if (this.mode === "beyond" && !this.levelConfig?.boss) this.enemies.push(...this.createBeyondSpecialEnemies());
     this.projectiles = [];
     this.explosions = [];
     this.lasers = [];
@@ -882,8 +903,9 @@ export class Game {
 
     if (this.levelConfig?.boss && !this.bossSpawned && this.score >= this.levelConfig.targetScore) {
       this.bossSpawned = true;
-      this.boss = new Enemy(createBossDefinition(this.levelNumber, this.beyondConfig?.bossVariant), this.bounds.width / 2, { level: this.levelNumber, hpMultiplier: this.levelConfig?.hpMultiplier ?? 1, speedMultiplier: this.levelConfig?.speedMultiplier ?? 1, damageMultiplier: this.levelConfig?.damageMultiplier ?? 1 });
-      this.enemies = [this.boss];
+      const bossVariant = this.beyondConfig?.bossVariant ?? getBossVariantForLevel(this.levelNumber);
+      this.boss = new Enemy(createBossDefinition(this.levelNumber, bossVariant), this.bounds.width / 2, { level: this.levelNumber, hpMultiplier: this.levelConfig?.hpMultiplier ?? 1, speedMultiplier: this.levelConfig?.speedMultiplier ?? 1, damageMultiplier: this.levelConfig?.damageMultiplier ?? 1 });
+      this.enemies = [this.boss, ...this.createBeyondSpecialEnemies()];
       this.bossSummonTimer = 1.2;
       this.bossSummonCount = 0;
     } else if (!this.bossSpawned) {

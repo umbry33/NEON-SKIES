@@ -20,19 +20,15 @@ export function getEncyclopediaSections() {
     meta: `生命 ${enemy.hp} · 速度 ${enemy.speed} · 积分 ${enemy.score}`,
     enemyVisual: { type: enemy.visualType ?? enemy.type, color: enemy.color, flipY: enemy.flipY === true },
   }));
-  enemies.push({
-    title: "\u672a\u542f\u7528\u7684\u654c\u673a",
-    tag: `UNRELEASED / ${UNRELEASED_ENEMY_CONFIG.length}`,
-    description: "\u8fd9\u4e9b\u654c\u673a\u5df2\u5b8c\u6210\u6982\u5ff5\u8bbe\u8ba1\u4e0e\u5916\u5f62\u5efa\u6a21\uff0c\u6682\u4e0d\u4f1a\u51fa\u73b0\u5728\u4efb\u4f55\u6e38\u620f\u6a21\u5f0f\u4e2d\u3002",
-    meta: "\u70b9\u51fb\u67e5\u770b\u672a\u542f\u7528\u7684\u654c\u673a",
-    action: "unreleased-enemies",
-  });
+  enemies.push(...UNRELEASED_ENEMY_CONFIG.map((enemy) => ({
+    title: enemy.name,
+    tag: enemy.type.toUpperCase(),
+    description: enemy.mechanic,
+    meta: `\u751f\u547d ${enemy.hp} \u00b7 \u901f\u5ea6 ${enemy.speed} \u00b7 \u79ef\u5206 ${enemy.score}`,
+    enemyVisual: { type: enemy.visualType ?? enemy.type, color: enemy.color, flipY: enemy.flipY === true },
+  })));
   const environments = ENVIRONMENT_CONFIG.map((environment) => ({
-    title: environment.name, tag: `第 ${environment.minLevel} 关起`, description: environment.description, meta: `持续 ${environment.duration}s` }));
-  const bossStages = [5, 25, 50].map((level) => {
-    const boss = createBossDefinition(level);
-    return { title: `${level} 关首领`, tag: boss.bossSkills.join(" / ").toUpperCase(), description: "首领会在上半区域游走、发射特殊弹幕并召唤护卫机。高阶首领还会冲刺或释放环形弹幕。", meta: `生命 ${boss.hp} · 召唤间隔 ${boss.summon.interval.toFixed(1)}s` };
-  });
+    title: environment.name, tag: environment.beyondOnly ? "光锥之外 · 航程环境" : `第 ${environment.minLevel} 关起`, description: environment.description, meta: `持续 ${environment.duration}s` }));
   const bossVariantDescriptions = {
     "storm-warden": "雷暴监守以螺旋弹幕逐步压缩安全区域，并在战斗中召唤护卫机。",
     "nest-matriarch": "覆巢母舰发射扇形弹幕，同时持续召唤护卫机形成多层火力。",
@@ -45,9 +41,16 @@ export function getEncyclopediaSections() {
   };
   const bossVariants = Object.keys(bossVariantDescriptions).map((variantId) => {
     const boss = createBossDefinition(25, variantId);
-    return { title: boss.name, tag: `BOSS VARIANT · ${boss.attackPattern.toUpperCase()}`, description: bossVariantDescriptions[variantId], meta: `形态 ${boss.bossShape} · 技能 ${boss.bossSkills.join(" / ")} · 生命 ${boss.hp}` };
+    return { title: boss.name, tag: `BOSS VARIANT · ${boss.attackPattern.toUpperCase()}`, description: bossVariantDescriptions[variantId], meta: `形态 ${boss.bossShape} · 技能 ${boss.bossSkills.join(" / ")} · 生命 ${boss.hp}`, enemyVisual: { type: boss.bossShape, color: boss.color } };
   });
-  const bosses = [...bossStages, ...bossVariants];
+  const standardBoss = createBossDefinition(50);
+  const bosses = [{
+    title: "常规首领",
+    tag: "STANDARD BOSS",
+    description: "常规首领会在战场上方游走，持续发射扇形弹幕并召唤护卫机。击败首领后才能完成对应的首领关。",
+    meta: `生命 ${standardBoss.hp} · 召唤间隔 ${standardBoss.summon.interval.toFixed(1)}s`,
+    enemyVisual: { type: standardBoss.bossShape, color: standardBoss.color },
+  }, ...bossVariants];
   // 光锥之外的百科内容集中在这里，模式配置发生变化时同步核对本区块。
   const beyond = [
     {
@@ -106,9 +109,9 @@ export function getEncyclopediaSections() {
       meta: "可复制 / 可导入 · 记录本局航程 · 支持连携能力",
     },
   ];
-  return [
+  const sections = [
     { title: "战斗规则", entries: [
-      { title: "关卡推进", tag: "MISSION", description: "累计指定积分即可完成普通关卡；每五关为首领关，积分达标后首领出现，击败首领才算通关。", meta: "共 50 关 · 10 场首领战" },
+      { title: "关卡推进", tag: "MISSION", description: "累计指定积分即可完成普通关卡；每五关为首领关，积分达标后首领出现，击败首领才算通关。", meta: "共 100 关 · 20 场首领战" },
       { title: "机体拼装", tag: "ASSEMBLY", description: "所有模块必须直接或间接连接核心。模块可自由摆放，装配不同组合会改变攻击与技能。", meta: `${ASSEMBLY_BOARD.columns} × ${ASSEMBLY_BOARD.rows} 核心网络` },
       { title: "主动技能", tag: "SKILL", description: "带技能的模块会在战斗左下角生成对应按钮，可用 1–9 数字键或触摸释放。", meta: "最多装配 9 个技能模块" },
     ] },
@@ -118,6 +121,7 @@ export function getEncyclopediaSections() {
     { title: "特殊环境", entries: environments },
     { title: "光锥之外", entries: beyond },
   ];
+  return sections;
 }
 
 export function getBeyondEventArchiveEntries() {
