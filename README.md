@@ -18,7 +18,7 @@ powershell -ExecutionPolicy Bypass -File .\start-server.ps1
 powershell -ExecutionPolicy Bypass -File .\package-release.ps1 -FolderOnly
 ```
 
-上传前必须重新生成完整的 `publish-package/` 或 ZIP；它们是被 Git 忽略的生成物，不能只替换单个 JavaScript 文件。用户已确认当前 GitHub 部署版本在手机和电脑上都能正常运行；具体线上部署设置不在本仓库内，不凭空假设 GitHub Pages、Actions 或其他托管方式。
+GitHub Pages 通过 `.github/workflows/deploy-pages.yml` 从 `main` 分支自动部署完整源码；推送后等待 GitHub Actions 完成即可更新线上站点。手动上传到其他静态托管服务时，仍需先生成完整的 `publish-package/` 或 ZIP，不能只替换单个 JavaScript 文件。用户已确认当前 GitHub 部署版本在手机和电脑上都能正常运行。
 
 ## 技术与平台
 
