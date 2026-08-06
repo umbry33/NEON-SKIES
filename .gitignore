@@ -8,6 +8,10 @@ pnpm-debug.log*
 # Generated release artifacts
 publish-package/
 *.zip
+*.log
+.cache/
+tmp/
+temp/
 
 # Test and coverage output
 coverage/

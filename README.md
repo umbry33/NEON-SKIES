@@ -1,86 +1,80 @@
 # Neon Skies
 
-Native HTML5 Canvas vertical shooter. There is no build step and no third-party dependency. Build a custom airframe by dragging modules onto the fixed 15x15 core network.
+Neon Skies 是一个原生 HTML5 Canvas 纵向射击游戏。项目没有 npm 依赖、没有构建步骤，玩家通过 15×15 核心连接网络拖拽模块，组合出自己的机体并进入战斗。
 
-## Run
+## 运行、调试与构建
 
-Open `index.html`. If the browser blocks ES Modules from `file://`, run:
+直接打开 `index.html` 可以尝试运行；如果浏览器限制 `file://` 下的 ES Module，使用真实存在的本地服务器脚本：
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\start-server.ps1
 ```
 
-Then open `http://localhost:5500/`. Logic tests are at `/tests/index.html`.
+然后打开 `http://localhost:5500/`。逻辑检查页为 `http://localhost:5500/tests/index.html`。项目没有 `package.json`，不要运行或添加未经确认的 npm 构建命令。
 
-## Publish and update
+发布包由以下脚本从源文件生成：
 
-This is a static project and does not need `npm`, a build command, or a database.
+```powershell
+powershell -ExecutionPolicy Bypass -File .\package-release.ps1 -FolderOnly
+```
 
-### Netlify first publish
+上传前必须重新生成完整的 `publish-package/` 或 ZIP；它们是被 Git 忽略的生成物，不能只替换单个 JavaScript 文件。部署平台和站点配置不在本仓库内，当前以 Netlify 手动上传流程为既有约定，若要改变发布方式需另行确认。
 
-Upload the contents of `publish-package` to Netlify, or upload `neon-skies-publish.zip` when Netlify asks for a site folder/archive. The published site entry file is `index.html`.
+## 技术与平台
 
-To rebuild only the directly uploadable folder, use `powershell -ExecutionPolicy Bypass -File .\package-release.ps1 -FolderOnly`.
+- 技术栈：HTML、CSS、原生 JavaScript ES Modules、Canvas 2D、Web Audio API。
+- 运行要求：支持 ES Modules、Canvas 2D、Pointer Events 和 Web Audio API 的现代浏览器。
+- 目标平台：桌面浏览器与移动浏览器；具体浏览器版本矩阵待确认。
+- 当前资源：飞机、敌机、模块、子弹和特效主要由 Canvas 几何绘制，无外部图片、字体或音频文件。
 
-### Updating after a code change
+## 当前玩法
 
-1. Edit the original project files in this folder.
-2. Test the game at `http://127.0.0.1:5500/`.
-3. Recreate the publish package so it contains the newest `index.html`, `styles.css`, `src/`, and `assets/`.
-4. In Netlify, open the same site and use **Deploys → Deploy manually**, then upload the new `publish-package` folder or ZIP.
+- 无尽模式：持续生成敌机的经典战斗。
+- 关卡模式：100 个战区，每 5 关为 Boss 关；关卡越高，敌机池、生命、速度、伤害与生成压力逐步提升，26 关后可出现特殊环境，51 关后加入 10 个已启用的原型敌机。
+- 躲避弹幕模式：简单、困难、噩梦三档，只生成持续变化的危险弹幕，按存活时间和躲过的弹幕计分。
+- 新手教程：引导装配、移动、释放技能和完成 800 分训练目标。
+- 光锥之外：独立的随机章节航程，包含战斗、精英、商店、回复、事件和 Boss 节点；支持四档难度、局内库存、路线、金币、模块成长、连携能力和航程存档码。
+- 游戏百科与更新日志：从游戏内查看模块、敌机、Boss、环境、光锥之外规则和历史更新记录。
 
-Do not upload only the changed JavaScript file: upload the complete package so all module imports and styles stay in sync.
+## 操作方式
 
-## Modes and controls
+- 键盘：WASD 或方向键移动，数字键 1–9 释放主动技能。
+- 鼠标/触摸：在战斗画布上拖动移动；技能按钮位于战斗界面左下区域。
+- 装配：从模块仓库拖到核心网络；可开启快捷装配，也可拖动已安装模块重新摆放或拖入删除区。
+- 装配校验：模块不能重叠，必须落在 15×15 网格内，并通过核心连通性校验；最多装配 9 个技能模块，普通模块没有总数量上限，但单个模块仍可能有自身限制。
+- 暂停：战斗 HUD 的暂停按钮提供继续和返回选项，返回路线图/主菜单需要二次确认。
 
-- The main menu opens a mode screen. **Endless** starts the original endless battle; **Level** opens a 5-column grid of 25 unlocked stages.
-- Normal stages clear after reaching their score target. Stages 5, 10, 15, 20 and 25 first reach the target, then spawn a moving boss that must be defeated.
-- Higher stages increase enemy health, speed, spawn cadence, and unlock advanced enemy movement/abilities. Bosses stay in the upper half and fire fan-shaped barrages.
-- The battle HUD pause button opens continue/return choices. Returning to the main menu requires a second confirmation.
-
-- Keyboard: WASD or arrow keys to move; number keys 1-9 activate skills.
-- Touch: drag on the canvas to move. Skill buttons appear at lower-left and can be pressed with another finger.
-- The player auto-fires. The main menu battle button uses the current build directly.
-
-## Assembly
-
-The core stays in the center of a 15x15 board. Drag modules from the vertical four-column module bay. A translucent preview shows the footprint. On release, geometry, overlap, and core connectivity are checked; disconnected modules are removed. Click an installed module for details.
-
-The **快捷装配** switch is above the core network. When enabled, click a module in the bay to select it, then click valid cells on the network to install it repeatedly without opening the detail panel. Turn it off to restore the normal detail-click behavior.
-
-Current weapons: electric whirlwind, nest, ricochet, ball lightning, and psionic.
-
-Current specials: optical decoy, wingman, ion chainsaw, sonic strings, and zero domain.
-
-## Structure
+## 目录结构
 
 ```text
-index.html                 menu, assembly, battle and HUD
-styles.css                 portrait game styling
-src/config/                player, enemy, level and module data
-src/core/Game.js           game state, loop and rendering
-src/entities/              player, enemy, projectile, decoy and wingman
-src/systems/                input, modules, weapons, skills and collisions
-src/ui/UI.js               menu, module bay, assembly preview and HUD
-src/rendering/              Canvas geometry icons
-tests/                     standalone logic and import smoke tests
-assets/                    reserved for future resources
+index.html                 页面骨架、菜单、装配、战斗 HUD
+styles.css                 全局与移动端视觉样式
+src/main.js                应用入口，组装 UI、输入和 Game
+src/config/                模块、敌机、关卡、环境、事件和模式配置
+src/core/Game.js           游戏状态、主循环、模式流程和 Canvas 渲染
+src/entities/              玩家、敌机、子弹、分身、僚机实体
+src/systems/               输入、装配、武器、技能、碰撞、音效、航程系统
+src/ui/                    菜单、改装界面、百科和光锥之外界面
+src/rendering/             模块图标和 Canvas 几何绘制
+tests/                     浏览器逻辑测试页与测试脚本
+assets/                    当前仅有资源策略说明，暂无外部资源
+docs/                      AI 长期维护文档
 ```
 
-## Add content
+## 新增内容的入口
 
-Add a module configuration to `src/config/module-config.js`. Reuse an existing behavior type where possible. For a new flight pattern, add a behavior factory in `src/systems/WeaponSystem.js`; the player and main loop do not need module-specific branches.
+- 新模块：先改 `src/config/module-config.js`；尽量复用 `src/systems/WeaponSystem.js` 中现有 behavior，只有新机制确实需要时才扩展行为工厂，并同步 `ModuleRenderer.js`、百科与测试。
+- 新敌机/Boss：改 `src/config/enemy-config.js`，必要时扩展 `src/entities/Enemy.js`、武器系统和百科配置。
+- 新关卡/环境：改 `src/config/level-config.js`、`src/config/environment-config.js`，并检查 `Game.js` 的生成、HUD 和结算逻辑。
+- 新光锥之外内容：改 `src/config/beyond-light-cone-config.js`、`beyond-events-config.js` 与 `BeyondLightConeSystem.js`，UI 在 `src/ui/BeyondLightConeUI.js`。
+- 新主动技能：配置 `module-config.js`，在 `SkillSystem.js` 分发，并在 `Game.js` 实现状态、更新和渲染。
 
-Attribute modules use `modifiers`, for example:
+完整架构、数据兼容、测试与 AI 交接规则见 [`docs/README.md`](docs/README.md)。
 
-```js
-modifiers: { maxHp: { add: 2, multiply: 1 }, moveSpeed: { add: 0, multiply: 1 } }
-```
+## 当前限制
 
-Enemy definitions live in `src/config/enemy-config.js`. Spawn cadence and difficulty growth live in `src/config/level-config.js`.
-
-## Tests and limitations
-
-The test page covers the 15x15 board, multi-cell modules, stat merging, module loading, module fire origins, nest spread delay, electric whirlwind area damage, skill cooldowns, pruning, and circle collisions.
-
-Story, networking, accounts, leaderboards, saves, drops, audio, external art, and in-battle module replacement are not implemented yet. All 25 stages are intentionally unlocked during testing.
+- 没有故事、账号、联网、排行榜或数据库。
+- 没有浏览器本地自动存档；普通机体和光锥之外航程使用可复制的配置码/存档码手动保存。
+- 光锥之外的模块合成数据和系统代码仍存在，但当前 UI 入口被隐藏，不能视为已开放的玩家功能。
+- `publish-package/` 和 `neon-skies-publish.zip` 可能是旧生成物；修改源码后必须重新生成。
+- `tests/index.html` 当前存在一组与 v0.6/v0.7 实现不同步的旧断言失败，具体失败项和复现方式见 `docs/KNOWN_ISSUES.md`。

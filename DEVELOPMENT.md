@@ -1,11 +1,17 @@
-# Recommended development order
+# 开发说明
 
-1. Add rotation and clearer footprint previews.
-2. Expand level data with authored waves, boss patterns and stage rewards.
-3. Add module drops and in-battle replacement.
-4. Add more enemy movement patterns and enemy skills.
-5. Add module rarity, upgrades and equipment limits.
-6. Add multiple local airframe saves.
-7. Add sound, particles and optional art resources.
+本文件保留原有的开发顺序职责，详细规则已拆分到 `docs/`，避免多个文档重复描述同一约束。
 
-Keep new content data-driven. New modules should normally require configuration plus one behavior implementation, not changes across Player or Game.
+## 推荐开发顺序（计划，不代表已实现）
+
+1. 增加模块旋转和更清晰的占位预览。
+2. 将关卡数据扩展为可编写的波次、Boss 模式和关卡奖励。
+3. 增加模块掉落与战斗内替换。
+4. 增加更多敌机移动模式和敌人技能。
+5. 增加模块稀有度成长、升级和装备限制。
+6. 增加多个本地机体保存槽。
+7. 增加更多音效、粒子和可选外部资源。
+
+这些条目来自历史开发计划，当前是否进入下一版本需以 `docs/ROADMAP.md` 和任务记录为准。新内容应保持数据驱动：通常新增模块只需要配置和一个行为实现，不应在 `Player` 或 `Game` 中散落大量模块专用分支。
+
+开始开发前先读 `AGENTS.md`、`docs/AI_HANDOFF.md` 和 `docs/DEVELOPMENT_RULES.md`。
