@@ -141,20 +141,52 @@ const consumeSyntheticTouchClick = (element, event) => {
 const bindTap = (element, handler) => {
   if (!element) return;
   let activePointerId = null;
-  element.addEventListener("pointerdown", (event) => {
-    if (isTouchLikePointer(event)) activePointerId = event.pointerId;
-  }, { passive: true });
-  element.addEventListener("pointerup", (event) => {
-    if (!isTouchLikePointer(event) || activePointerId !== event.pointerId) return;
-    activePointerId = null;
-    if (element.disabled) return;
+  let activeTouchId = null;
+  let touchActionHandled = false;
+  const invokeTouch = (event) => {
+    if (touchActionHandled || element.disabled) return;
+    touchActionHandled = true;
     event.preventDefault();
     event.stopPropagation();
     markTouchHandled(element);
     handler(event);
+  };
+  element.addEventListener("pointerdown", (event) => {
+    if (isTouchLikePointer(event)) {
+      activePointerId = event.pointerId;
+      activeTouchId = null;
+      touchActionHandled = false;
+    }
+  }, { passive: true });
+  element.addEventListener("pointerup", (event) => {
+    if (!isTouchLikePointer(event) || activePointerId !== event.pointerId) return;
+    activePointerId = null;
+    invokeTouch(event);
   }, { passive: false });
   element.addEventListener("pointercancel", (event) => {
-    if (event.pointerId === activePointerId) activePointerId = null;
+    if (event.pointerId === activePointerId) {
+      activePointerId = null;
+      activeTouchId = null;
+      touchActionHandled = true;
+    }
+  }, { passive: true });
+  // Older mobile browsers may expose Touch Events without Pointer Events.
+  // Keep the same single-action guard so browsers exposing both APIs do not
+  // trigger the button twice.
+  element.addEventListener("touchstart", (event) => {
+    const touch = [...event.changedTouches].find(({ target }) => target === element || element.contains(target));
+    if (!touch) return;
+    activeTouchId = touch.identifier;
+    touchActionHandled = false;
+  }, { passive: true });
+  element.addEventListener("touchend", (event) => {
+    if (activeTouchId === null || ![...event.changedTouches].some(({ identifier }) => identifier === activeTouchId)) return;
+    activeTouchId = null;
+    invokeTouch(event);
+  }, { passive: false });
+  element.addEventListener("touchcancel", () => {
+    activeTouchId = null;
+    touchActionHandled = true;
   }, { passive: true });
   element.addEventListener("click", (event) => {
     if (consumeSyntheticTouchClick(element, event)) return;

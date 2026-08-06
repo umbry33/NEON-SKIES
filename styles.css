@@ -2212,4 +2212,14 @@ body { background: #02050c; }
     justify-content: center;
     padding-inline: 3px;
   }
+
+  /* Keep builder actions comfortably tappable on narrow touch screens. */
+  #builder-screen .builder-board-title .quick-assembly-toggle,
+  #builder-screen .builder-board-title .text-button {
+    min-height: 40px;
+    padding: 8px 9px;
+  }
+  #builder-screen .builder-board-title #hangar-button {
+    min-width: 52px;
+  }
 }
