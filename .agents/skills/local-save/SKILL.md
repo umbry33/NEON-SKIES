@@ -5,7 +5,7 @@ description: 仅保存当前项目到本地 Git 的工作流。用户说“保�
 
 # 本地保存
 
-仅在当前项目根目录执行。此 Skill 只创建本地 Git 提交，不触发 GitHub、Netlify 或其他线上操作。
+仅在当前项目根目录执行。此 Skill 只创建本地 Git 提交，不触发 GitHub 或其他线上操作。
 
 ## 流程
 
@@ -15,7 +15,7 @@ description: 仅保存当前项目到本地 Git 的工作流。用户说“保�
 4. 根据改动运行必要检查。优先使用项目现有的测试或静态检查；检查失败时停止，不提交。
 5. 默认不修改 `CHANGELOG.md`。只有用户明确要求时才更新它。
 6. 只暂存本次需要保存的项目文件，执行 `git add` 和 `git commit`。
-7. 严禁执行 `git push`、Netlify 部署或任何线上发布操作。
+7. 严禁执行 `git push` 或任何线上发布操作。
 8. 完成后报告提交说明、commit hash 和 `git status --short` 的结果。
 
 ## 安全规则

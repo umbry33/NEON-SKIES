@@ -18,7 +18,7 @@ powershell -ExecutionPolicy Bypass -File .\start-server.ps1
 powershell -ExecutionPolicy Bypass -File .\package-release.ps1 -FolderOnly
 ```
 
-上传前必须重新生成完整的 `publish-package/` 或 ZIP；它们是被 Git 忽略的生成物，不能只替换单个 JavaScript 文件。部署平台和站点配置不在本仓库内，当前以 Netlify 手动上传流程为既有约定，若要改变发布方式需另行确认。
+上传前必须重新生成完整的 `publish-package/` 或 ZIP；它们是被 Git 忽略的生成物，不能只替换单个 JavaScript 文件。用户已确认当前 GitHub 部署版本在手机和电脑上都能正常运行；具体线上部署设置不在本仓库内，不凭空假设 GitHub Pages、Actions 或其他托管方式。
 
 ## 技术与平台
 

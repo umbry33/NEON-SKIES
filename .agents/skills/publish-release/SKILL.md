@@ -21,8 +21,8 @@ description: 当前项目的正式版本发布工作流。用户说“正式发�
 
 1. 在执行 `git push` 前展示待推送内容摘要、commit message、commit hash 和目标分支。
 2. 等待用户明确回复“确认发布”。在收到前严禁推送。
-3. 检查 GitHub 与 Netlify 自动部署关联：检查 `netlify.toml`、`.netlify`、GitHub Actions、仓库部署设置及其他可验证线索。
-4. 如检测到关联，说明此次 push 可能触发 Netlify 部署并消耗 Credits，等待用户再次明确确认后再推送。
+3. 检查 GitHub Actions、GitHub Pages、仓库部署设置及其他可验证线索；不要假设具体托管平台。
+4. 如检测到自动部署关联，说明此次 push 可能触发线上部署，等待用户再次明确确认后再推送。
 5. 严禁使用强制 push。推送后验证远程分支，并报告 commit hash、推送分支和 push 是否成功。
 
 ## 安全规则
