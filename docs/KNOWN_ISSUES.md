@@ -17,12 +17,12 @@
 
 ## 玩家可见文案与数据不一致
 
-- `src/config/beyond-events-config.js` 当前有 34 个事件，但 `index.html` 和 `src/config/encyclopedia-config.js` 的部分玩家文案仍写“30 个”。这是可见文案问题，修正前需确认版本归属，避免把它写入未经确认的 CHANGELOG。
+- 已确认当前正式事件数量为 34 个；但 `index.html` 和 `src/config/encyclopedia-config.js` 的部分玩家文案仍写“30 个”。这是已确认的可见文案问题，后续应修正文案；是否写入 CHANGELOG 仍需按版本改动规则单独确认。
 
 ## 合成系统入口暂不开放
 
 - `src/config/module-config.js`、`src/systems/BeyondLightConeSystem.js` 和 `src/ui/BeyondLightConeUI.js` 保留合成/分解实现，但 `installBeyondLightConeUI()` 中会移除 `#beyond-fusion-button`，玩家当前无法从航程 UI 进入。
-- 风险：未来 AI 可能看到完整实现就误以为合成已经开放；功能文档必须保持“实现但未开放”。开放前需验证库存消耗、分解返还、存档兼容和移动端布局。
+- 已确认：合成系统不正式开放。未来 AI 不能因为看到完整实现就开放该功能；功能文档必须保持“实现但未开放”。除非重新获得明确产品决策，否则不应把它列入玩家功能或 Roadmap 的开放项。
 
 ## 发布包可能过期
 
