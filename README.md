@@ -77,4 +77,4 @@ docs/                      AI 长期维护文档
 - 没有浏览器本地自动存档；普通机体和光锥之外航程使用可复制的配置码/存档码手动保存。
 - 光锥之外的模块合成数据和系统代码仍存在，但当前 UI 入口被隐藏，不能视为已开放的玩家功能。
 - `publish-package/` 和 `neon-skies-publish.zip` 可能是旧生成物；修改源码后必须重新生成。
-- `tests/index.html` 当前存在一组与 v0.6/v0.7 实现不同步的旧断言失败，具体失败项和复现方式见 `docs/KNOWN_ISSUES.md`。
+- `tests/index.html` 是当前逻辑检查入口，必须显示 `All tests passed`；失败时按 `docs/TEST_CHECKLIST.md` 区分代码回归、过期断言和测试夹具问题。

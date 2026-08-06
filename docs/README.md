@@ -21,7 +21,7 @@
 
 - Git 分支：`main`；代码基线提交：`317207a`，提交标题为 `发布 v0.7.0：新增模块与战斗机制优化`。本次文档提交以后的 HEAD 以 Git 历史为准。
 - 项目类型：原生 HTML5/CSS/ES Modules，无 `package.json`、无 npm 构建和无数据库。
-- 当前工作区在本次审计开始时干净；`publish-package/` 与 `neon-skies-publish.zip` 为忽略的生成物，不等同于当前源码。
+- 当前测试基线已按 v0.7.0 规则同步并通过；`publish-package/` 与 `neon-skies-publish.zip` 为忽略的生成物，最近一次已依据当前源码重新生成。
 - 最后一次文档审计：2026-08-06（Asia/Shanghai）。
 
 ## 维护规则

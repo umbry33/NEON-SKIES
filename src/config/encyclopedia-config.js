@@ -79,7 +79,7 @@ export function getEncyclopediaSections() {
     },
     {
       title: "深空事件档案",
-      tag: "30 EVENTS",
+      tag: "34 EVENTS",
       description: "事件节点会从深空事件池中抽取一段独立遭遇。每个事件都提供至少两种处理方式，可能带来模块、金币、治疗、风险战斗或随机结果。",
       meta: "点击查看全部事件",
       action: "beyond-events",

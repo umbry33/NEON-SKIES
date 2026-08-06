@@ -72,7 +72,7 @@
 powershell -ExecutionPolicy Bypass -File .\start-server.ps1
 ```
 
-然后打开 `http://localhost:5500/`，逻辑检查页是 `http://localhost:5500/tests/index.html`。命令必须以当前脚本和代码为准，不要虚构其它命令。现有测试页在 v0.7.0 基线上有已记录的旧断言失败，详见 `docs/KNOWN_ISSUES.md`。
+然后打开 `http://localhost:5500/`，逻辑检查页是 `http://localhost:5500/tests/index.html`。命令必须以当前脚本和代码为准，不要虚构其它命令。测试页必须显示 `All tests passed`；若失败，先按 `docs/TEST_CHECKLIST.md` 区分代码回归、过期断言和测试夹具问题。
 
 ## 更新日志规则
 
