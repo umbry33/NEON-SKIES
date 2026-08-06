@@ -18,6 +18,7 @@ import { hasActiveSynergy } from "../config/synergy-config.js";
 import { BeyondLightConeSystem } from "../systems/BeyondLightConeSystem.js";
 import { BEYOND_LIGHT_CONE_CONFIG } from "../config/beyond-light-cone-config.js";
 import { getFootprintBounds } from "../config/module-config.js";
+import { LocalSaveSystem } from "../systems/LocalSaveSystem.js";
 
 const ELEMENT_DAMAGE_COLORS = { neutral: "#f4fbff", electric: "#fff34d", light: "#fff8cf", dark: "#9d2639", ice: "#a6eaff", water: "#2468ff", fire: "#ff3b32" };
 
@@ -33,7 +34,9 @@ export class Game {
     this.collisionSystem = new CollisionSystem();
     this.sound = new SoundSystem();
     this.beyondSystem = new BeyondLightConeSystem();
+    this.localSave = ui.localSave ?? new LocalSaveSystem();
     this.beyondRun = null;
+    this.beyondSafeSaveCode = this.localSave.getBeyondCode();
     this.beyondPendingResult = null;
     this.beyondBattleNode = null;
     this.beyondBattleCheckpoint = null;
@@ -86,6 +89,9 @@ export class Game {
       this.toBeyondMap();
       return true;
     };
+    this.ui.setBeyondLocalSaveAvailable?.(Boolean(this.beyondSafeSaveCode));
+    window.addEventListener("pagehide", () => this.persistBeyondLocalSave());
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") this.persistBeyondLocalSave(); });
     this.armAudioInteraction();
     this.input.setSkillHandler((index) => this.activateSkill(index));
     this.render();
@@ -96,6 +102,7 @@ export class Game {
     if (!screen) return;
     screen.addEventListener("beyond:open", () => this.openBeyondLightCone());
     screen.addEventListener("beyond:new", (event) => this.createBeyondRun(event.detail.difficulty));
+    screen.addEventListener("beyond:resume-local", () => this.resumeBeyondLocalRun());
     screen.addEventListener("beyond:load", (event) => this.loadBeyondRun(event.detail.code));
     screen.addEventListener("beyond:node", (event) => this.enterBeyondNodeWithResult(event.detail.id));
     screen.addEventListener("beyond:event-choice", (event) => this.chooseBeyondEvent(event.detail));
@@ -112,19 +119,24 @@ export class Game {
     screen.addEventListener("beyond:complete-exit", () => {
       this.beyondRun = null;
       this.beyondBattleNode = null;
+      this.clearBeyondLocalSave();
       this.ui.hideBeyondComplete?.();
       this.toMenu();
     });
-    screen.addEventListener("beyond:exit", () => { this.beyondRun = null; this.toMenu(); });
+    screen.addEventListener("beyond:exit", () => { this.beyondRun = null; this.clearBeyondLocalSave(); this.toMenu(); });
     const pauseSave = document.createElement("button");
     pauseSave.type = "button"; pauseSave.className = "secondary-button is-hidden"; pauseSave.textContent = "复制航程存档码";
     this.ui.pauseOverlay?.querySelector(".pause-card")?.insertBefore(pauseSave, this.ui.pauseReturnButton);
     pauseSave.addEventListener("click", async () => { const code = this.getBeyondSaveCode(); if (!code) return; try { await navigator.clipboard.writeText(code); pauseSave.textContent = "存档码已复制"; } catch { pauseSave.textContent = "请从路线图复制存档码"; } });
     this.beyondPauseSaveButton = pauseSave;
   }
-  openBeyondLightCone() { this.stopLoop(); this.state = "menu"; this.ui.showBeyondStart(); }
-  createBeyondRun(difficulty) { this.beyondRun = this.beyondSystem.createRun(difficulty); this.beyondPendingResult = null; this.beyondBattleCheckpoint = null; this.beyondEventCheckpoint = null; this.beyondPendingChapterTransition = false; this.toBeyondMap(); }
-  loadBeyondRun(code) { try { this.beyondRun = this.beyondSystem.decode(code); this.beyondPendingResult = null; this.beyondBattleCheckpoint = null; this.beyondEventCheckpoint = null; this.beyondPendingChapterTransition = false; this.ui.closeBeyondSave?.(); this.toBeyondMap(); } catch (error) { this.ui.setBeyondSaveCode?.("", error instanceof Error ? error.message : "存档码无效", "import"); } }
+  openBeyondLightCone() { this.stopLoop(); this.state = "menu"; this.ui.setBeyondLocalSaveAvailable?.(Boolean(this.localSave.getBeyondCode())); this.ui.showBeyondStart(); }
+  persistBeyondLocalSave() { if (!this.beyondRun || !this.beyondSafeSaveCode) return false; const saved = this.localSave.saveBeyondCode(this.beyondSafeSaveCode); this.ui.setBeyondLocalSaveAvailable?.(saved || Boolean(this.localSave.getBeyondCode())); return saved; }
+  checkpointBeyondLocalSave() { if (!this.beyondRun) return false; try { this.beyondSafeSaveCode = this.beyondSystem.encode(this.beyondRun); return this.persistBeyondLocalSave(); } catch { return false; } }
+  resumeBeyondLocalRun() { const code = this.localSave.getBeyondCode(); if (code) this.loadBeyondRun(code); else this.ui.setBeyondLocalSaveAvailable?.(false); }
+  clearBeyondLocalSave() { this.beyondSafeSaveCode = null; this.localSave.clearBeyondCode(); this.ui.setBeyondLocalSaveAvailable?.(false); }
+  createBeyondRun(difficulty) { this.beyondRun = this.beyondSystem.createRun(difficulty); this.beyondPendingResult = null; this.beyondBattleCheckpoint = null; this.beyondEventCheckpoint = null; this.beyondPendingChapterTransition = false; this.toBeyondMap(); this.checkpointBeyondLocalSave(); }
+  loadBeyondRun(code) { try { this.beyondRun = this.beyondSystem.decode(code); this.beyondPendingResult = null; this.beyondBattleCheckpoint = null; this.beyondEventCheckpoint = null; this.beyondPendingChapterTransition = false; this.ui.closeBeyondSave?.(); this.toBeyondMap(); this.checkpointBeyondLocalSave(); } catch (error) { this.ui.setBeyondSaveCode?.("", error instanceof Error ? error.message : "存档码无效", "import"); } }
   toBeyondMap() {
     this.stopLoop(); this.state = "menu";
     if (!this.beyondRun) { this.ui.showBeyondStart(); return; }
@@ -137,13 +149,13 @@ export class Game {
   openBeyondBuilder() { if (this.beyondRun) this.ui.showBeyondBuilder(this.beyondRun); }
   getBeyondFusionData() { return this.beyondRun ? { inventoryRows: this.beyondSystem.getInventoryRows(this.beyondRun), recipes: this.beyondSystem.getFusionRecipes() } : { inventoryRows: [], recipes: [] }; }
   openBeyondFusion() { if (this.beyondRun) this.ui.showBeyondFusion?.(this.getBeyondFusionData()); }
-  synthesizeBeyondModules(slots) { if (!this.beyondRun) return; try { const result = this.beyondSystem.synthesize(this.beyondRun, slots); this.ui.refreshBeyondFusion?.(this.getBeyondFusionData(), `合成成功：${result.product.name}`); this.ui.showBeyondFusionResult?.(result.product); } catch (error) { this.ui.refreshBeyondFusion?.(this.getBeyondFusionData(), error instanceof Error ? error.message : "合成失败"); } }
-  decomposeBeyondModule(moduleId) { if (!this.beyondRun) return; try { const result = this.beyondSystem.decompose(this.beyondRun, moduleId); this.ui.refreshBeyondFusion?.(this.getBeyondFusionData(), `已分解 ${result.module.name}，材料已返还`); } catch (error) { this.ui.refreshBeyondFusion?.(this.getBeyondFusionData(), error instanceof Error ? error.message : "分解失败"); } }
-  saveBeyondBuild(spec) { if (!this.beyondRun) return; this.beyondRun.loadout = this.moduleSystem.install(spec); this.toBeyondMap(); }
+  synthesizeBeyondModules(slots) { if (!this.beyondRun) return; try { const result = this.beyondSystem.synthesize(this.beyondRun, slots); this.ui.refreshBeyondFusion?.(this.getBeyondFusionData(), `合成成功：${result.product.name}`); this.ui.showBeyondFusionResult?.(result.product); this.checkpointBeyondLocalSave(); } catch (error) { this.ui.refreshBeyondFusion?.(this.getBeyondFusionData(), error instanceof Error ? error.message : "合成失败"); } }
+  decomposeBeyondModule(moduleId) { if (!this.beyondRun) return; try { const result = this.beyondSystem.decompose(this.beyondRun, moduleId); this.ui.refreshBeyondFusion?.(this.getBeyondFusionData(), `已分解 ${result.module.name}，材料已返还`); this.checkpointBeyondLocalSave(); } catch (error) { this.ui.refreshBeyondFusion?.(this.getBeyondFusionData(), error instanceof Error ? error.message : "分解失败"); } }
+  saveBeyondBuild(spec) { if (!this.beyondRun) return; this.beyondRun.loadout = this.moduleSystem.install(spec); this.toBeyondMap(); this.checkpointBeyondLocalSave(); }
   exportBeyondRun() { const code = this.getBeyondSaveCode(); if (code) this.ui.setBeyondSaveCode?.(code); }
   getBeyondSaveCode() { if (!this.beyondRun) return null; if (this.mode === "beyond" && this.player) { this.beyondRun.hp = Math.max(0, this.player.hp); this.beyondRun.currentBattle = { score: this.score, elapsed: this.elapsed, nodeId: this.beyondBattleNode?.id ?? null }; } return this.beyondSystem.encode(this.beyondRun); }
   enterBeyondNode(id) { if (!this.beyondRun) return; try { const node = this.beyondSystem.enterNode(this.beyondRun, id); this.beyondBattleNode = node; if (["combat", "elite", "boss"].includes(node.type)) { this.startBeyondBattle(node); return; } if (node.type === "shop") { this.beyondShopOffers = this.beyondSystem.getShopOffers(this.beyondRun); this.ui.showBeyondShop?.(this.beyondRun, this.beyondShopOffers); return; } const result = this.beyondSystem.resolvePeacefulNode(this.beyondRun, node); if (result.battle) { this.startBeyondBattle({ ...node, type: "combat" }); return; } this.beyondRun.log.push(result.message); this.toBeyondMap(); } catch (error) { console.warn("无法进入光锥节点", error); } }
-  buyBeyondShopOffer(index) { const offer = this.beyondShopOffers?.[index]; if (!offer || !this.beyondRun || this.beyondRun.gold < offer.cost) return; this.beyondRun.gold -= offer.cost; this.beyondRun.inventory[offer.id] = (this.beyondRun.inventory[offer.id] ?? 0) + 1; this.beyondRun.log.push(`商店购入 ${offer.id}`); this.beyondShopOffers.splice(index, 1); this.ui.showBeyondShop?.(this.beyondRun, this.beyondShopOffers); }
+  buyBeyondShopOffer(index) { const offer = this.beyondShopOffers?.[index]; if (!offer || !this.beyondRun || this.beyondRun.gold < offer.cost) return; this.beyondRun.gold -= offer.cost; this.beyondRun.inventory[offer.id] = (this.beyondRun.inventory[offer.id] ?? 0) + 1; this.beyondRun.log.push(`商店购入 ${offer.id}`); this.beyondShopOffers.splice(index, 1); this.checkpointBeyondLocalSave(); this.ui.showBeyondShop?.(this.beyondRun, this.beyondShopOffers); }
   ensureBeyondStats() {
     if (!this.beyondRun) return null;
     this.beyondRun.stats ??= {};
@@ -234,6 +246,7 @@ export class Game {
   enterBeyondNodeWithResult(id) {
     if (!this.beyondRun) return;
     try {
+      this.persistBeyondLocalSave();
       const checkpoint = { currentNodeId: this.beyondRun.currentNodeId, visitedLength: this.beyondRun.visited.length, nodeId: id, activeEvent: this.beyondRun.activeEvent ?? null };
       const node = this.beyondSystem.enterNode(this.beyondRun, id);
       this.beyondBattleNode = node;
@@ -246,12 +259,14 @@ export class Game {
       }
       if (node.type === "shop") {
         this.beyondShopOffers = this.beyondSystem.getShopOffers(this.beyondRun);
+        this.checkpointBeyondLocalSave();
         this.ui.showBeyondShop?.(this.beyondRun, this.beyondShopOffers);
         return;
       }
       if (node.type === "event") {
         this.beyondEventCheckpoint = checkpoint;
         this.ui.showBeyondEvent?.(this.beyondSystem.createEventEncounter(this.beyondRun, node));
+        this.checkpointBeyondLocalSave();
         return;
       }
       const result = this.beyondSystem.resolvePeacefulNodeDetailed(this.beyondRun, node);
@@ -266,6 +281,7 @@ export class Game {
         return;
       }
       this.toBeyondMap();
+      this.checkpointBeyondLocalSave();
       this.ui.showBeyondResult?.({ node, result, action: "map" });
     } catch (error) {
       console.warn("无法进入光锥节点", error);
@@ -275,6 +291,7 @@ export class Game {
   chooseBeyondEvent({ nodeId, eventId, choiceId } = {}) {
     if (!this.beyondRun) return;
     try {
+      this.persistBeyondLocalSave();
       const node = this.beyondSystem.findNode(this.beyondRun, nodeId);
       const result = this.beyondSystem.resolveEventChoice(this.beyondRun, node, eventId, choiceId);
       this.beyondRun.log.push(result.message);
@@ -290,6 +307,7 @@ export class Game {
       }
       this.beyondEventCheckpoint = null;
       this.toBeyondMap();
+      this.checkpointBeyondLocalSave();
       this.ui.showBeyondResult?.({ node, result, action: "map" });
     } catch (error) {
       this.ui.showBeyondEventError?.(error instanceof Error ? error.message : "事件处理失败");
@@ -305,6 +323,7 @@ export class Game {
     if (!victory) {
       const summary = this.buildBeyondCompletionSummary([], 0);
       this.beyondRun = null;
+      this.clearBeyondLocalSave();
       this.ui.showBeyondComplete?.({ summary, victory: false });
       return;
     }
@@ -321,16 +340,19 @@ export class Game {
       if ((this.beyondRun.chapter ?? 1) < (this.beyondRun.totalChapters ?? 1)) {
         this.beyondSystem.advanceChapter(this.beyondRun);
         this.beyondPendingChapterTransition = true;
+        this.checkpointBeyondLocalSave();
         this.ui.showBeyondStageComplete?.({ score: this.score, elapsed: this.elapsed, node, rewards, goldReward, chapterComplete: true, chapter: this.beyondRun.chapter - 1, totalChapters: this.beyondRun.totalChapters });
         this.ui.showBeyondBattleRewards?.(rewards, goldReward);
         return;
       }
       this.beyondRun.completed = true;
       const summary = this.buildBeyondCompletionSummary(rewards, goldReward);
+      this.clearBeyondLocalSave();
       this.ui.gameOverScreen?.classList.add("is-hidden");
       this.ui.showBeyondComplete?.({ summary });
       return;
     }
+    this.checkpointBeyondLocalSave();
     this.ui.showBeyondStageComplete?.({ score: this.score, elapsed: this.elapsed, node, rewards, goldReward });
     this.ui.showBeyondBattleRewards?.(rewards, goldReward);
   }

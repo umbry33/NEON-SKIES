@@ -48,6 +48,24 @@
 
 `ModuleSystem.validateGeometry()` 检查边界、占位重叠和连通性；`pruneDisconnected()` 会移除与核心断开的模块；`calculateFinalStats()` 合并 `maxHp`、`moveSpeed`、`attackSpeed` 等修正。`getInstalledEntries()` 会把核心作为 `slotId: "core"` 的第一项。
 
+## 浏览器本地存档与机库
+
+`src/systems/LocalSaveSystem.js` 使用 `localStorage` 保存版本化对象：
+
+```js
+{
+  version: 1,
+  selectedHangarSlot: 0,
+  hangarSlots: [loadoutSpec, ...], // 固定 10 个普通模式机体槽位
+  beyondCode: "◇...",              // 光锥之外本地安全断点
+  updatedAt: 0
+}
+```
+
+`loadoutSpec` 保存机体名称（最多 24 个字符，数字和中英文均可）、`instanceId`、`moduleId`、位置、旋转和连携 ID，不保存完整模块定义；读取后通过当前配置重新构造并校验。点击普通模式机库中的名称会进入文本输入，回车或失焦保存，手机端同步聚焦输入框以唤起系统键盘。每个机库槽位都可以直接打开配置码窗口导出自身配置，或把输入的配置码导入该槽位；导入后会保存并切换到目标槽位。机库只属于普通模式，进入光锥之外改装时必须使用本局库存，不得读写机库槽位。`beyondCode` 保存路线节点等安全断点，战斗进行中关闭页面时回到本场战斗开始前的航程状态。
+
+本地数据属于当前浏览器设备和网站来源；清理网站数据、无痕模式或更换设备可能导致本地数据不可用。配置码和航程存档码仍是跨设备迁移和手动备份方式。
+
 ## 敌机与关卡
 
 - 基础敌机：`ENEMY_CONFIG` 3 种；高级敌机：`ADVANCED_ENEMY_CONFIG` 5 种；原型列表 10 种；`ENABLED_PROTOTYPE_ENEMY_CONFIG` 在关卡 51 后进入关卡敌池。

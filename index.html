@@ -33,7 +33,7 @@
     </div>
     <div class="menu-content">
       <div class="menu-logo-lockup">
-        <p class="eyebrow">v0.7.0 / Made by umbry33</p>
+        <p class="eyebrow">v0.8.0 / Made by umbry33</p>
         <h1><span class="menu-logo-line">NEON</span> <span class="menu-logo-line">SKIES</span></h1>
       </div>
       <div class="menu-aircraft" aria-hidden="true"><span>&#10022;</span></div>
@@ -74,7 +74,7 @@
     </header>
     <div class="builder-content">
       <div class="builder-board-area">
-        <div class="builder-board-title"><button id="quick-assembly-toggle" class="quick-assembly-toggle" type="button" aria-pressed="false"><span>&#24555;&#25463;&#35013;&#37197;</span><small>OFF</small></button><button id="builder-undo-button" class="quick-assembly-toggle" type="button">&#25764;&#38144;</button><button id="loadout-code-button" class="quick-assembly-toggle loadout-code-button" type="button">&#37197;&#32622;&#30721;</button><button id="clear-loadout" class="text-button" type="button">&#28165;&#31354;&#27169;&#22359;</button></div>
+        <div class="builder-board-title"><button id="quick-assembly-toggle" class="quick-assembly-toggle" type="button" aria-pressed="false"><span>&#24555;&#25463;&#35013;&#37197;</span><small>OFF</small></button><button id="builder-undo-button" class="quick-assembly-toggle" type="button">&#25764;&#38144;</button><button id="loadout-code-button" class="quick-assembly-toggle loadout-code-button" type="button">&#37197;&#32622;&#30721;</button><button id="hangar-button" class="quick-assembly-toggle" type="button">机库</button><button id="clear-loadout" class="text-button" type="button">&#28165;&#31354;&#27169;&#22359;</button></div>
         <div class="assembly-board-frame"><button id="module-synthesis-button" class="synergy-config-button module-synthesis-button" type="button" aria-label="&#27169;&#22359;&#21512;&#25104;&#65288;&#39044;&#30041;&#21151;&#33021;&#65289;"><span>&#27169;&#22359;&#21512;&#25104;</span><small>MODULE FUSION</small></button><div id="assembly-board" class="assembly-board" aria-label="&#39134;&#26426;&#33258;&#30001;&#35013;&#37197;&#32593;&#26684;"></div></div>
         <div class="builder-status-row"><span id="loadout-status">&#35013;&#37197;&#23601;&#32490;</span></div>
         <div class="builder-stats"><button id="preview-attack-speed" class="attack-speed-button" type="button" aria-label="&#26597;&#30475;&#25915;&#36895;&#35268;&#21017;"><span>&#25915;&#36895;</span><strong id="preview-attack-speed-value">100%</strong></button><button id="synergy-config-button" class="synergy-config-button" type="button"><span>&#36830;&#25658;&#37197;&#32622;</span><small>SYNERGY LINK</small></button></div>
@@ -91,7 +91,10 @@
       <div class="module-detail-card"><button id="module-detail-close" class="detail-close" type="button" aria-label="&#20851;&#38381;">X</button><canvas id="detail-icon-canvas" class="detail-icon" width="64" height="64" aria-hidden="true"></canvas><p id="detail-type" class="eyebrow">MODULE</p><h3 id="detail-name">MODULE</h3><p id="detail-description" class="detail-description"></p><div id="detail-stats" class="detail-stats"></div></div>
     </div>
     <div id="loadout-code-modal" class="module-detail-modal is-hidden" role="dialog" aria-modal="true" aria-label="&#26426;&#20307;&#37197;&#32622;&#30721;">
-      <div class="module-detail-card loadout-code-card"><button id="loadout-code-close" class="detail-close" type="button" aria-label="&#20851;&#38381;">X</button><p class="eyebrow">BUILD CODE</p><h3>&#26426;&#20307;&#37197;&#32622;&#30721;</h3><p class="detail-description">&#37197;&#32622;&#30721;&#19981;&#21547;&#27169;&#22359;&#21517;&#31216;&#65292;&#21487;&#22797;&#21046;&#20998;&#20139;&#12290;&#23548;&#20837;&#20250;&#23436;&#25972;&#26367;&#25442;&#24403;&#21069;&#26426;&#20307;&#12290;</p><textarea id="loadout-code-input" class="loadout-code-input" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" aria-label="&#26426;&#20307;&#37197;&#32622;&#30721;"></textarea><p id="loadout-code-message" class="loadout-code-message"></p><button id="loadout-code-export" class="secondary-button" type="button">&#22797;&#21046;&#37197;&#32622;&#30721;</button><button id="loadout-code-import" class="primary-button" type="button">&#23548;&#20837;&#26426;&#20307;</button></div>
+      <div class="module-detail-card loadout-code-card"><button id="loadout-code-close" class="detail-close" type="button" aria-label="&#20851;&#38381;">X</button><p class="eyebrow">BUILD CODE</p><h3>&#26426;&#20307;&#37197;&#32622;&#30721;</h3><p class="detail-description">&#37197;&#32622;&#30721;&#19981;&#21547;&#27169;&#22359;&#21517;&#31216;&#65292;&#21487;&#22797;&#21046;&#20998;&#20139;&#12290;&#23548;&#20837;&#20250;&#26367;&#25442;&#24403;&#21069;&#26426;&#20307;&#25110;&#25351;&#23450;&#30340;&#26426;&#24211;&#27133;&#20301;&#12290;</p><textarea id="loadout-code-input" class="loadout-code-input" spellcheck="false" autocomplete="off" autocapitalize="off" autocorrect="off" aria-label="&#26426;&#20307;&#37197;&#32622;&#30721;"></textarea><p id="loadout-code-message" class="loadout-code-message"></p><button id="loadout-code-export" class="secondary-button" type="button">&#22797;&#21046;&#37197;&#32622;&#30721;</button><button id="loadout-code-import" class="primary-button" type="button">&#23548;&#20837;&#26426;&#20307;</button></div>
+    </div>
+    <div id="hangar-modal" class="module-detail-modal is-hidden" role="dialog" aria-modal="true" aria-label="机库">
+      <div class="module-detail-card hangar-card"><button id="hangar-close" class="detail-close" type="button" aria-label="关闭">X</button><p class="eyebrow">AIRFRAME HANGAR</p><h3>机库</h3><p class="detail-description">普通模式可保存十台机体。当前机体会自动保存到选中的槽位。</p><div id="hangar-slots" class="hangar-slots"></div><p id="hangar-message" class="loadout-code-message"></p></div>
     </div>
     <div id="synergy-config-modal" class="module-detail-modal is-hidden" role="dialog" aria-modal="true" aria-label="&#36830;&#25658;&#33021;&#21147;&#37197;&#32622;">
       <div class="module-detail-card synergy-config-card"><button id="synergy-config-close" class="detail-close" type="button" aria-label="&#20851;&#38381;">X</button><p class="eyebrow">SYNERGY LINK</p><h3>&#36830;&#25658;&#33021;&#21147;</h3><p class="detail-description">&#35013;&#37197;&#19968;&#27425;&#21518;&#65292;&#25152;&#26377;&#31526;&#21512;&#26465;&#20214;&#30340;&#27169;&#22359;&#37117;&#20250;&#33258;&#21160;&#33719;&#24471;&#36830;&#25658;&#22686;&#30410;&#12290;&#21516;&#19968;&#36830;&#25658;&#33021;&#21147;&#21482;&#38656;&#35013;&#37197;&#19968;&#27425;&#12290;</p><div id="synergy-config-list" class="synergy-config-list"></div></div>
@@ -179,7 +182,7 @@
   // after the game has finished binding its controls instead of losing it.
   window.__neonUiReady = false;
   window.__neonPendingTaps = [];
-  const bootButtonIds = new Set(["settings-button", "changelog-button", "encyclopedia-button", "open-builder-button", "menu-battle-button", "mode-back-button", "level-mode-button", "endless-mode-button", "tutorial-button", "builder-save-button", "loadout-code-button"]);
+  const bootButtonIds = new Set(["settings-button", "changelog-button", "encyclopedia-button", "open-builder-button", "menu-battle-button", "mode-back-button", "level-mode-button", "endless-mode-button", "tutorial-button", "builder-save-button", "loadout-code-button", "hangar-button"]);
   const queueBootTap = (event) => {
     if (window.__neonUiReady) return;
     const point = event.changedTouches?.[0] ?? event;

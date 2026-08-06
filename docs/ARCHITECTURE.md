@@ -21,6 +21,7 @@
 | 系统 | `src/systems/EnemySpawner.js` | 按权重从当前模式敌池生成敌机 |
 | 系统 | `src/systems/InputSystem.js` | 键盘、指针、触摸拖动和画布坐标映射 |
 | 系统 | `src/systems/BeyondLightConeSystem.js` | 航程随机地图、节点、事件、库存、奖励、合成和航程码 |
+| 系统 | `src/systems/LocalSaveSystem.js` | 浏览器本地存档、普通模式十槽机库和光锥之外安全断点 |
 | 系统 | `src/systems/LoadoutCodec.js` | 普通机体配置码的紧凑编码、校验和解析 |
 | 系统 | `src/systems/SoundSystem.js` | Web Audio 音效、背景音乐调度和音量 |
 | UI | `src/ui/UI.js` | 静态页面、改装交互、百科、HUD、设置和模式切换 |
@@ -48,7 +49,7 @@ flowchart TD
   J --> F
 ```
 
-`Game` 是运行时状态的中心，但内容定义不应全部写入 `Game.js`。`UI` 负责显示和用户意图，系统负责可复用规则，实体负责自身状态，配置负责内容参数。当前没有全局 store，也没有 `localStorage` 自动持久化；普通机体通过 `LoadoutCodec` 生成配置码，光锥之外通过 `BeyondLightConeSystem.encode/decode` 生成航程存档码。
+`Game` 是运行时状态的中心，但内容定义不应全部写入 `Game.js`。`UI` 负责显示和用户意图，系统负责可复用规则，实体负责自身状态，配置负责内容参数。`LocalSaveSystem` 负责浏览器本地持久化：普通模式由 `UI` 保存当前十槽机库，光锥之外由 `Game` 保存安全航程断点。普通机体仍通过 `LoadoutCodec` 生成配置码，光锥之外仍通过 `BeyondLightConeSystem.encode/decode` 生成航程存档码，用于分享和跨设备迁移。
 
 ## 渲染流程
 

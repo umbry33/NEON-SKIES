@@ -23,6 +23,8 @@ export class InputSystem {
   setSkillHandler(handler) { this.skillHandler = handler; }
 
   onKeyDown(event) {
+    const target = event.target;
+    if (target?.matches?.("input, textarea, select") || target?.isContentEditable) return;
     const key = event.key.toLowerCase();
     if (["arrowup", "arrowdown", "arrowleft", "arrowright", "w", "a", "s", "d"].includes(key)) {
       event.preventDefault();
