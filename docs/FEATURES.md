@@ -19,7 +19,7 @@
 | 躲避弹幕模式 | 简单/困难/噩梦三档，持续生成多种弹幕，按存活和躲避计分 | `src/config/dodge-config.js`、`src/core/Game.js`、`src/entities/Projectile.js` | 已完成 |
 | 新手教程 | 装配、移动、技能和 800 分训练流程 | `src/ui/UI.js`、`src/core/Game.js` | 已完成 |
 | 敌机与 Boss | 基础敌机、5 种高级敌机、10 种后期原型敌机、标准 Boss 和 8 种 Boss 变体 | `src/config/enemy-config.js`、`src/entities/Enemy.js`、`src/core/Game.js` | 已完成；原型敌机在当前配置中已于 51 关后启用，不应再写成全部未启用 |
-| 特殊环境 | 日冕风暴、离子迷雾、星辉潮汐、引力裂隙及 Beyond 专属环境 | `src/config/environment-config.js`、`src/core/Game.js` | 已完成；具体浏览器性能基线待确认 |
+| 特殊环境 | 日冕风暴、离子迷雾、星辉潮汐、引力裂隙及 Beyond 专属环境 | `src/config/environment-config.js`、`src/core/Game.js` | 已完成；按轻量设备冒烟标准检查 |
 | 模块系统 | 自动武器、技能模块、属性修正、元素、稀有度、单模块限制和 4 个连携能力 | `src/config/module-config.js`、`src/config/synergy-config.js`、`src/systems/WeaponSystem.js`、`SkillSystem.js` | 已完成；行为边界以配置和测试为准 |
 | 光锥之外航程 | 随机路线、四档难度、多章节、节点、事件、商店、回复、库存、奖励和 Boss | `src/systems/BeyondLightConeSystem.js`、`src/ui/BeyondLightConeUI.js`、`src/config/beyond-*` | 已完成；当前事件档案为 34 个 |
 | 光锥之外存档码 | 编码随机种子、地图、路线、库存、机体、连携和战斗进度，复制/导入后继续 | `src/systems/BeyondLightConeSystem.js` | 已完成；不是自动存档 |
@@ -33,4 +33,4 @@
 
 ## 未实现或不应误写成已完成
 
-故事、联网、账号、排行榜、数据库、本地自动存档、多个本地机体槽、模块掉落、战斗中替换、模块旋转和正式发布浏览器兼容矩阵均未被当前代码证明为已完成。
+故事、联网、账号、排行榜、数据库、本地自动存档、多个本地机体槽、模块掉落、战斗中替换、模块旋转和完整浏览器兼容矩阵均未被当前代码证明为已完成；本项目当前不计划维护完整矩阵。

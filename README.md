@@ -24,7 +24,7 @@ powershell -ExecutionPolicy Bypass -File .\package-release.ps1 -FolderOnly
 
 - 技术栈：HTML、CSS、原生 JavaScript ES Modules、Canvas 2D、Web Audio API。
 - 运行要求：支持 ES Modules、Canvas 2D、Pointer Events 和 Web Audio API 的现代浏览器。
-- 目标平台：桌面浏览器与移动浏览器；具体浏览器版本矩阵待确认。
+- 目标平台：桌面浏览器与移动浏览器；用户已确认当前 GitHub 部署版本在手机和电脑上均可正常运行。本项目不承诺完整浏览器版本矩阵。
 - 当前资源：飞机、敌机、模块、子弹和特效主要由 Canvas 几何绘制，无外部图片、字体或音频文件。
 
 ## 当前玩法
@@ -76,5 +76,5 @@ docs/                      AI 长期维护文档
 - 没有故事、账号、联网、排行榜或数据库。
 - 没有浏览器本地自动存档；普通机体和光锥之外航程使用可复制的配置码/存档码手动保存。
 - 光锥之外的模块合成数据和系统代码仍存在，但当前 UI 入口被隐藏，不能视为已开放的玩家功能。
-- `publish-package/` 和 `neon-skies-publish.zip` 可能是旧生成物；修改源码后必须重新生成。
+- `publish-package/` 和 `neon-skies-publish.zip` 是忽略的生成物；修改源码后必须重新生成。
 - `tests/index.html` 是当前逻辑检查入口，必须显示 `All tests passed`；失败时按 `docs/TEST_CHECKLIST.md` 区分代码回归、过期断言和测试夹具问题。
