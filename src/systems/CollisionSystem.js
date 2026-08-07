@@ -22,10 +22,13 @@ export class CollisionSystem {
     };
     const triggerDarkErosion = (enemy) => {
       if (!darkErosionActive || !enemy || (enemy.darkErosionMarks ?? 0) <= 0) return false;
+      const markCount = Math.max(0, Math.floor(enemy.darkErosionMarks));
       enemy.darkErosionMarks = 0;
       const radius = 86;
-      explosionEvents.push({ x: enemy.x, y: enemy.y, radius, color: "#9d2639", kind: "darkErosion", life: 0.46, maxLife: 0.46 });
-      applyExplosionDamage({ x: enemy.x, y: enemy.y, radius, damage: 15, element: "dark" });
+      for (let index = 0; index < markCount; index += 1) {
+        explosionEvents.push({ x: enemy.x, y: enemy.y, radius, color: "#9d2639", kind: "darkErosion", life: 0.46, maxLife: 0.46 });
+        applyExplosionDamage({ x: enemy.x, y: enemy.y, radius, damage: 15, element: "dark" });
+      }
       return true;
     };
     const pointOf = (entity) => ({ x: entity.x, y: entity.y });

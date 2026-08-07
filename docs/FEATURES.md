@@ -21,7 +21,7 @@
 | 新手教程 | 装配、移动、技能和 800 分训练流程 | `src/ui/UI.js`、`src/core/Game.js` | 已完成 |
 | 敌机与 Boss | 基础敌机、5 种高级敌机、10 种后期原型敌机、标准 Boss 和 8 种 Boss 变体 | `src/config/enemy-config.js`、`src/entities/Enemy.js`、`src/core/Game.js` | 已完成；原型敌机在当前配置中已于 51 关后启用，不应再写成全部未启用 |
 | 特殊环境 | 日冕风暴、离子迷雾、星辉潮汐、引力裂隙及 Beyond 专属环境 | `src/config/environment-config.js`、`src/core/Game.js` | 已完成；按轻量设备冒烟标准检查 |
-| 模块系统 | 自动武器、技能模块、属性修正、元素、稀有度、单模块限制和 4 个连携能力 | `src/config/module-config.js`、`src/config/synergy-config.js`、`src/systems/WeaponSystem.js`、`SkillSystem.js` | 已完成；行为边界以配置和测试为准 |
+| 模块系统 | 自动武器、技能模块、属性修正、元素、稀有度、单模块限制和 4 个连携能力；暗蚀印记可叠加并按层数触发暗属性爆炸，火羽命中后消失 | `src/config/module-config.js`、`src/config/synergy-config.js`、`src/systems/WeaponSystem.js`、`src/systems/CollisionSystem.js`、`SkillSystem.js` | 已完成；行为边界以配置和测试为准 |
 | 光锥之外航程 | 随机路线、四档难度、多章节、节点、事件、商店、回复、库存、奖励和 Boss | `src/systems/BeyondLightConeSystem.js`、`src/ui/BeyondLightConeUI.js`、`src/config/beyond-*` | 已完成；当前事件档案为 34 个 |
 | 光锥之外存档码与本地断点 | 编码随机种子、地图、路线、库存、机体、连携和战斗进度；本地自动保存安全航程断点，复制/导入后继续 | `src/systems/BeyondLightConeSystem.js`、`src/systems/LocalSaveSystem.js`、`src/core/Game.js` | 已完成；本地断点仅限当前浏览器设备 |
 | 合成数据与系统 | 存在合成配方、库存合成/分解和合成模块数据 | `src/config/module-config.js`、`BeyondLightConeSystem.js`、`BeyondLightConeUI.js` | 实现但未开放；`BeyondLightConeUI.js` 当前移除合成入口 |

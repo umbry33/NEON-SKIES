@@ -75,7 +75,7 @@
 
 ## 连携能力
 
-来源：`src/config/synergy-config.js`。当前为 `synergy-wolfpack`、`synergy-white-hole`、`synergy-water-fire`、`synergy-dark-erosion`。每项以模块 ID `requirements` 判定，装配一次后作用于所有满足条件的模块实例；`normalizeSynergies()` 负责旧实例选择字段的兼容清理。
+来源：`src/config/synergy-config.js`。当前为 `synergy-wolfpack`、`synergy-white-hole`、`synergy-water-fire`、`synergy-dark-erosion`。每项以模块 ID `requirements` 判定，装配一次后作用于所有满足条件的模块实例；`normalizeSynergies()` 负责旧实例选择字段的兼容清理。暗蚀由黑曜波束命中叠加暗耀印记，星蚀脉冲命中时每层分别触发一次 15 点暗属性范围爆炸，再清除全部印记；火羽弹命中敌人后立即移除，不穿透敌人。
 
 ## 航程与存档
 

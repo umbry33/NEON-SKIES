@@ -145,7 +145,7 @@ const behaviors = {
     const origin = moduleOrigin(player, entry); const baseAngle = densestEnemyAngle(enemies, origin);
     return Array.from({ length: behavior.volley ?? 3 }, (_, index) => {
       const angle = baseAngle + (index - ((behavior.volley ?? 3) - 1) / 2) * (behavior.spreadAngle ?? 0.16);
-      return makePlayerProjectile(player, behavior.projectile, angle, { ...origin, kind: "fireFeather", pierce: true, damageMultiplier });
+      return makePlayerProjectile(player, behavior.projectile, angle, { ...origin, kind: "fireFeather", pierce: false, damageMultiplier });
     });
   },
   waterMoon: (player, behavior, enemies, entry, damageMultiplier) => {
