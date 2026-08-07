@@ -20,7 +20,7 @@
 <div class="app-shell">
   <audio id="bgm-audio" src="./梦见天际 Dreaming the Skies.mp3" preload="auto" autoplay loop aria-hidden="true"></audio>
   <div id="audio-start-overlay" class="audio-start-overlay" role="dialog" aria-label="开启游戏声音">
-    <div class="audio-start-card"><p class="eyebrow">NEON SKIES / AUDIO</p><h2>开启游戏声音</h2><p>点击后播放背景音乐与游戏音效。</p><button id="audio-start-button" class="primary-button" type="button">点击开启声音</button></div>
+    <div class="audio-start-card"><p class="eyebrow">NEON SKIES / AUDIO</p><h2>开启游戏声音</h2><p>点击后播放背景音乐与游戏音效。</p><button id="audio-start-button" class="primary-button" type="button" onclick="const audio=document.getElementById('bgm-audio'); audio.volume=1; audio.play().then(()=>document.getElementById('audio-start-overlay').classList.add('is-hidden')).catch(()=>{});">点击开启声音</button></div>
   </div>
   <canvas id="app-ambient-canvas" class="app-ambient-canvas" aria-hidden="true"></canvas>
   <section id="main-menu-screen" class="game-screen menu-screen" aria-label="&#20027;&#33756;&#21333;">
