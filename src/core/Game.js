@@ -464,10 +464,12 @@ export class Game {
     const unlock = () => {
       this.audioInteractionArmed = false;
       document.removeEventListener("pointerup", unlock, true);
+      document.removeEventListener("touchend", unlock, true);
       document.removeEventListener("keydown", unlock, true);
       this.sound.startMusic();
     };
     document.addEventListener("pointerup", unlock, true);
+    document.addEventListener("touchend", unlock, true);
     document.addEventListener("keydown", unlock, true);
   }
 
