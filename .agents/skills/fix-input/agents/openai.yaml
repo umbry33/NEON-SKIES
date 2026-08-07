@@ -1,0 +1,7 @@
+interface:
+  display_name: "修复点击与触控"
+  short_description: "定位根因并最小化修复电脑与手机端的点击、触控和拖拽问题"
+  default_prompt: "使用 $fix-input 按照项目点击与触控规范定位并修复这个交互问题。"
+
+policy:
+  allow_implicit_invocation: true
