@@ -91,7 +91,7 @@ export class Game {
     };
     this.ui.setBeyondLocalSaveAvailable?.(Boolean(this.beyondSafeSaveCode));
     window.addEventListener("pagehide", () => this.persistBeyondLocalSave());
-    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") this.persistBeyondLocalSave(); });
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") this.persistBeyondLocalSave(); else this.sound.handleVisibilityChange(); });
     this.armAudioInteraction();
     this.sound.startMusic();
     this.input.setSkillHandler((index) => this.activateSkill(index));

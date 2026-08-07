@@ -20,6 +20,7 @@ $mime = @{
   ".png" = "image/png"
   ".jpg" = "image/jpeg"
   ".svg" = "image/svg+xml"
+  ".mp3" = "audio/mpeg"
 }
 
 try {
