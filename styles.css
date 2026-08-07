@@ -2213,13 +2213,17 @@ body { background: #02050c; }
     padding-inline: 3px;
   }
 
-  /* Keep builder actions comfortably tappable on narrow touch screens. */
+  /* Keep the original compact appearance while enlarging only the invisible
+     touch hit area around each action. */
   #builder-screen .builder-board-title .quick-assembly-toggle,
   #builder-screen .builder-board-title .text-button {
-    min-height: 40px;
-    padding: 8px 9px;
+    position: relative;
   }
-  #builder-screen .builder-board-title #hangar-button {
-    min-width: 52px;
+  #builder-screen .builder-board-title .quick-assembly-toggle::after,
+  #builder-screen .builder-board-title .text-button::after {
+    position: absolute;
+    inset: -8px -2px;
+    content: "";
+    background: transparent;
   }
 }
