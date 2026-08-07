@@ -71,7 +71,8 @@ export class SoundSystem {
     this.musicSources = new Set();
     this.musicVolume = 1;
     this.soundVolume = 1;
-    this.musicAudio = typeof Audio === "function" ? new Audio("./梦见天际 Dreaming the Skies.mp3") : null;
+    this.musicAudio = typeof document !== "undefined" ? document.querySelector("#bgm-audio") : null;
+    if (!this.musicAudio && typeof Audio === "function") this.musicAudio = new Audio("./梦见天际 Dreaming the Skies.mp3");
     if (this.musicAudio) { this.musicAudio.loop = true; this.musicAudio.preload = "auto"; this.musicAudio.volume = this.musicVolume; }
   }
 
