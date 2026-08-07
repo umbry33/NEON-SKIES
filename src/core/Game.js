@@ -93,6 +93,7 @@ export class Game {
     window.addEventListener("pagehide", () => this.persistBeyondLocalSave());
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") this.persistBeyondLocalSave(); });
     this.armAudioInteraction();
+    this.sound.startMusic();
     this.input.setSkillHandler((index) => this.activateSkill(index));
     this.render();
   }
