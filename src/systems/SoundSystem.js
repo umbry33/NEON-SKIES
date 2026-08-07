@@ -20,6 +20,10 @@ export class SoundSystem {
     this.musicRequested = true;
     this.musicActive = false;
     this.musicUnlocked = false;
+    this.bgmUnlocked = false;
+    this.bgmEnabled = true;
+    this.bgmWasPlayingBeforeHidden = false;
+    this.bgmPageHidden = false;
     this.musicPlayPromise = null;
     this.musicUnlockListening = false;
     this.musicVolume = 1;
@@ -27,6 +31,11 @@ export class SoundSystem {
     this.musicAudio = this.createMusicAudio();
     this.musicUnlockHandler = () => this.unlockMusicFromInteraction();
     this.armMusicUnlockListeners();
+    if (typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", () => this.handleVisibilityChange());
+      window.addEventListener("pagehide", () => this.handlePageHidden());
+      window.addEventListener("pageshow", () => this.handlePageVisible());
+    }
     this.playMusic();
   }
 
@@ -56,7 +65,11 @@ export class SoundSystem {
   setMusicVolume(volume) {
     this.musicVolume = clamp(Number(volume) || 0, 0, 3);
     if (this.musicAudio) this.musicAudio.volume = Math.min(1, this.musicVolume);
-    if (this.musicVolume > 0 && this.enabled) this.playMusic();
+    this.bgmEnabled = this.musicVolume > 0;
+    if (!this.bgmEnabled) {
+      this.musicAudio?.pause();
+      this.musicActive = false;
+    } else if (this.enabled) this.playMusic();
   }
 
   setSoundVolume(volume) { this.soundVolume = clamp(Number(volume) || 0, 0, 3); }
@@ -102,9 +115,10 @@ export class SoundSystem {
     }
     this.musicPlayPromise = result.then(() => {
       this.musicPlayPromise = null;
-      this.musicActive = true;
+      this.musicActive = !this.musicAudio.paused;
       this.musicUnlocked = true;
-      this.removeMusicUnlockListeners();
+      this.bgmUnlocked = true;
+      if (this.musicActive) this.removeMusicUnlockListeners();
     }).catch(() => {
       this.musicPlayPromise = null;
       this.musicActive = false;
@@ -117,19 +131,35 @@ export class SoundSystem {
   }
 
   resumeMusic() {
-    if (!this.musicRequested || !this.enabled || this.musicVolume <= 0) return;
+    if (!this.musicRequested || !this.enabled || !this.bgmEnabled || this.musicVolume <= 0) return;
     this.playMusic(true);
   }
 
+  handlePageHidden() {
+    if (this.bgmPageHidden) return;
+    this.bgmPageHidden = true;
+    this.bgmWasPlayingBeforeHidden = Boolean(this.bgmUnlocked && this.bgmEnabled && this.musicAudio && !this.musicAudio.paused && !this.musicAudio.ended);
+    this.musicAudio?.pause();
+    this.musicActive = false;
+  }
+
+  handlePageVisible() {
+    if (!this.bgmPageHidden || typeof document === "undefined" || document.visibilityState !== "visible") return;
+    this.bgmPageHidden = false;
+    const shouldResume = this.bgmWasPlayingBeforeHidden;
+    this.bgmWasPlayingBeforeHidden = false;
+    if (shouldResume && this.bgmUnlocked && this.bgmEnabled && this.enabled) this.playMusic(true);
+  }
+
   handleVisibilityChange() {
-    if (document.visibilityState === "visible" && this.musicUnlocked && this.musicAudio?.paused) this.playMusic(true);
+    if (document.visibilityState === "hidden") this.handlePageHidden();
+    else this.handlePageVisible();
   }
 
   stopMusic(preserveRequest = false) {
     if (!preserveRequest) this.musicRequested = false;
     this.musicAudio?.pause();
     this.musicActive = false;
-    if (!preserveRequest && this.musicAudio) this.musicAudio.currentTime = 0;
   }
 
   play(name) {
