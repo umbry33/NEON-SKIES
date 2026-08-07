@@ -94,6 +94,11 @@ export class Game {
     document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") this.persistBeyondLocalSave(); });
     this.armAudioInteraction();
     this.sound.startMusic();
+    const audioStartOverlay = document.querySelector("#audio-start-overlay");
+    document.querySelector("#audio-start-button")?.addEventListener("click", () => {
+      this.sound.startMusic();
+      audioStartOverlay?.classList.add("is-hidden");
+    }, { once: true });
     this.input.setSkillHandler((index) => this.activateSkill(index));
     this.render();
   }
