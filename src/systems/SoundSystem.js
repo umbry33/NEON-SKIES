@@ -71,6 +71,8 @@ export class SoundSystem {
     this.musicSources = new Set();
     this.musicVolume = 1;
     this.soundVolume = 1;
+    this.musicAudio = typeof Audio === "function" ? new Audio("./梦见天际 Dreaming the Skies.mp3") : null;
+    if (this.musicAudio) { this.musicAudio.loop = true; this.musicAudio.preload = "auto"; this.musicAudio.volume = this.musicVolume; }
   }
 
   setEnabled(enabled) {
@@ -85,6 +87,7 @@ export class SoundSystem {
 
   setMusicVolume(volume) {
     this.musicVolume = clamp(Number(volume) || 0, 0, 3);
+    if (this.musicAudio) this.musicAudio.volume = Math.min(1, this.musicVolume);
     if (this.musicBus?.master && this.context) {
       const now = this.context.currentTime;
       this.musicBus.master.gain.cancelScheduledValues(now);
@@ -122,6 +125,13 @@ export class SoundSystem {
   startMusic() {
     this.musicRequested = true;
     if (!this.enabled || this.musicVolume <= 0 || typeof window === "undefined") return;
+    if (this.musicAudio) {
+      this.musicAudio.volume = Math.min(1, this.musicVolume);
+      if (!this.musicActive) {
+        this.musicAudio.play().then(() => { this.musicActive = true; }).catch(() => {});
+      }
+      return;
+    }
     const context = this.unlock();
     if (!context) return;
     if (context.state === "suspended") {
@@ -153,6 +163,12 @@ export class SoundSystem {
 
   stopMusic(preserveRequest = false) {
     if (!preserveRequest) this.musicRequested = false;
+    if (this.musicAudio) {
+      this.musicAudio.pause();
+      if (!preserveRequest) this.musicAudio.currentTime = 0;
+      this.musicActive = false;
+      return;
+    }
     this.musicPaused = preserveRequest && this.musicPaused;
     if (this.musicSchedulerTimer !== null && typeof window !== "undefined") window.clearTimeout(this.musicSchedulerTimer);
     this.musicSchedulerTimer = null;

@@ -11,7 +11,7 @@ export class Player {
     this.radius = GAME_CONFIG.player.radius;
     this.installedEntries = getInstalledEntries(loadout);
     this.collisionCells = this.buildCollisionCells();
-    this.collisionBounds = this.getCollisionBounds();
+    this.collisionBounds = this.getMovementBounds();
     // 自动模块不一定会直接开火（例如能量聚合器），只有声明攻击行为的模块才进入开火队列。
     this.weaponEntries = this.installedEntries.filter(({ module }) => module?.type === "weapon" && module.behavior?.type);
     this.hp = Math.round(stats.maxHp);
@@ -29,27 +29,36 @@ export class Player {
 
   // 每一个已占用网格都是机体的一部分，战斗碰撞不再只取核心圆点。
   buildCollisionCells() {
-    const cells = new Map();
-    for (const entry of this.installedEntries) {
-      for (const [offsetX, offsetY] of entry.module?.footprint?.cells ?? [[0, 0]]) {
-        const x = entry.x + offsetX;
-        const y = entry.y + offsetY;
-        const key = `${x}:${y}`;
-        const radius = entry.module?.type === "core" ? 11 : 8;
-        const current = cells.get(key);
-        if (!current || radius > current.radius) cells.set(key, { x, y, radius });
-      }
-    }
-    const core = ASSEMBLY_BOARD.corePosition;
-    return [...cells.values()].map((cell) => ({
-      offsetX: (cell.x - core.x) * GAME_CONFIG.player.moduleSpacing,
-      offsetY: (cell.y - core.y) * GAME_CONFIG.player.moduleSpacing,
-      radius: cell.radius,
-    }));
+    return [{ offsetX: 0, offsetY: 0, radius: this.radius }];
   }
 
   getCollisionBounds() {
     const parts = this.collisionCells.length ? this.collisionCells : [{ offsetX: 0, offsetY: 0, radius: this.radius }];
+    return {
+      minX: Math.min(...parts.map((part) => part.offsetX - part.radius)),
+      maxX: Math.max(...parts.map((part) => part.offsetX + part.radius)),
+      minY: Math.min(...parts.map((part) => part.offsetY - part.radius)),
+      maxY: Math.max(...parts.map((part) => part.offsetY + part.radius)),
+    };
+  }
+
+  getMovementBounds() {
+    const core = ASSEMBLY_BOARD.corePosition;
+    const parts = this.installedEntries.flatMap((entry) => {
+      const footprint = getFootprintBounds(entry.module);
+      const centerX = entry.x + (footprint.minX + footprint.maxX) / 2;
+      const centerY = entry.y + (footprint.minY + footprint.maxY) / 2;
+      return [{
+        offsetX: (centerX - core.x) * GAME_CONFIG.player.moduleSpacing,
+        offsetY: (centerY - core.y) * GAME_CONFIG.player.moduleSpacing,
+        radius: Math.max(footprint.width, footprint.height) * GAME_CONFIG.player.moduleSpacing / 2,
+      }];
+    });
+    const fallback = [{ offsetX: 0, offsetY: 0, radius: this.radius }];
+    return this.getBoundsForParts(parts.length ? parts : fallback);
+  }
+
+  getBoundsForParts(parts) {
     return {
       minX: Math.min(...parts.map((part) => part.offsetX - part.radius)),
       maxX: Math.max(...parts.map((part) => part.offsetX + part.radius)),

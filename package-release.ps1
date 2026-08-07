@@ -15,12 +15,18 @@ if (Test-Path -LiteralPath $publishDir) {
 }
 New-Item -ItemType Directory -Path $publishDir -Force | Out-Null
 
+$bgmFile = Get-ChildItem -LiteralPath $root -Filter '*.mp3' -File | Select-Object -First 1
+if (-not $bgmFile) {
+  throw 'No MP3 BGM file was found in the project folder.'
+}
+
 $rootFiles = @(
   (Join-Path $root 'index.html')
   (Join-Path $root 'styles.css')
   (Join-Path $root 'README.md')
   (Join-Path $root 'DEVELOPMENT.md')
   (Join-Path $root 'start-server.ps1')
+  $bgmFile.FullName
 )
 Copy-Item -LiteralPath $rootFiles -Destination $publishDir -Force
 Copy-Item -LiteralPath (Join-Path $root 'src'), (Join-Path $root 'assets') -Destination $publishDir -Recurse -Force
