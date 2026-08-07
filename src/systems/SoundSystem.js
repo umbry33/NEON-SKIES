@@ -69,11 +69,12 @@ export class SoundSystem {
     this.musicNextNoteTime = 0;
     this.musicBus = null;
     this.musicSources = new Set();
+    this.musicBuffer = null;
+    this.musicBufferPromise = null;
+    this.musicSource = null;
+    this.musicGain = null;
     this.musicVolume = 1;
     this.soundVolume = 1;
-    this.musicAudio = typeof document !== "undefined" ? document.querySelector("#bgm-audio") : null;
-    if (!this.musicAudio && typeof Audio === "function") this.musicAudio = new Audio("./梦见天际 Dreaming the Skies.mp3");
-    if (this.musicAudio) { this.musicAudio.loop = true; this.musicAudio.preload = "auto"; this.musicAudio.volume = this.musicVolume; }
   }
 
   setEnabled(enabled) {
@@ -88,7 +89,7 @@ export class SoundSystem {
 
   setMusicVolume(volume) {
     this.musicVolume = clamp(Number(volume) || 0, 0, 3);
-    if (this.musicAudio) this.musicAudio.volume = Math.min(1, this.musicVolume);
+    if (this.musicGain) this.musicGain.gain.setTargetAtTime(Math.min(1, this.musicVolume), this.context.currentTime, 0.04);
     if (this.musicBus?.master && this.context) {
       const now = this.context.currentTime;
       this.musicBus.master.gain.cancelScheduledValues(now);
@@ -126,29 +127,36 @@ export class SoundSystem {
   startMusic() {
     this.musicRequested = true;
     if (!this.enabled || this.musicVolume <= 0 || typeof window === "undefined") return;
-    if (this.musicAudio) {
-      this.musicAudio.volume = Math.min(1, this.musicVolume);
-      if (!this.musicActive) {
-        this.musicAudio.play().then(() => { this.musicActive = true; }).catch(() => {});
-      }
-      return;
-    }
     const context = this.unlock();
     if (!context) return;
     if (context.state === "suspended") {
-      context.resume().then(() => {
-        if (this.musicRequested && !this.musicPaused && !this.musicActive) this.startMusic();
-      }).catch(() => {});
-      return;
+      context.resume().catch(() => {});
     }
-    if (this.musicActive || this.musicPaused) return;
+    if (this.musicActive || this.musicBufferPromise) return;
+    this.musicBufferPromise = this.loadMusicBuffer(context).then((buffer) => {
+      this.musicBuffer = buffer;
+      this.musicBufferPromise = null;
+      if (!this.musicRequested || !this.enabled || this.musicVolume <= 0 || this.musicActive) return;
+      const source = context.createBufferSource();
+      const gain = context.createGain();
+      source.buffer = buffer;
+      source.loop = true;
+      gain.gain.value = Math.min(1, this.musicVolume);
+      source.connect(gain).connect(context.destination);
+      source.start();
+      this.musicSource = source;
+      this.musicGain = gain;
+      this.musicActive = true;
+    }).catch(() => { this.musicBufferPromise = null; });
+  }
 
-    this.musicActive = true;
-    this.musicStep = this.musicStep % (MUSIC_CONFIG.bars * 16);
-    this.musicNextNoteTime = context.currentTime + 0.06;
-    this.musicBus = this.createMusicBus(context);
-    this.startTapeNoise(context);
-    this.scheduleMusic();
+  loadMusicBuffer(context) {
+    if (this.musicBuffer) return Promise.resolve(this.musicBuffer);
+    const sourceUrl = new URL("./梦见天际 Dreaming the Skies.mp3", document.baseURI).href;
+    return fetch(sourceUrl).then((response) => {
+      if (!response.ok) throw new Error(`BGM load failed: ${response.status}`);
+      return response.arrayBuffer();
+    }).then((data) => context.decodeAudioData(data));
   }
 
   pauseMusic() {
@@ -164,11 +172,13 @@ export class SoundSystem {
 
   stopMusic(preserveRequest = false) {
     if (!preserveRequest) this.musicRequested = false;
-    if (this.musicAudio) {
-      this.musicAudio.pause();
-      if (!preserveRequest) this.musicAudio.currentTime = 0;
+    if (this.musicSource) {
+      try { this.musicSource.stop(); } catch { /* already stopped */ }
+      this.musicSource.disconnect();
+      this.musicSource = null;
+      this.musicGain?.disconnect();
+      this.musicGain = null;
       this.musicActive = false;
-      return;
     }
     this.musicPaused = preserveRequest && this.musicPaused;
     if (this.musicSchedulerTimer !== null && typeof window !== "undefined") window.clearTimeout(this.musicSchedulerTimer);

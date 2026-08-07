@@ -2227,7 +2227,3 @@ body { background: #02050c; }
     background: transparent;
   }
 }
- .audio-start-overlay{position:fixed;inset:0;z-index:1000;display:grid;place-items:center;background:rgba(3,5,18,.86);backdrop-filter:blur(10px)}
- .audio-start-overlay.is-hidden{display:none}
- .audio-start-card{width:min(420px,calc(100% - 32px));padding:32px 24px;text-align:center;background:rgba(12,15,38,.96);border:1px solid rgba(174,86,255,.65);box-shadow:0 0 40px rgba(112,55,255,.28)}
- .audio-start-card p:not(.eyebrow){color:#b9b9d3;margin:12px 0 22px}
