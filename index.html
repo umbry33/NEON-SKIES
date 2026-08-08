@@ -8,15 +8,6 @@
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
-<div id="boot-loader" class="boot-loader" role="status" aria-live="polite" aria-label="正在加载游戏" aria-busy="true">
-  <div class="boot-loader-card">
-    <p class="eyebrow">NEON SKIES / SYSTEM BOOT</p>
-    <h2>正在进入霓虹天际</h2>
-    <p id="boot-loader-status" class="boot-loader-status">正在加载核心系统…</p>
-    <div class="boot-progress" role="progressbar" aria-label="游戏加载进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="6"><i id="boot-progress-fill"></i></div>
-    <div class="boot-progress-meta"><span>LOADING</span><strong id="boot-progress-value">06%</strong></div>
-  </div>
-</div>
 <div class="app-shell">
   <canvas id="app-ambient-canvas" class="app-ambient-canvas" aria-hidden="true"></canvas>
   <section id="main-menu-screen" class="game-screen menu-screen" aria-label="&#20027;&#33756;&#21333;">
@@ -33,7 +24,7 @@
     </div>
     <div class="menu-content">
       <div class="menu-logo-lockup">
-        <p class="eyebrow">v0.8.3 / Made by umbry33</p>
+        <p class="eyebrow">v0.8.4 / Made by umbry33</p>
         <h1><span class="menu-logo-line">NEON</span> <span class="menu-logo-line">SKIES</span></h1>
       </div>
       <div class="menu-aircraft" aria-hidden="true"><span>&#10022;</span></div>
@@ -171,9 +162,7 @@
       loader?.remove();
       window.__neonBoot = { setProgress: () => {}, finish: () => {} };
     } else {
-      window.__neonBoot = { setProgress, finish };
-      drawProgress(current);
-      frame = requestAnimationFrame(animate);
+      window.__neonBoot = { setProgress: () => {}, finish: () => {} };
     }
     window.__neonFinishBoot = () => window.__neonBoot?.finish?.();
   })();

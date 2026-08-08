@@ -101,6 +101,10 @@ export class SoundSystem {
     this.playMusic(true);
   }
 
+  startMusic(forceRetry = false) {
+    this.playMusic(forceRetry);
+  }
+
   playMusic(forceRetry = false) {
     if (!this.musicAudio || !this.enabled || this.musicVolume <= 0) return;
     if (this.musicActive) return;
