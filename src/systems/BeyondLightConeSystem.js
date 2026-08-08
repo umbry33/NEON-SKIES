@@ -10,11 +10,11 @@ const FIRST_CHAPTER_OPENING_EVENT_IDS = ["orphan-wingman", "zero-maintenance", "
 const BOSS_VARIANTS = [
   { id: "storm-warden", name: "雷暴监守", rewardId: "weapon-electric-whirlwind", color: "#89ddff" },
   { id: "nest-matriarch", name: "覆巢母舰", rewardId: "weapon-nest", color: "#ff6b84" },
-  { id: "prism-oracle", name: "棱镜先知", rewardId: "special-optical", color: "#f0c5ff" },
+  { id: "prism-oracle", name: "棱镜先知", rewardId: null, color: "#f0c5ff" },
   { id: "zero-archon", name: "零度执政官", rewardId: "special-zero", color: "#baf6ff" },
-  { id: "abyss-gardener", name: "深渊园丁", rewardId: "fusion-abyss-bloom", color: "#c47cff" },
-  { id: "chorus-conductor", name: "合唱指挥舰", rewardId: "fusion-photon-chorus", color: "#fff0a8" },
-  { id: "cryo-hive-queen", name: "寒潮蜂后", rewardId: "fusion-cryo-hive", color: "#a5f6ec" },
+  { id: "abyss-gardener", name: "深渊园丁", rewardId: "weapon-obsidian-beam", color: "#c47cff" },
+  { id: "chorus-conductor", name: "合唱指挥舰", rewardId: "special-sky-protocol", color: "#fff0a8" },
+  { id: "cryo-hive-queen", name: "寒潮蜂后", rewardId: null, color: "#a5f6ec" },
 ];
 const textEncoder = new TextEncoder();
 const textDecoder = new TextDecoder();
@@ -153,17 +153,16 @@ export class BeyondLightConeSystem {
     const node = this.findNode(run, id); node.cleared = true; run.currentNodeId = node.id; run.visited.push(node.id); run.log.push(`抵达 ${node.type}`); return node;
   }
   getBossVariant(id) { return BOSS_VARIANTS.find((item) => item.id === id) ?? BOSS_VARIANTS[0]; }
-  getLegendaryModules() { return allModules.filter((module) => !PLAYER_DISABLED_MODULE_IDS.has(module.id) && module.rarity === "legendary"); }
+  getLegendaryModules() { return this.getOpenNormalModules().filter((module) => module.rarity === "legendary"); }
+  getOpenNormalModules() { return allModules.filter((module) => !PLAYER_DISABLED_MODULE_IDS.has(module.id) && !fusionModuleIds.has(module.id)); }
   getBeyondRewardModules({ elite = false } = {}) {
-    const normal = allModules.filter((module) => !PLAYER_DISABLED_MODULE_IDS.has(module.id) && !fusionModuleIds.has(module.id) && !module.beyondFusionOnly && module.rarity !== "legendary" && (!elite || ["epic", "rare", "uncommon"].includes(module.rarity)));
-    const fusion = allModules.filter((module) => !PLAYER_DISABLED_MODULE_IDS.has(module.id) && (module.beyondFusionOnly || fusionModuleIds.has(module.id)));
-    return [...normal, ...fusion];
+    return this.getOpenNormalModules().filter((module) => module.rarity !== "legendary" && (!elite || ["epic", "rare", "uncommon"].includes(module.rarity)));
   }
   rewardModules(run, count = 1, { elite = false, boss = false, bossVariant = null } = {}) {
     if (boss) {
       const variantRewardId = this.getBossVariant(bossVariant ?? this.findNode(run, run.currentNodeId)?.bossVariant ?? run.map?.at(-1)?.[0]?.bossVariant).rewardId;
       const enabledLegendary = this.getLegendaryModules();
-      const rewardId = PLAYER_DISABLED_MODULE_IDS.has(variantRewardId)
+      const rewardId = !variantRewardId || getModuleById(variantRewardId)?.rarity !== "legendary" || PLAYER_DISABLED_MODULE_IDS.has(variantRewardId)
         ? choose(rngFrom(`${run.seed}:boss-reward:${run.visited.length}`), enabledLegendary)?.id
         : variantRewardId;
       if (!rewardId) return [];
@@ -207,7 +206,16 @@ export class BeyondLightConeSystem {
     run.activeEvent = { nodeId: node.id, eventId: event.id };
     return { nodeId: node.id, event, choices: event.choices.map((item) => ({ ...item, ...this.getEventChoiceState(run, item) })) };
   }
-  grantEventModules(run, count = 1, rarity = "any") {
+  grantEventModules(run, count = 1, rarity = "any", moduleId = null) {
+    if (moduleId) {
+      const targeted = this.getOpenNormalModules().find((module) => module.id === moduleId && (rarity === "any" || module.rarity === rarity));
+      if (!targeted) return [];
+      const rewards = Array.from({ length: count }, () => targeted.id);
+      run.inventory[targeted.id] = (run.inventory[targeted.id] ?? 0) + rewards.length;
+      run.stats ??= {};
+      run.stats.modulesGained = (run.stats.modulesGained ?? 0) + rewards.length;
+      return rewards;
+    }
     const pools = {
       any: this.getBeyondRewardModules(),
       rare: this.getBeyondRewardModules().filter((module) => ["rare", "epic", "legendary"].includes(module.rarity)),
@@ -236,7 +244,9 @@ export class BeyondLightConeSystem {
         if (change > 0) { result.healAmount += change; run.stats.healing = (run.stats.healing ?? 0) + change; }
         if (change < 0) result.damageAmount += Math.abs(change);
       } else if (effect.type === "module") {
-        result.rewardIds.push(...this.grantEventModules(run, effect.count ?? 1, effect.rarity ?? "any"));
+        const rewards = this.grantEventModules(run, effect.count ?? 1, effect.rarity ?? "any", effect.moduleId ?? null);
+        result.rewardIds.push(...rewards);
+        if (effect.moduleId && rewards.length) result.variants.push(`获得传说模块：${getModuleById(rewards[0])?.name ?? rewards[0]}`);
       } else if (effect.type === "legendary") {
         const candidates = this.getLegendaryModules();
         const module = choose(rng, candidates);
@@ -465,5 +475,5 @@ export class BeyondLightConeSystem {
     run.log?.push(`分解 ${module.name}`);
     return { module, returned: [...returned.entries()].map(([id, count]) => ({ id, count })) };
   }
-  getInventoryRows(run) { const free = this.getFreeInventory(run); return Object.entries(run?.inventory ?? {}).filter(([, count]) => count > 0).map(([id, count]) => ({ id, name: getModuleById(id)?.name ?? id, count, free: free[id] ?? 0 })); }
+  getInventoryRows(run) { const free = this.getFreeInventory(run); const openIds = new Set(this.getOpenNormalModules().map((module) => module.id)); return Object.entries(run?.inventory ?? {}).filter(([id, count]) => count > 0 && openIds.has(id)).map(([id, count]) => ({ id, name: getModuleById(id)?.name ?? id, count, free: free[id] ?? 0 })); }
 }

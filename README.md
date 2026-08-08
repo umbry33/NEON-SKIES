@@ -12,11 +12,13 @@ powershell -ExecutionPolicy Bypass -File .\start-server.ps1
 
 然后打开 `http://localhost:5500/`。逻辑检查页为 `http://localhost:5500/tests/index.html`。项目没有 `package.json`，不要运行或添加未经确认的 npm 构建命令。
 
-发布包由以下脚本从源文件生成：
+正式发布前由以下脚本从源文件重新生成发布目录和 ZIP；普通开发不强制生成发布物：
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\package-release.ps1 -FolderOnly
+powershell -ExecutionPolicy Bypass -File .\package-release.ps1
 ```
+
+仅检查发布目录而不生成 ZIP 时，可使用 `-FolderOnly`。
 
 GitHub Pages 通过 `.github/workflows/deploy-pages.yml` 从 `main` 分支自动部署完整源码；推送后等待 GitHub Actions 完成即可更新线上站点。手动上传到其他静态托管服务时，仍需先生成完整的 `publish-package/` 或 ZIP，不能只替换单个 JavaScript 文件。用户已确认当前 GitHub 部署版本在手机和电脑上都能正常运行。
 
@@ -25,7 +27,7 @@ GitHub Pages 通过 `.github/workflows/deploy-pages.yml` 从 `main` 分支自动
 - 技术栈：HTML、CSS、原生 JavaScript ES Modules、Canvas 2D、Web Audio API。
 - 运行要求：支持 ES Modules、Canvas 2D、Pointer Events 和 Web Audio API 的现代浏览器。
 - 目标平台：桌面浏览器与移动浏览器；用户已确认当前 GitHub 部署版本在手机和电脑上均可正常运行。本项目不承诺完整浏览器版本矩阵。
-- 当前资源：飞机、敌机、模块、子弹和特效主要由 Canvas 几何绘制，无外部图片、字体或音频文件。
+- 当前资源：飞机、敌机、模块、子弹和特效主要由 Canvas 几何绘制；背景音乐使用项目根目录的 `梦见天际 Dreaming the Skies.mp3`，战斗音效由 Web Audio API 合成。
 
 ## 当前玩法
 
@@ -59,7 +61,7 @@ src/systems/               输入、装配、武器、技能、碰撞、音效�
 src/ui/                    菜单、改装界面、百科和光锥之外界面
 src/rendering/             模块图标和 Canvas 几何绘制
 tests/                     浏览器逻辑测试页与测试脚本
-assets/                    当前仅有资源策略说明，暂无外部资源
+assets/                    资源策略说明；背景音乐位于项目根目录
 docs/                      AI 长期维护文档
 ```
 
@@ -77,6 +79,6 @@ docs/                      AI 长期维护文档
 
 - 没有故事、账号、联网、排行榜或数据库。
 - 本地自动存档只保存在当前浏览器设备；普通机体配置码和光锥之外航程存档码仍用于备份、分享和跨设备迁移。
-- 光锥之外的模块合成数据和系统代码仍存在，但当前 UI 入口被隐藏，不能视为已开放的玩家功能。
-- `publish-package/` 和 `neon-skies-publish.zip` 是忽略的生成物；修改源码后必须重新生成。
+- 合成系统暂时停止开发：相关旧配置和系统代码仅供内部维护，当前不对玩家开放，也不存在“合成模块”这一玩家模块定义；它们不会进入正常模块库、百科、商店或光锥之外奖励池。
+- `publish-package/` 和 `neon-skies-publish.zip` 是忽略的生成物；正式发布前必须重新生成，普通开发不强制生成。
 - `tests/index.html` 是当前逻辑检查入口，必须显示 `All tests passed`；失败时按 `docs/TEST_CHECKLIST.md` 区分代码回归、过期断言和测试夹具问题。

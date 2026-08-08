@@ -15,16 +15,17 @@
 | [`CHANGELOG_GUIDELINES.md`](CHANGELOG_GUIDELINES.md) | 更新日志的事实与确认规则 |
 | [`TASK_TEMPLATE.md`](TASK_TEMPLATE.md) | 新任务统一记录模板 |
 | [`TEST_CHECKLIST.md`](TEST_CHECKLIST.md) | 启动、交互、模式、移动端和发布前检查 |
+| [`TEST_RESULTS.md`](TEST_RESULTS.md) | 按版本、commit 和设备记录实际测试结果 |
 | [`TECHNICAL_DECISIONS.md`](TECHNICAL_DECISIONS.md) | 长期设计决策、替代方案和修改条件 |
 
 ## 当前基线
 
-- Git 分支：`main`；代码基线提交：`317207a`，提交标题为 `发布 v0.7.0：新增模块与战斗机制优化`。本次文档提交以后的 HEAD 以 Git 历史为准。
+- Git 分支：`main`；当前代码基线为 v0.9.0 发布提交，具体 commit 以 Git 历史为准。
 - 项目类型：原生 HTML5/CSS/ES Modules，无 `package.json`、无 npm 构建和无数据库。
-- 当前测试基线已按 v0.7.0 规则同步并通过；`publish-package/` 与 `neon-skies-publish.zip` 为忽略的生成物，最近一次已依据当前源码重新生成。
+- 当前测试基线为 v0.9.0，浏览器逻辑测试共 82 项并通过；实际测试记录见 `TEST_RESULTS.md`。`publish-package/` 与 `neon-skies-publish.zip` 为忽略的生成物，正式发布前必须依据当前源码重新生成。
 - 兼容性采用轻量冒烟标准：以用户已确认的 GitHub 部署版本在一台手机和一台电脑上的实际运行结果为准，不维护复杂设备矩阵或固定性能预算。
-- 最后一次文档审计：2026-08-06（Asia/Shanghai）。
+- 最后一次文档审计：2026-08-08（Asia/Shanghai），对应当前发布版本 v0.9.0。
 
 ## 维护规则
 
-正式开发完成后，先更新 `AI_HANDOFF.md`，再按改动范围更新架构、功能、数据、路线图、已知问题和测试清单；如果是玩家可感知的版本改动，先向用户列出 `CHANGELOG.md` 拟写内容并等待确认。
+正式开发完成后，先更新 `AI_HANDOFF.md` 和 `TEST_RESULTS.md`，再按改动范围更新架构、功能、数据、路线图、已知问题和测试清单；如果是玩家可感知的版本改动，先按用户提供的版本号列出 `CHANGELOG.md` 拟写内容并等待确认。

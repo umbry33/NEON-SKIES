@@ -2,7 +2,7 @@
 
 ## 入口与页面
 
-- `index.html`：页面骨架、首屏加载遮罩、主菜单、设置、百科、模式选择、教程、关卡选择、改装界面、战斗 HUD 和结算层；底部加载 `src/main.js`。
+- `index.html`：页面骨架、主菜单、设置、百科、模式选择、教程、关卡选择、改装界面、战斗 HUD 和结算层；底部加载 `src/main.js`。
 - `src/main.js`：创建 `UI`、`InputSystem`、`Game`，把 UI 回调接到游戏方法，并开始菜单渲染。
 - `tests/index.html`：浏览器逻辑测试入口，加载 `tests/logic-tests.js`。
 - `src/ui/BeyondLightConeUI.js`：由 `UI` 在运行时注入光锥之外界面，因此部分 Beyond DOM 不在 `index.html` 静态骨架中。
@@ -20,12 +20,12 @@
 | 系统 | `src/systems/CollisionSystem.js` | 圆/矩形碰撞、伤害、爆炸、链式效果、治疗和玩家接触伤害 |
 | 系统 | `src/systems/EnemySpawner.js` | 按权重从当前模式敌池生成敌机 |
 | 系统 | `src/systems/InputSystem.js` | 键盘、指针、触摸拖动和画布坐标映射 |
-| 系统 | `src/systems/BeyondLightConeSystem.js` | 航程随机地图、节点、事件、库存、奖励、合成和航程码 |
+| 系统 | `src/systems/BeyondLightConeSystem.js` | 航程随机地图、节点、事件、库存、奖励和航程码；合成代码仅作暂停开发的内部存放 |
 | 系统 | `src/systems/LocalSaveSystem.js` | 浏览器本地存档、普通模式十槽机库和光锥之外安全断点 |
 | 系统 | `src/systems/LoadoutCodec.js` | 普通机体配置码的紧凑编码、校验和解析 |
 | 系统 | `src/systems/SoundSystem.js` | Web Audio 音效、背景音乐调度和音量 |
 | UI | `src/ui/UI.js` | 静态页面、改装交互、百科、HUD、设置和模式切换 |
-| UI | `src/ui/BeyondLightConeUI.js` | 光锥之外地图、商店、事件、合成面板、存档码和结果弹窗 |
+| UI | `src/ui/BeyondLightConeUI.js` | 光锥之外地图、商店、事件、存档码和结果弹窗；不提供合成玩家入口 |
 | 绘制 | `src/rendering/ModuleRenderer.js`、各实体/场景 `draw` | Canvas 几何图标、飞机、敌人、子弹、背景和战斗特效 |
 
 ## 状态管理与数据流

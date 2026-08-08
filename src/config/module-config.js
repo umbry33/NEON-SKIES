@@ -49,6 +49,7 @@ export const MODULE_CONFIG = {
     weapon({ id: "special-energy-aggregator", shareCode: 12, name: zh.aggregator, type: "weapon", description: "\u81ea\u52a8\u653b\u51fb\u6a21\u5757\u3002\u5360 1 \u683c\uff0c\u6bcf\u4e2a\u4f7f\u6240\u6709\u81ea\u52a8\u653b\u51fb\u6a21\u5757\u653b\u901f\u63d0\u9ad8 20%\uff0c\u6700\u9ad8 300%\u3002\u4e0d\u5f71\u54cd\u4e3b\u52a8\u6280\u80fd\u51b7\u5374\u3002", rarity: "rare", icon: "A", modifiers: { maxHp: { add: 0, multiply: 1 }, moveSpeed: { add: 0, multiply: 1 }, attackSpeed: { add: 0.2, multiply: 1 } } }),
     weapon({ id: "weapon-flame-crossbow", shareCode: 16, name: zh.flameCrossbow, type: "weapon", description: "\u5360 1 \u683c\u3002\u6bcf 1.5 \u79d2\u5411\u524d\u65b9\u6247\u5f62\u53d1\u5c04 3 \u652f\u70c8\u7130\u7bad\uff0c\u547d\u4e2d\u9020\u6210 5 \u70b9\u706b\u7130\u4f24\u5bb3\u5e76\u65bd\u52a0 3 \u79d2\u707c\u70e7\u3002\u707c\u70e7\u6bcf\u79d2\u53d1\u751f 3 \u6b21\uff0c\u6bcf\u6b21\u9020\u6210 1 \u70b9\u4f24\u5bb3\uff0c\u5171 9 \u6b21\uff0c\u91cd\u590d\u547d\u4e2d\u4f1a\u5237\u65b0\u6301\u7eed\u65f6\u95f4\u3002", rarity: "epic", icon: "F", element: "fire", behavior: { type: "flameCrossbow", fireInterval: 1.5, angles: [-0.12, 0, 0.12], projectile: { damage: 5, speed: 430, radius: 6, life: 3.2, color: "#ff3344", burn: { duration: 3, tickInterval: 1 / 3, damage: 1, ticks: 9 } } } }),
     weapon({ id: "weapon-water-shot", shareCode: 17, name: zh.waterShot, type: "weapon", description: "\u5360 1 \u683c\u3002\u6bcf\u79d2\u53d1\u5c04 5 \u53d1\u6c34\u5f39\uff0c\u5f39\u4f53\u547d\u4e2d\u540e\u6d88\u5931\u5e76\u4ea7\u751f 28px \u6c34\u82b1\u7206\u70b8\uff0c\u5bf9\u8303\u56f4\u5185\u5176\u4ed6\u654c\u4eba\u9020\u6210 2 \u70b9\u4f24\u5bb3\u3002", rarity: "epic", icon: "W", element: "water", behavior: { type: "waterShot", fireRate: 5, fireInterval: 0.2, projectile: { damage: 3, speed: 520, radius: 5, life: 2.6, explosionRadius: 28, explosionDamage: 2, color: "#176dff" } } }),
+    weapon({ id: "weapon-star-arc", shareCode: 38, name: "\u661f\u5f27", type: "weapon", description: "\u5360 1 \u683c\u3002\u81ea\u52a8\u5411\u524d\u53d1\u5c04\u5f27\u5149\u5b50\u5f39\uff0c\u5f39\u4f53\u98de\u884c\u5feb\u4e14\u4fdd\u6301\u7a33\u5b9a\u7684\u6b63\u524d\u65b9\u706b\u529b\u3002", rarity: "rare", icon: "SA", behavior: { type: "starArc", fireInterval: 0.75, projectile: { damage: 3, speed: 500, radius: 5, life: 2.4, color: "#7ad8ff" } } }),
     weapon({ id: "weapon-obsidian-beam", shareCode: 31, name: "黑曜波束", type: "weapon", footprint: square2, description: "占 2 × 2 格。自动索敌并快速连射 7 发黑曜短脉冲激光；每发激光在发射瞬间锁定敌人方向，飞行中仅进行小幅方向修正以提高命中率，形成高频点杀火力。", rarity: "legendary", icon: "OB", element: "dark", behavior: { type: "obsidianBeam", fireInterval: 2.4, projectile: { damage: 3.4, speed: 980, radius: 3.5, life: 2.9, burstCount: 7, burstInterval: 0.1, homingTurnRate: 0.42, color: "#8e72ff" } } }),
     weapon({ id: "weapon-eclipse-pulse", shareCode: 32, name: "星蚀脉冲", type: "weapon", footprint: square2, description: "占 2 × 2 格。自动向正上方发射绑定模块的持续星蚀光束，固定航线持续灼穿光束范围内的敌人。", rarity: "legendary", icon: "EP", element: "light", behavior: { type: "eclipseBeam", fireInterval: 4.8, projectile: { damage: 3, speed: 0, radius: 1, life: 2.4, beamWidth: 11, damageInterval: 0.18, color: "#e8f4ff" } } }),
     weapon({ id: "weapon-fire-feather", shareCode: 33, name: "火羽", type: "weapon", footprint: horizontal2, description: "横向两格，竖向一格。自动寻找敌人最密集的方向齐射九片火焰羽片；火羽命中敌人后消失，不会穿透；同一敌人被火羽命中两次后触发烈羽冲击并被击退。", rarity: "legendary", icon: "FF", element: "fire", behavior: { type: "fireFeather", fireInterval: 1.4, volley: 9, spreadAngle: 0.1, projectile: { damage: 3, speed: 390, radius: 6, life: 3.6, color: "#ff3b32", featherMarkDuration: 3, featherBurstDamage: 4 } } }),
@@ -62,13 +63,15 @@ export const MODULE_CONFIG = {
     special({ id: "special-zero", shareCode: 10, name: zh.zero, type: "special", description: "\u6a2a\u5411\u4e09\u683c\u3002\u51bb\u7ed3\u666e\u901a\u654c\u4eba\u548c\u654c\u65b9\u5f39\u5e55 3.5 \u79d2\u3002", rarity: "legendary", icon: "F", footprint: horizontal3, skill: { id: "freeze", name: "\u96f6\u5ea6\u9886\u57df", cooldown: 15, duration: 3.5 } }),
     special({ id: "special-overclock", shareCode: 13, name: zh.overclock, type: "special", description: "\u5360 2 \u00d7 2 \u683c\u3002\u4e3b\u52a8\u6280\u80fd\u6301\u7eed 5 \u79d2\uff0c\u6240\u6709\u81ea\u52a8\u6b66\u5668\u653b\u901f +80%\uff0c\u53ef\u7a81\u7834 300% \u4e0a\u9650\u4e00\u6b21\uff1b\u7ed3\u675f\u540e\u505c\u706b 1 \u79d2\u3002", rarity: "legendary", icon: "O", footprint: square2, skill: { id: "overclock", name: zh.overclock, cooldown: 15, duration: 5 } }),
     special({ id: "special-polarity-reverse", shareCode: 14, name: zh.polarity, type: "special", description: "\u5360 2 \u00d7 2 \u683c\u3002\u4e3b\u52a8\u6280\u80fd\u5c06\u5168\u90e8\u654c\u65b9\u5f39\u5e55\u505c\u6ede 0.25 \u79d2\u540e\u8f6c\u5316\u4e3a\u5df1\u65b9\u5f39\u5e55\uff0c\u5411\u4e0a\u5c04\u51fa\u5e76\u4f24\u5bb3\u654c\u4eba\u3002", rarity: "legendary", icon: "P", footprint: square2, skill: { id: "polarityReverse", name: zh.polarity, cooldown: 12, duration: 0.25 } }),
+    special({ id: "special-silent-storm", shareCode: 39, name: "\u9759\u9ed8\u78c1\u66b4", type: "special", description: "\u5360 2 \u00d7 2 \u683c\u3002\u7535\u5c5e\u6027\u4e3b\u52a8\u6280\u80fd\uff0c\u91ca\u653e\u9759\u9ed8\u78c1\u66b4\uff0c\u4f7f\u5f53\u524d\u53ca\u65b0\u51fa\u73b0\u7684\u654c\u673a\u77ed\u65f6\u65e0\u6cd5\u53d1\u5c04\u5f39\u5e55\uff0c\u4f46\u4e0d\u6e05\u9664\u573a\u4e0a\u5df2\u6709\u5f39\u5e55\u3002", rarity: "epic", icon: "SM", footprint: square2, element: "electric", skill: { id: "silentStorm", name: "\u9759\u9ed8\u78c1\u66b4", cooldown: 14, duration: 2.6 } }),
+    special({ id: "special-tactical-mine", shareCode: 40, name: "\u6218\u672f\u5730\u96f7", type: "special", description: "\u6a2a\u5411\u4e24\u683c\u3002\u4e3b\u52a8\u5728\u6a21\u5757\u4f4d\u7f6e\u5e03\u8bbe\u5730\u96f7\uff0c\u62e5\u6709 3 \u5c42\u5145\u80fd\uff0c\u6bcf 6 \u79d2\u6062\u590d 1 \u5c42\uff0c\u654c\u673a\u8fdb\u5165\u89e6\u53d1\u8303\u56f4\u540e\u7206\u70b8\uff0c\u6bcf\u679a\u6700\u591a\u5b58\u5728 30 \u79d2\u3002", rarity: "epic", icon: "TM", footprint: horizontal2, skill: { id: "tacticalMine", name: "\u6218\u672f\u5730\u96f7", cooldown: 6, chargeInterval: 6, maxCharges: 3, duration: 30, triggerRadius: 46, explosionRadius: 58, explosionDamage: 14 } }),
     special({ id: "special-sky-protocol", shareCode: 35, name: "天幕协议", type: "special", description: "占 2 × 2 格。主动展开天幕火力区，在模块上方横向排开一整列弹幕并向上齐射；弹幕处于火力区内时伤害翻倍，形成密集的不追踪火力覆盖。", rarity: "legendary", icon: "SP", footprint: square2, skill: { id: "skyProtocol", name: "天幕协议", cooldown: 14, duration: 4.5 } }),
-    special({ id: "special-azure-singularity", shareCode: 36, name: "幽蓝奇点", type: "special", description: "占 2 × 2 格。以模块中心创造持续 1 秒、不会跟随玩家移动的奇点区域；区域内的普通敌机会被缩小并向上传送，随后移动速度降低 25%、攻击间隔延长 35%、造成的伤害降低 50%，持续 7 秒。Boss 不受影响。", rarity: "legendary", icon: "AS", footprint: square2, skill: { id: "azureSingularity", name: "幽蓝奇点", cooldown: 16, duration: 1 } }),
+    special({ id: "special-azure-singularity", shareCode: 36, name: "幽蓝奇点", type: "special", description: "占 2 × 2 格。以模块中心创造持续 1 秒、不会跟随玩家移动的奇点区域；区域内的普通敌机会被缩小并向上传送，随后移动速度降低 25%、攻击间隔延长 35%、造成的伤害降低 50%，持续 7 秒。Boss 不受影响。", rarity: "epic", icon: "AS", footprint: square2, skill: { id: "azureSingularity", name: "幽蓝奇点", cooldown: 16, duration: 1 } }),
     special({ id: "special-star-ring", shareCode: 37, name: "星环", type: "special", description: "占 2 × 2 格。主动展开环绕模块的星环，吸收接触到的敌方弹幕，将其强化后转化为玩家方弹幕并自动反击敌人。", rarity: "legendary", icon: "SR", footprint: square2, skill: { id: "starRing", name: "星环", cooldown: 14, duration: 5 } }),
   ],
 };
 
-// 光锥之外的合成产物：常规模式默认可用，但航程内只能依配方获取。
+// 暂停开发的旧合成实验定义：当前不属于玩家模块，也不进入任何玩家获取流程。
 // recipe 中的坐标是合成台 3×3 内的固定锚点；允许整体平移，不允许旋转或镜像。
 const fusion = (data) => ({ ...data, beyondFusionOnly: true, fusionRecipe: data.fusionRecipe.map((item) => ({ ...item })) });
 export const PLAYER_DISABLED_MODULE_IDS = new Set(["weapon-water-moon", "fusion-mirage-anchor", "fusion-overflow-drive", "fusion-photon-chorus"]);
@@ -81,7 +84,7 @@ export const FUSION_MODULES = [
   fusion(special({ id: "fusion-overflow-drive", shareCode: 30, name: "溢流驱动", type: "special", description: "合成模块。2×2 格，启动同步脉冲：立刻重置全部武器节奏，并在持续期间周期性齐射。", rarity: "epic", icon: "OD", footprint: square2, skill: { id: "overflowDrive", name: "溢流驱动", cooldown: 16, duration: 3.4 }, fusionRecipe: [{ moduleId: "weapon-ricochet", x: 0, y: 0 }, { moduleId: "weapon-water-shot", x: 1, y: 0 }, { moduleId: "weapon-flame-crossbow", x: 0, y: 1 }, { moduleId: "special-energy-aggregator", x: 1, y: 1 }] })),
 ];
 
-// 现有传说模块同样可在光锥之外合成；稀有事件与指定首领可作为例外直接奖励它们。
+// 旧合成配方元数据仅供内部维护；当前开放的传说模块由独立的稀有事件和首领奖励规则处理。
 export const LEGENDARY_FUSION_RECIPES = {
   "weapon-electric-whirlwind": [{ moduleId: "weapon-water-shot", x: 1, y: 0 }, { moduleId: "weapon-ball-lightning", x: 1, y: 1 }, { moduleId: "weapon-ricochet", x: 1, y: 2 }],
   "weapon-nest": [{ moduleId: "weapon-ricochet", x: 0, y: 1 }, { moduleId: "weapon-flame-crossbow", x: 1, y: 1 }, { moduleId: "weapon-water-shot", x: 2, y: 1 }],
@@ -138,7 +141,8 @@ const RARITY_OVERRIDES = {
   "weapon-electric-whirlwind": "legendary",
   "weapon-nest": "legendary",
   "weapon-lightning-generator": "epic",
-  "special-optical": "legendary",
+  "special-optical": "epic",
+  "special-azure-singularity": "epic",
   "special-sonic": "epic",
   "special-zero": "legendary",
   "weapon-ball-lightning": "rare",
@@ -167,7 +171,7 @@ export const MODULE_ELEMENT_CONFIG = {
   "weapon-ball-lightning": "electric", "weapon-lightning-generator": "electric", "special-sonic": "electric", "special-polarity-reverse": "electric", "weapon-electric-whirlwind": "electric",
   "weapon-psionic": "light", "special-optical": "light", "weapon-black-hole": "dark", "weapon-nest": "dark", "special-zero": "ice", "weapon-water-shot": "water", "weapon-flame-crossbow": "fire",
   "weapon-obsidian-beam": "dark", "weapon-eclipse-pulse": "light", "weapon-fire-feather": "fire", "weapon-water-moon": "water",
-  "special-sky-protocol": "light", "special-azure-singularity": "light", "special-star-ring": "neutral",
+  "special-sky-protocol": "light", "special-azure-singularity": "light", "special-star-ring": "neutral", "special-silent-storm": "electric",
   "fusion-abyss-bloom": "dark", "fusion-photon-chorus": "light", "fusion-cryo-hive": "ice", "fusion-mirage-anchor": "light", "fusion-polar-saw": "electric", "fusion-overflow-drive": "neutral",
 };
 export function getModuleElement(moduleOrId) { const id = typeof moduleOrId === "string" ? moduleOrId : moduleOrId?.id; return moduleOrId?.element ?? MODULE_ELEMENT_CONFIG[id] ?? "neutral"; }

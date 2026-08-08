@@ -54,6 +54,8 @@ export class Game {
     this.decoys = [];
     this.wingman = null;
     this.freezeTimer = 0;
+    this.silentStormTimer = 0;
+    this.silentStormPulse = null;
     this.polarityWindow = 0;
     this.whiteHoleActive = false;
     this.whiteHoleHealing = null;
@@ -413,6 +415,8 @@ export class Game {
     const wolfpack = hasActiveSynergy(loadout, "synergy-wolfpack");
     this.wingman = this.mode === "dodge" ? null : (loadout.modules.some(({ module }) => module?.id === "special-wingman") ? new Wingman(this.player, { wolfpack }) : null);
     this.freezeTimer = 0;
+    this.silentStormTimer = 0;
+    this.silentStormPulse = null;
     this.polarityWindow = 0;
     this.whiteHoleActive = hasActiveSynergy(loadout, "synergy-white-hole");
     this.whiteHoleHealing = null;
@@ -492,6 +496,20 @@ export class Game {
 
   activateSkill(index) { const activated = this.skillSystem?.activate(index, this); if (activated) { this.sound.play("skill"); if (this.tutorialMode) { this.tutorialHasUsedSkill = true; this.exitTutorialBattle(); } } return activated; }
   startOverclock(duration) { this.player.overclockTimer = duration; }
+  startSilentStorm(duration) {
+    this.silentStormTimer = Math.max(this.silentStormTimer, duration);
+    for (const enemy of this.enemies) enemy.silence(this.silentStormTimer);
+    this.silentStormPulse = { age: 0, duration: 0.82, maxRadius: Math.hypot(this.bounds.width, this.bounds.height) };
+  }
+  deployTacticalMine(skill = {}) {
+    if (!this.player) return;
+    const origin = this.getFusionSkillOrigin(skill.instanceId, "tacticalMine");
+    this.projectiles.push(new Projectile({
+      x: origin.x, y: origin.y, vx: 0, vy: 0, damage: 0, radius: 8,
+      triggerRadius: skill.triggerRadius ?? 46, explosionRadius: skill.explosionRadius ?? 58, explosionDamage: skill.explosionDamage ?? 14,
+      color: "#6ee8ff", life: skill.duration ?? 8, team: "player", kind: "tacticalMine", element: "neutral",
+    }));
+  }
   markPolarityProjectile(projectile) { if (!projectile || projectile.team !== "enemy" || projectile.polarityDelay > 0 || projectile.kind === "blackHole") return; projectile.polarityDelay = 0.25; projectile.vx = 0; projectile.vy = 0; projectile.polarityColor = "#9d7bff"; }
   convertPolarityProjectile(projectile) {
     if (!projectile || projectile.polarityDelay > 0) return;
@@ -1006,6 +1024,8 @@ export class Game {
     this.skillSystem.update(dt);
     this.polarityWindow = Math.max(0, this.polarityWindow - dt);
     this.freezeTimer = Math.max(0, this.freezeTimer - dt);
+    this.silentStormTimer = Math.max(0, this.silentStormTimer - dt);
+    if (this.silentStormPulse) { this.silentStormPulse.age += dt; if (this.silentStormPulse.age >= this.silentStormPulse.duration) this.silentStormPulse = null; }
     this.ionSaw.duration = Math.max(0, (this.ionSaw.duration ?? 0) - dt);
     this.ionSaw.active = this.ionSaw.duration > 0;
     this.ionSaw.damageTimer -= dt;
@@ -1051,6 +1071,7 @@ export class Game {
     const statusDamageEvents = [];
     for (const current of this.enemies) {
       current.frozen = this.freezeTimer > 0 && !current.definition.boss;
+      if (this.silentStormTimer > 0) current.silence(this.silentStormTimer + dt);
       current.environmentSpeedMultiplier = environmentEffects.enemy.speed ?? 1;
       current.environmentShootIntervalMultiplier = environmentEffects.enemy.shootInterval ?? 1;
       current.environmentProjectileSpeedMultiplier = environmentEffects.enemy.projectileSpeed ?? 1;
@@ -1131,7 +1152,42 @@ export class Game {
     this.drawEnvironment();
     if (this.ionSaw.active) this.drawIonSaw();
     if (this.freezeTimer > 0) { this.ctx.save(); this.ctx.fillStyle = "rgba(150,230,255,.045)"; this.ctx.fillRect(0, 0, this.bounds.width, this.bounds.height); this.ctx.restore(); }
+    this.drawSilentStormEffects();
     this.ctx.restore();
+  }
+
+  drawSilentStormEffects() {
+    if (this.silentStormPulse) {
+      const pulse = this.silentStormPulse;
+      const progress = Math.min(1, pulse.age / pulse.duration);
+      const eased = 1 - Math.pow(1 - progress, 2);
+      const radius = pulse.maxRadius * (0.06 + eased * 0.94);
+      const fade = Math.max(0, 1 - progress);
+      this.ctx.save(); this.ctx.translate(this.player.x, this.player.y); this.ctx.globalCompositeOperation = "lighter";
+      this.ctx.globalAlpha = fade * 0.22; this.ctx.fillStyle = "#8fddff"; this.ctx.shadowColor = "#8fddff"; this.ctx.shadowBlur = 34;
+      this.ctx.beginPath(); this.ctx.arc(0, 0, radius, 0, Math.PI * 2); this.ctx.fill();
+      this.ctx.globalAlpha = fade * 0.94; this.ctx.strokeStyle = "#bff6ff"; this.ctx.lineWidth = 4.5; this.ctx.shadowBlur = 26;
+      this.ctx.beginPath(); this.ctx.arc(0, 0, radius, 0, Math.PI * 2); this.ctx.stroke();
+      this.ctx.globalAlpha = fade * 0.7; this.ctx.strokeStyle = "#4ecbff"; this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath(); this.ctx.arc(0, 0, radius * 0.88, this.elapsed * 2.4, this.elapsed * 2.4 + Math.PI * 1.45); this.ctx.stroke();
+      for (let index = 0; index < 12; index += 1) {
+        const angle = index * Math.PI * 2 / 12 + this.elapsed * 0.55;
+        const inner = radius * (0.68 + (index % 3) * 0.035); const outer = radius * (1.02 + (index % 2) * 0.1);
+        this.ctx.globalAlpha = fade * (0.5 + (index % 3) * 0.12); this.ctx.strokeStyle = index % 2 ? "#7ae6ff" : "#e7fdff"; this.ctx.lineWidth = index % 3 === 0 ? 2.2 : 1;
+        this.ctx.beginPath(); this.ctx.moveTo(Math.cos(angle) * inner, Math.sin(angle) * inner); this.ctx.lineTo(Math.cos(angle + 0.035) * outer, Math.sin(angle + 0.035) * outer); this.ctx.stroke();
+      }
+      this.ctx.restore();
+    }
+    if (this.silentStormTimer > 0) {
+      const wave = (this.elapsed * 92) % 28;
+      this.ctx.save(); this.ctx.globalCompositeOperation = "screen";
+      this.ctx.globalAlpha = 0.065 + Math.sin(this.elapsed * 8) * 0.012; this.ctx.fillStyle = "#6dcfff"; this.ctx.fillRect(0, 0, this.bounds.width, this.bounds.height);
+      this.ctx.globalAlpha = 0.22; this.ctx.strokeStyle = "#8fddff"; this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(8, 8, this.bounds.width - 16, this.bounds.height - 16);
+      this.ctx.globalAlpha = 0.12; this.ctx.setLineDash([12, 18]); this.ctx.lineDashOffset = wave;
+      for (let y = -28 + wave; y < this.bounds.height + 28; y += 28) { this.ctx.beginPath(); this.ctx.moveTo(0, y); this.ctx.lineTo(this.bounds.width, y); this.ctx.stroke(); }
+      this.ctx.setLineDash([]); this.ctx.restore();
+    }
   }
 
   drawFusionSkillEffects() {

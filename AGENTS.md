@@ -2,7 +2,7 @@
 
 任何 AI 修改代码之前，必须先阅读 AGENTS.md、AI_HANDOFF、开发规范以及当前任务相关文档。
 
-本项目是 Neon Skies：一个无构建步骤、无第三方运行时依赖的原生 HTML5 Canvas 纵向射击游戏。当前代码基线为 v0.7.0，入口是 `index.html`，主逻辑从 `src/main.js` 启动。
+本项目是 Neon Skies：一个无构建步骤、无第三方运行时依赖的原生 HTML5 Canvas 纵向射击游戏。当前代码基线为 v0.8.4，入口是 `index.html`，主逻辑从 `src/main.js` 启动。
 
 ## 必读文档
 
@@ -26,6 +26,7 @@
 - 保持项目随时可运行：这是浏览器原生 ES Module 项目，不要引入未经确认的构建工具、依赖或服务端框架。
 - 代码、测试、发布包、文档各自承担职责；不要把临时调试代码当正式实现，也不要生成无意义 BAT 文件。
 - 不能从代码或 Git 证明的内容必须写“待确认”，禁止猜测并写成已实现功能。
+- 每个任务开始时先记录工作区基线；开始前已经存在的修改默认属于用户，除非用户明确确认纳入本任务。
 
 ## 点击与触控交互强制规范
 
@@ -73,14 +74,15 @@
 - 不要删除现有文档、测试或资源占位说明。若内容过期，应在原职责文档中修正，并在 `docs/KNOWN_ISSUES.md` 记录仍未解决的代码问题。
 - 不要把未开放的合成系统、未启用敌机原型或路线图项目写成玩家当前可用功能。
 - 不要使用 `npm` 或凭空添加 `package.json`；当前项目没有 npm 依赖和构建流程。
+- 如果本次任务需要修改用户已有修改的同一文件，必须先暂停并说明冲突范围，得到用户确认后才能合并；无法可靠分离时不得自行拆分、覆盖或撤销。
 
 ## 推荐开发流程
 
-1. 阅读必读文档，查看 `git status --short`、最近提交和相关历史。
-2. 明确目标、范围、禁止修改项和验收标准；复杂任务先复制 `docs/TASK_TEMPLATE.md`。
+1. 阅读必读文档，查看 `git status --short`、逐文件差异、最近提交和相关历史，并记录已有修改的归属。
+2. 明确目标、范围、禁止修改项和验收标准；涉及多个系统、存档/兼容、玩家可见玩法，或预计需要三类以上文件和手动回归的任务，先复制 `docs/TASK_TEMPLATE.md`。
 3. 搜索真实入口、配置、调用方和测试，评估对其它模式的影响。
 4. 做最小、可回滚的修改；新内容优先放入配置文件，不要在 `Game.js` 中堆叠大量模块特判。
-5. 运行必要检查：`node --check`、本地服务器、`tests/index.html`，并按 `docs/TEST_CHECKLIST.md` 做对应手动流程。
+5. 运行必要检查：`node --check`、本地服务器、`tests/index.html`，并按 `docs/TEST_CHECKLIST.md` 做对应手动流程；结果记录到 `docs/TEST_RESULTS.md`。
 6. 检查浏览器控制台、桌面操作、触摸/移动端布局、暂停恢复、配置码和旧功能；每次正式发布都必须记录一次手机端触控回归，至少覆盖主菜单、改装界面机库按钮、弹窗按钮、触摸拖动和技能按钮。
 7. 同步所有受影响文档；文档与代码冲突时，以代码和 Git 为证据修正文档，未知处标“待确认”。
 8. 只提交本次任务相关文件，提交前再次检查敏感内容和 `git diff --check`。
@@ -89,8 +91,8 @@
 
 - 日常提交使用清晰的中文类型前缀，例如 `feat:`、`fix:`、`docs:`、`test:`、`chore:`；正式发布沿用项目现有的 `发布 vX.Y.Z：...` 格式。
 - 提交信息必须描述实际修改，不得夸大未验证内容。
-- 默认只做本地提交，不推送、不部署；发布操作必须得到明确授权并遵循 `.agents/skills/publish-release/`。
-- 本次文档系统建立任务的指定提交信息为：`docs: establish and synchronize AI development documentation`。
+- 默认只做本地提交，不推送、不部署；只有用户明确提出“正式发布”并提供版本号时，才按 `.agents/skills/publish-release/` 执行推送流程。
+- `git add` 必须使用明确的任务文件列表；不得使用 `git add -A` 或把用户已有修改混入本次提交。
 
 ## 完成后必须同步的文档
 
@@ -100,7 +102,7 @@
 - 架构、入口、模块边界：`docs/ARCHITECTURE.md`、`docs/TECHNICAL_DECISIONS.md`、`README.md`（若运行或目录变化）。
 - 数据字段、模块、敌人、存档或数值：`docs/DATA_MODEL.md`、`docs/FEATURES.md`、`docs/KNOWN_ISSUES.md`（若有兼容风险）。
 - 测试流程或已知失败：`docs/TEST_CHECKLIST.md`、`docs/KNOWN_ISSUES.md`、`docs/AI_HANDOFF.md`。
-- 任何正式开发完成后至少检查 `AGENTS.md`、`README.md`、`docs/AI_HANDOFF.md` 和受影响专题文档是否仍准确。
+- 任何正式开发完成后至少检查 `AGENTS.md`、`README.md`、`docs/AI_HANDOFF.md`、`docs/TEST_RESULTS.md` 和受影响专题文档是否仍准确。
 
 ## 测试要求
 
@@ -110,13 +112,13 @@
 powershell -ExecutionPolicy Bypass -File .\start-server.ps1
 ```
 
-然后打开 `http://localhost:5500/`，逻辑检查页是 `http://localhost:5500/tests/index.html`。命令必须以当前脚本和代码为准，不要虚构其它命令。测试页必须显示 `All tests passed`；若失败，先按 `docs/TEST_CHECKLIST.md` 区分代码回归、过期断言和测试夹具问题。
+然后打开 `http://localhost:5500/`，逻辑检查页是 `http://localhost:5500/tests/index.html`。命令必须以当前脚本和代码为准，不要虚构其它命令。测试页必须显示 `All tests passed`；若失败，先按 `docs/TEST_CHECKLIST.md` 区分代码回归、过期断言和测试夹具问题，并把结果记录到 `docs/TEST_RESULTS.md`。
 
 ## 更新日志规则
 
 1. 只记录自上一版本发布后、玩家能实际体验到的真实新增、修改和修复。
 2. 不记录内部测试、调试、重构、变量修改、临时方案或实验性工作。
 3. 每条必须能对应本次实际代码或资源改动；无法确认归属时默认不写。
-4. 修改 `CHANGELOG.md` 前必须先列出全部拟写入内容并等待用户明确确认。
+4. 正式发布时使用用户提供的版本号，只写该版本实际包含且玩家可见的内容；修改 `CHANGELOG.md` 前必须先列出全部拟写入内容并等待用户明确确认。用户确认后，才可继续提交、推送和触发 Pages 部署。
 
 完整规则见 `docs/CHANGELOG_GUIDELINES.md`。

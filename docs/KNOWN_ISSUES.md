@@ -1,17 +1,17 @@
 # 已知问题与风险
 
-本文件只记录已从代码、Git 或可复现测试确认的问题；没有证据的猜测不写入。最后验证时间：2026-08-06。
+本文件只记录已从代码、Git 或可复现测试确认的问题；没有证据的猜测不写入。最后验证时间：2026-08-08，对应当前发布版本 v0.9.0。
 
 ## 已解决：测试基线同步
 
-本轮已按当前代码和已确认产品规则更新 `tests/logic-tests.js`：100 个关卡、每 5 关一个 Boss、34 个光锥之外事件、当前武器配置，以及“合成系统不正式开放”的玩家边界均已纳入断言。复现：运行 `start-server.ps1`，打开 `http://localhost:5500/tests/index.html`，当前结果为 `All tests passed`。
+本轮已按当前代码和已确认产品规则更新 `tests/logic-tests.js`：100 个关卡、每 5 关一个 Boss、39 个光锥之外事件、当前武器配置，以及“合成系统暂时停止开发”的玩家边界均已纳入断言。复现：运行 `start-server.ps1`，打开 `http://localhost:5500/tests/index.html`，当前结果为 `All tests passed`。
 
 以后若测试失败，必须先区分代码回归、过期断言和测试夹具缺失；不能为了绿灯删除断言。
 
-## 合成系统入口暂不开放
+## 合成系统暂时停止开发
 
-- `src/config/module-config.js`、`src/systems/BeyondLightConeSystem.js` 和 `src/ui/BeyondLightConeUI.js` 保留合成/分解实现，但 `installBeyondLightConeUI()` 中会移除 `#beyond-fusion-button`，玩家当前无法从航程 UI 进入。
-- 已确认：合成系统不正式开放。未来 AI 不能因为看到完整实现就开放该功能；功能文档必须保持“实现但未开放”。除非重新获得明确产品决策，否则不应把它列入玩家功能或 Roadmap 的开放项。
+- `src/config/module-config.js`、`src/systems/BeyondLightConeSystem.js` 和 `src/ui/BeyondLightConeUI.js` 仍保留暂停开发的旧代码，但玩家模块库、百科、商店、Boss 奖励和光锥之外奖励池均排除这些定义。
+- 已确认：合成系统暂时停止开发，任何相关内容不对玩家开放，当前也没有“合成模块”这一玩家模块定义。除非重新获得明确产品决策，否则不得恢复入口或把它列入玩家功能与 Roadmap 开放项。
 
 ## 轻量兼容策略
 

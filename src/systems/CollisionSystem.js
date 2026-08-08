@@ -57,6 +57,17 @@ export class CollisionSystem {
       if (projectile.blackHoleCapturedBy) continue;
       if ((projectile.polarityDelay ?? 0) > 0) continue;
       if (projectile.team === "player") {
+        if (projectile.kind === "tacticalMine") {
+          const triggerRadius = projectile.triggerRadius ?? 46;
+          const triggered = enemies.some((enemy) => !destroyedEnemies.has(enemy) && !enemy.isPhased && enemy.hp > 0 && Math.hypot(enemy.x - projectile.x, enemy.y - projectile.y) <= triggerRadius + (enemy.radius ?? 0));
+          if (triggered) {
+            const radius = projectile.explosionRadius ?? 58;
+            explosionEvents.push({ x: projectile.x, y: projectile.y, radius, color: projectile.color, kind: "tacticalMine", life: 0.42, maxLife: 0.42 });
+            applyExplosionDamage({ x: projectile.x, y: projectile.y, radius, damage: projectile.explosionDamage ?? projectile.damage ?? 0, element: projectile.element });
+            removedProjectiles.add(projectile);
+          }
+          continue;
+        }
         if (projectile.kind === "blackHole") {
           const field = projectile.blackHole ?? {};
           if (projectile.life <= 0 && !field.exploded) {

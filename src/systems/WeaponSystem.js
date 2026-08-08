@@ -124,6 +124,7 @@ const behaviors = {
     }
     return [makePlayerProjectile(player, behavior.projectile, 0, { ...moduleOrigin(player, entry), kind: "waterShot", damageMultiplier })];
   },
+  starArc: (player, behavior, enemies, entry, damageMultiplier) => [makePlayerProjectile(player, behavior.projectile, 0, { ...moduleOrigin(player, entry), kind: "starArc", damageMultiplier })],
   lightning: (player, behavior, enemies, entry, damageMultiplier) => {
     const origin = moduleOrigin(player, entry);
     const target = nearestForwardEnemy(enemies, origin.originX, origin.originY);

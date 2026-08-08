@@ -1,4 +1,4 @@
-import { MODULE_CONFIG, ASSEMBLY_BOARD, getFootprintBounds } from "./module-config.js";
+import { FUSION_MODULES, MODULE_CONFIG, ASSEMBLY_BOARD, getFootprintBounds } from "./module-config.js";
 import { ENEMY_CONFIG, ADVANCED_ENEMY_CONFIG, UNRELEASED_ENEMY_CONFIG, createBossDefinition } from "./enemy-config.js";
 import { ENVIRONMENT_CONFIG } from "./environment-config.js";
 import { BEYOND_LIGHT_CONE_CONFIG } from "./beyond-light-cone-config.js";
@@ -8,7 +8,8 @@ const rarityNames = { common: "普通", uncommon: "非凡", rare: "稀有", epic
 const typeNames = { weapon: "自动模块", special: "技能模块" };
 
 export function getEncyclopediaSections() {
-  const modules = [...MODULE_CONFIG.weapons, ...MODULE_CONFIG.specials].map((module) => {
+  const fusionModuleIds = new Set(FUSION_MODULES.map((module) => module.id));
+  const modules = [...MODULE_CONFIG.weapons, ...MODULE_CONFIG.specials].filter((module) => !fusionModuleIds.has(module.id)).map((module) => {
     const size = getFootprintBounds(module);
     const skill = module.skill ? `主动技能：${module.skill.name}（冷却 ${module.skill.cooldown}s）` : "自动生效";
     return { title: module.name, tag: `${typeNames[module.type] ?? module.type} · ${rarityNames[module.rarity] ?? module.rarity}`, description: `${module.description} ${skill}`, meta: `占位 ${size.width} × ${size.height}` };
@@ -79,7 +80,7 @@ export function getEncyclopediaSections() {
     },
     {
       title: "深空事件档案",
-      tag: "34 EVENTS",
+      tag: "40 EVENTS",
       description: "事件节点会从深空事件池中抽取一段独立遭遇。每个事件都提供至少两种处理方式，可能带来模块、金币、治疗、风险战斗或随机结果。",
       meta: "点击查看全部事件",
       action: "beyond-events",

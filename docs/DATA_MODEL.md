@@ -23,13 +23,16 @@
 }
 ```
 
-当前源数据包含 31 个 `ALL_MODULES` 条目（含核心、正常模块、合成模块和光锥之外保留/禁用定义）；运行时标准改装仓库显示 26 个。`MODULE_CONFIG.weapons` 当前为 14 个、`specials` 当前为 12 个，但“weapon”数组中包含能量聚合器和自动化合成模块，阅读时以 `type`、`skill` 和 `behavior` 为准，不要只按数组名推断。
+主动技能的 `skill` 可包含 `duration`；需要独立充能的技能还可配置 `maxCharges`、`chargeInterval`，运行时状态由 `SkillSystem` 保存，不写入配置码。
+
+当前源数据包含 34 个 `ALL_MODULES` 条目（含核心、玩家模块和暂停开发的内部/禁用定义）；运行时标准改装仓库显示 26 个。`MODULE_CONFIG.weapons` 当前为 15 个、`specials` 当前为 14 个；数组中保留了暂停开发的旧合成定义，玩家界面会过滤 `FUSION_MODULES` 和禁用模块，阅读时以玩家过滤结果为准。
 
 主要模块 ID：
 
-- 自动：`weapon-electric-whirlwind`、`weapon-nest`、`weapon-ricochet`、`weapon-ball-lightning`、`weapon-psionic`、`weapon-lightning-generator`、`weapon-black-hole`、`special-energy-aggregator`、`weapon-flame-crossbow`、`weapon-water-shot`、`weapon-obsidian-beam`、`weapon-eclipse-pulse`、`weapon-fire-feather`、`fusion-polar-saw`。
-- 技能：`special-optical`、`special-wingman`、`special-chainsaw`、`special-sonic`、`special-zero`、`special-overclock`、`special-polarity-reverse`、`special-sky-protocol`、`special-azure-singularity`、`special-star-ring`、`fusion-abyss-bloom`、`fusion-cryo-hive`。
-- 合成定义：`FUSION_MODULES` 还包含 `fusion-photon-chorus`、`fusion-mirage-anchor`、`fusion-overflow-drive`；其中 `PLAYER_DISABLED_MODULE_IDS` 当前禁用部分模块的普通玩家装配或航程奖励。
+- 自动：`weapon-electric-whirlwind`、`weapon-nest`、`weapon-ricochet`、`weapon-ball-lightning`、`weapon-psionic`、`weapon-lightning-generator`、`weapon-black-hole`、`special-energy-aggregator`、`weapon-flame-crossbow`、`weapon-water-shot`、`weapon-star-arc`（显示名“星弧”）、`weapon-obsidian-beam`、`weapon-eclipse-pulse`、`weapon-fire-feather`。
+- 技能：`special-optical`（史诗）、`special-wingman`、`special-chainsaw`、`special-sonic`、`special-zero`、`special-overclock`、`special-polarity-reverse`、`special-silent-storm`、`special-tactical-mine`（3 层充能，6 秒恢复，单枚存活 30 秒）、`special-sky-protocol`、`special-azure-singularity`（史诗）、`special-star-ring`。
+- 元素：`special-silent-storm` 明确配置为 `electric`；未声明元素的模块继续由 `getModuleElement()` 回退为 `neutral`。
+- 暂停开发定义：`FUSION_MODULES`、`fusionRecipe` 和相关合成方法仅作内部维护资料；当前没有“合成模块”玩家定义，所有这些 ID 均不进入玩家装配库、百科、商店、Boss 奖励或光锥之外奖励池。`PLAYER_DISABLED_MODULE_IDS` 继续用于禁用其它未开放模块。
 
 不要随意修改 `id`、`shareCode`、`footprint` 坐标含义或技能 ID。`LoadoutCodec` 依赖 share code 和 15×15 网格编码，旧配置码可能因此失效。
 
@@ -81,7 +84,7 @@
 
 `BeyondLightConeSystem.createRun()` 的运行时数据包括：版本、随机种子、难度、章节、章节种子、地图、当前节点、已访问节点、金币、生命、库存、机体、连携、统计、事件状态、事件历史、活动事件、当前战斗和日志。`encode()` 会压缩/混淆后编码，`decode()` 必须保留版本兼容处理。
 
-航程库存按模块 ID 计数，普通战斗、精英和 Boss 奖励规则在 `rewardModules()`；合成/分解消耗和返还由 `synthesize()`/`decompose()` 处理。合成 UI 当前入口隐藏，不代表可以删除这些字段。
+航程库存按模块 ID 计数，普通战斗、精英和 Boss 奖励规则在 `rewardModules()`；当前玩家奖励池只使用已开放的正常模块，暂停开发的合成/分解方法和字段不参与玩家流程。
 
 ## 数值修改注意事项
 

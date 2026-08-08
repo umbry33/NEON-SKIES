@@ -104,12 +104,26 @@ function drawNestPod(ctx, x) {
 
 function drawWeapon(ctx, module) {
   const type = module?.behavior?.type; const id = module?.id;
-  const accent = id === "fusion-polar-saw" ? "#ffdf64" : id === "special-energy-aggregator" ? "#5fe8ff" : type === "obsidianBeam" ? "#9c84ff" : type === "eclipseBeam" ? "#e4f1ff" : type === "fireFeather" ? "#ff8a42" : type === "waterMoon" ? "#8de8ff" : type === "electricWhirlwind" ? "#ffd84a" : type === "ricochet" ? "#ffd36e" : type === "psionic" ? "#72f1c0" : type === "nest" ? "#ff294d" : type === "flameCrossbow" ? "#ff3b32" : type === "waterShot" ? "#2468ff" : type === "ballLightning" ? "#b7a1ff" : type === "lightning" ? "#b86cff" : type === "blackHole" ? "#b57bff" : "#ffd27a";
-  const fill = id === "fusion-polar-saw" ? "#3a2b08" : id === "special-energy-aggregator" ? "#092d3d" : type === "obsidianBeam" ? "#110d2e" : type === "eclipseBeam" ? "#111a2d" : type === "fireFeather" ? "#4a2011" : type === "waterMoon" ? "#092b42" : type === "electricWhirlwind" ? "#3e2b0d" : type === "ricochet" ? "#3a2a13" : type === "psionic" ? "#123d3e" : type === "nest" || type === "flameCrossbow" ? "#090b13" : type === "waterShot" ? "#071b3c" : "#142d46";
+  const accent = id === "fusion-polar-saw" ? "#ffdf64" : id === "special-energy-aggregator" ? "#5fe8ff" : type === "starArc" ? "#7ad8ff" : type === "obsidianBeam" ? "#9c84ff" : type === "eclipseBeam" ? "#e4f1ff" : type === "fireFeather" ? "#ff8a42" : type === "waterMoon" ? "#8de8ff" : type === "electricWhirlwind" ? "#ffd84a" : type === "ricochet" ? "#ffd36e" : type === "psionic" ? "#72f1c0" : type === "nest" ? "#ff294d" : type === "flameCrossbow" ? "#ff3b32" : type === "waterShot" ? "#2468ff" : type === "ballLightning" ? "#b7a1ff" : type === "lightning" ? "#b86cff" : type === "blackHole" ? "#b57bff" : "#ffd27a";
+  const fill = id === "fusion-polar-saw" ? "#3a2b08" : id === "special-energy-aggregator" ? "#092d3d" : type === "starArc" ? "#102c4e" : type === "obsidianBeam" ? "#110d2e" : type === "eclipseBeam" ? "#111a2d" : type === "fireFeather" ? "#4a2011" : type === "waterMoon" ? "#092b42" : type === "electricWhirlwind" ? "#3e2b0d" : type === "ricochet" ? "#3a2a13" : type === "psionic" ? "#123d3e" : type === "nest" || type === "flameCrossbow" ? "#090b13" : type === "waterShot" ? "#071b3c" : "#142d46";
   drawFrame(ctx, module, accent, fill);
   setModuleGlow(ctx, accent, 5);
   if (type === "single") drawBarrel(ctx, 0);
   else if (type === "twin") { drawBarrel(ctx, -5); drawBarrel(ctx, 5); }
+  else if (type === "starArc") {
+    ctx.save(); setModuleGlow(ctx, "#7ad8ff", 13); ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.strokeStyle = "#7ad8ff"; ctx.lineWidth = 2.1;
+    ctx.beginPath(); ctx.moveTo(0, 11); ctx.quadraticCurveTo(12, 3, 0, -12); ctx.stroke();
+    ctx.strokeStyle = "#bff6ff"; ctx.lineWidth = 1.15;
+    ctx.beginPath(); ctx.moveTo(0, 8); ctx.quadraticCurveTo(7, 2, 0, -9); ctx.stroke();
+    ctx.strokeStyle = "#4ecbff"; ctx.lineWidth = .8; ctx.beginPath(); ctx.arc(0, 0, 12, -.95, .95); ctx.stroke();
+    ctx.fillStyle = "#173c61"; ctx.strokeStyle = "#eaffff"; ctx.lineWidth = 1;
+    polygon(ctx, [[0, -11], [4, -3], [9, 0], [4, 3], [0, 11], [-4, 3], [-9, 0], [-4, -3]]); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#dffaff"; ctx.beginPath(); ctx.arc(0, -1, 3.2, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(-1, -2, 1.1, 0, Math.PI * 2); ctx.fill();
+    for (const [x, y] of [[-11, -7], [11, -7], [-11, 7], [11, 7]]) drawSpark(ctx, x, y, 2.2, "#9deaff");
+    ctx.restore();
+  }
   else if (type === "spread") { drawBarrel(ctx, -6, -0.27); drawBarrel(ctx, 0); drawBarrel(ctx, 6, 0.27); }
   else if (type === "missile") { polygon(ctx, [[-4, 7], [0, 11], [4, 7], [3, 1], [-3, 1]]); ctx.fillStyle = "#ff8d6d"; ctx.fill(); ctx.strokeStyle = "#ffe0bd"; ctx.stroke(); ctx.fillStyle = "#fff0c2"; ctx.fillRect(-1, -8, 2, 7); }
   else if (type === "electricWhirlwind") {
@@ -238,6 +252,8 @@ function drawSpecial(ctx, module) {
     "special-zero": { accent: "#a9f4ff", fill: "#123e61" },
     "special-overclock": { accent: "#ffbd55", fill: "#482116" },
     "special-polarity-reverse": { accent: "#d3a8ff", fill: "#27184d" },
+    "special-silent-storm": { accent: "#8fddff", fill: "#102f4f" },
+    "special-tactical-mine": { accent: "#6ee8ff", fill: "#0b3441" },
     "fusion-photon-chorus": { accent: "#ffe98a", fill: "#4d3a18" },
     "fusion-cryo-hive": { accent: "#a5f6ec", fill: "#123f4a" },
     "fusion-abyss-bloom": { accent: "#d09aff", fill: "#241044" },
@@ -295,6 +311,17 @@ function drawSpecial(ctx, module) {
   else if (module?.id === "special-star-ring") {
     ctx.save(); setModuleGlow(ctx, "#ffe28a", 12); ctx.strokeStyle = "#ffe28a"; ctx.lineWidth = 1.4; ctx.beginPath(); ctx.arc(0, 0, 11, .1, Math.PI * 1.7); ctx.stroke(); ctx.strokeStyle = "#9deaff"; ctx.beginPath(); ctx.arc(0, 0, 8, Math.PI + .2, Math.PI * 2.8); ctx.stroke();
     for (let i = 0; i < 4; i += 1) { const angle = i * Math.PI / 2 + .1; drawSpark(ctx, Math.cos(angle) * 11, Math.sin(angle) * 11, 3, i % 2 ? "#9deaff" : "#ffe28a"); } ctx.fillStyle = "#fff8d0"; ctx.beginPath(); ctx.arc(0, 0, 2.5, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+  }
+  else if (module?.id === "special-silent-storm") {
+    ctx.save(); setModuleGlow(ctx, "#8fddff", 12); ctx.strokeStyle = "#8fddff"; ctx.lineWidth = 1.1;
+    for (const radius of [5, 9, 12]) { ctx.beginPath(); ctx.arc(0, 0, radius, -.72, Math.PI * 1.72); ctx.stroke(); }
+    drawLightningBolt(ctx, "#dffaff"); ctx.strokeStyle = "#66c8ff"; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(-12, -8); ctx.lineTo(-7, -5); ctx.moveTo(12, 8); ctx.lineTo(7, 5); ctx.stroke(); ctx.restore();
+  }
+  else if (module?.id === "special-tactical-mine") {
+    ctx.save(); setModuleGlow(ctx, "#6ee8ff", 11); drawDiamond(ctx, 0, 0, 9, "#15526a", "#a9f7ff"); drawDiamond(ctx, 0, 0, 4.2, "#6ee8ff", "#eaffff");
+    ctx.strokeStyle = "#6ee8ff"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.stroke();
+    for (const [x, y] of [[-10, -10], [10, 10], [-10, 10], [10, -10]]) { ctx.beginPath(); ctx.moveTo(x * .55, y * .55); ctx.lineTo(x, y); ctx.stroke(); }
+    ctx.restore();
   }
   else if (module?.id === "special-optical") {
     ctx.save(); setModuleGlow(ctx, "#9ee9ff", 9);

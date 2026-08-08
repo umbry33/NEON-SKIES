@@ -24,7 +24,7 @@
     </div>
     <div class="menu-content">
       <div class="menu-logo-lockup">
-        <p class="eyebrow">v0.8.4 / Made by umbry33</p>
+        <p class="eyebrow">v0.9.0 / Made by umbry33</p>
         <h1><span class="menu-logo-line">NEON</span> <span class="menu-logo-line">SKIES</span></h1>
       </div>
       <div class="menu-aircraft" aria-hidden="true"><span>&#10022;</span></div>
@@ -41,7 +41,7 @@
     <div class="encyclopedia-shell"><button id="encyclopedia-back-button" class="round-button screen-back-button" type="button" aria-label="&#36820;&#22238;">&lt;</button><p class="eyebrow">NEON ARCHIVE</p><h2>&#28216;&#25103;&#30334;&#31185;</h2><p class="encyclopedia-intro">&#25112;&#26426;&#27169;&#22359;&#12289;&#25932;&#26426;&#12289;&#39318;&#39046;&#19982;&#25112;&#22330;&#29615;&#22659;&#30340;&#23454;&#26102;&#26723;&#26696;&#12290;</p><div id="encyclopedia-content" class="encyclopedia-content"></div></div>
   </section>
   <section id="encyclopedia-events-screen" class="game-screen encyclopedia-screen is-hidden" aria-label="&#20809;&#38181;&#20043;&#22806;&#20107;&#20214;&#26723;&#26696;">
-    <div class="encyclopedia-shell encyclopedia-events-shell"><button id="encyclopedia-events-back-button" class="round-button screen-back-button" type="button" aria-label="&#36820;&#22238;&#28216;&#25103;&#30334;&#31185;">&lt;</button><p class="eyebrow">BEYOND LIGHT CONE / EVENT ARCHIVE</p><h2>&#28145;&#31354;&#20107;&#20214;</h2><p class="encyclopedia-intro">&#20809;&#38181;&#20043;&#22806;&#27169;&#24335;&#30340; 34 &#20010;&#29420;&#31435;&#36973;&#36935;&#12290;&#20107;&#20214;&#20869;&#23481;&#20250;&#22312;&#26412;&#23616;&#20013;&#23613;&#37327;&#36991;&#20813;&#37325;&#22797;&#12290;</p><div id="encyclopedia-events-content" class="encyclopedia-content"></div></div>
+    <div class="encyclopedia-shell encyclopedia-events-shell"><button id="encyclopedia-events-back-button" class="round-button screen-back-button" type="button" aria-label="&#36820;&#22238;&#28216;&#25103;&#30334;&#31185;">&lt;</button><p class="eyebrow">BEYOND LIGHT CONE / EVENT ARCHIVE</p><h2>&#28145;&#31354;&#20107;&#20214;</h2><p class="encyclopedia-intro">&#20809;&#38181;&#20043;&#22806;&#27169;&#24335;&#30340; 40 &#20010;&#29420;&#31435;&#36973;&#36935;&#12290;&#20107;&#20214;&#20869;&#23481;&#20250;&#22312;&#26412;&#23616;&#20013;&#23613;&#37327;&#36991;&#20813;&#37325;&#22797;&#12290;</p><div id="encyclopedia-events-content" class="encyclopedia-content"></div></div>
   </section>
 
   <section id="mode-screen" class="game-screen menu-screen sub-menu-screen is-hidden" aria-label="&#27169;&#24335;&#36873;&#25321;">
@@ -66,7 +66,7 @@
     <div class="builder-content">
       <div class="builder-board-area">
         <div class="builder-board-title"><button id="quick-assembly-toggle" class="quick-assembly-toggle" type="button" aria-pressed="false"><span>&#24555;&#25463;&#35013;&#37197;</span><small>OFF</small></button><button id="builder-undo-button" class="quick-assembly-toggle" type="button">&#25764;&#38144;</button><button id="loadout-code-button" class="quick-assembly-toggle loadout-code-button" type="button">&#37197;&#32622;&#30721;</button><button id="hangar-button" class="quick-assembly-toggle" type="button">机库</button><button id="clear-loadout" class="text-button" type="button">&#28165;&#31354;&#27169;&#22359;</button></div>
-        <div class="assembly-board-frame"><button id="module-synthesis-button" class="synergy-config-button module-synthesis-button" type="button" aria-label="&#27169;&#22359;&#21512;&#25104;&#65288;&#39044;&#30041;&#21151;&#33021;&#65289;"><span>&#27169;&#22359;&#21512;&#25104;</span><small>MODULE FUSION</small></button><div id="assembly-board" class="assembly-board" aria-label="&#39134;&#26426;&#33258;&#30001;&#35013;&#37197;&#32593;&#26684;"></div></div>
+        <div class="assembly-board-frame"><div id="assembly-board" class="assembly-board" aria-label="&#39134;&#26426;&#33258;&#30001;&#35013;&#37197;&#32593;&#26684;"></div></div>
         <div class="builder-status-row"><span id="loadout-status">&#35013;&#37197;&#23601;&#32490;</span></div>
         <div class="builder-stats"><button id="preview-attack-speed" class="attack-speed-button" type="button" aria-label="&#26597;&#30475;&#25915;&#36895;&#35268;&#21017;"><span>&#25915;&#36895;</span><strong id="preview-attack-speed-value">100%</strong></button><button id="synergy-config-button" class="synergy-config-button" type="button"><span>&#36830;&#25658;&#37197;&#32622;</span><small>SYNERGY LINK</small></button></div>
       </div>
@@ -104,87 +104,6 @@
     <p class="battle-help">WASD / &#26041;&#21521;&#38190;&#31227;&#21160; &middot; &#35302;&#25720;&#25302;&#21160; &middot; &#33258;&#21160;&#23556;&#20987; &middot; 1-9 &#20351;&#29992;&#25216;&#33021;</p>
   </section>
 </div>
-<script>
-  // The boot layer is the only loading UI. It is removed after app startup and
-  // never participates in later menu, builder or combat screen changes.
-  (() => {
-    const loader = document.getElementById("boot-loader");
-    const fill = document.getElementById("boot-progress-fill");
-    const value = document.getElementById("boot-progress-value");
-    const status = document.getElementById("boot-loader-status");
-    const progressbar = loader?.querySelector('[role="progressbar"]');
-    const sessionKey = "neon-skies-boot-ready";
-    let frame = null;
-    let finished = false;
-    let current = 6;
-    let target = 88;
-    const startedAt = performance.now();
-    const hasLoadedBefore = (() => { try { return sessionStorage.getItem(sessionKey) === "1"; } catch { return false; } })();
-
-    const setProgress = (next, message = null) => {
-      if (!loader || finished) return;
-      target = Math.max(current, Math.min(96, Number(next) || 0));
-      if (message) status.textContent = message;
-    };
-    const drawProgress = (next) => {
-      current = Math.max(0, Math.min(100, next));
-      const rounded = Math.round(current);
-      fill.style.width = `${current}%`;
-      value.textContent = `${String(rounded).padStart(2, "0")}%`;
-      progressbar?.setAttribute("aria-valuenow", String(rounded));
-    };
-    const animate = () => {
-      if (finished) return;
-      current += (target - current) * 0.075;
-      if (target - current < 0.08) current = target;
-      drawProgress(current);
-      frame = requestAnimationFrame(animate);
-    };
-    const finish = () => {
-      if (!loader || finished) return;
-      finished = true;
-      if (frame !== null) cancelAnimationFrame(frame);
-      const minimumDisplay = 320;
-      const wait = Math.max(0, minimumDisplay - (performance.now() - startedAt));
-      window.setTimeout(() => {
-        drawProgress(100);
-        status.textContent = "系统已就绪";
-        loader.classList.add("is-complete");
-        loader.setAttribute("aria-busy", "false");
-        window.setTimeout(() => {
-          try { sessionStorage.setItem(sessionKey, "1"); } catch { /* storage may be unavailable */ }
-          loader.remove();
-        }, 260);
-      }, wait);
-    };
-
-    if (hasLoadedBefore) {
-      loader?.remove();
-      window.__neonBoot = { setProgress: () => {}, finish: () => {} };
-    } else {
-      window.__neonBoot = { setProgress: () => {}, finish: () => {} };
-    }
-    window.__neonFinishBoot = () => window.__neonBoot?.finish?.();
-  })();
-
-  // If a finger taps while ES modules are still loading, replay that release
-  // after the game has finished binding its controls instead of losing it.
-  window.__neonUiReady = false;
-  window.__neonPendingTaps = [];
-  const bootButtonIds = new Set(["settings-button", "changelog-button", "encyclopedia-button", "open-builder-button", "menu-battle-button", "mode-back-button", "level-mode-button", "endless-mode-button", "tutorial-button", "builder-save-button", "loadout-code-button", "hangar-button"]);
-  const queueBootTap = (event) => {
-    if (window.__neonUiReady) return;
-    const point = event.changedTouches?.[0] ?? event;
-    const button = event.target.closest?.("button") ?? document.elementFromPoint(point.clientX, point.clientY)?.closest?.("button");
-    if (!button || !bootButtonIds.has(button.id)) return;
-    event.preventDefault();
-    if (!window.__neonPendingTaps.includes(button.id)) window.__neonPendingTaps.push(button.id);
-  };
-  document.addEventListener("pointerup", queueBootTap, true);
-  document.addEventListener("mouseup", queueBootTap, true);
-  document.addEventListener("touchend", queueBootTap, true);
-  document.addEventListener("click", queueBootTap, true);
-</script>
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>

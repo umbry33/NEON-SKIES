@@ -1,4 +1,4 @@
-import { ASSEMBLY_BOARD, CORE_MODULE, createLoadout, getFootprintCells, getInstalledEntries, getInstalledModules, getModuleById } from "../config/module-config.js";
+import { ASSEMBLY_BOARD, CORE_MODULE, FUSION_MODULES, PLAYER_DISABLED_MODULE_IDS, createLoadout, getFootprintCells, getInstalledEntries, getInstalledModules, getModuleById } from "../config/module-config.js";
 import { GAME_CONFIG } from "../config/game-config.js";
 import { normalizeSynergies, validateSynergies } from "../config/synergy-config.js";
 
@@ -55,6 +55,8 @@ export function pruneDisconnected(loadout) {
 export function validateLoadout(loadout) {
   if (!loadout?.core || loadout.core.id !== CORE_MODULE.id) return { valid: false, reason: "Core cannot be replaced" };
   if (!Array.isArray(loadout.modules)) return { valid: false, reason: "Invalid modules" };
+  const fusionModuleIds = new Set(FUSION_MODULES.map((module) => module.id));
+  if (loadout.modules.some(({ module }) => module && (fusionModuleIds.has(module.id) || PLAYER_DISABLED_MODULE_IDS.has(module.id)))) return { valid: false, reason: "Module is not currently available" };
   const synergyResult = validateSynergies(loadout); if (!synergyResult.valid) return synergyResult;
   if (countSkillModules(loadout) > MAX_SKILL_MODULES) return { valid: false, reason: `主动技能模块最多装配 ${MAX_SKILL_MODULES} 个` };
   const geometry = validateGeometry(loadout); if (!geometry.valid) return geometry;

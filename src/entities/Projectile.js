@@ -16,8 +16,8 @@ function drawJaggedBolt(ctx, from, to, seed = 0) {
 }
 
 export class Projectile {
-  constructor({ x, y, vx = 0, vy = 0, damage, damageEnd, radius, color, life, chainLife = null, chainFlashDuration = 0.045, team, homing = false, homingDelay = 0, homingTurnRate = 2.4, target = null, playerTarget = null, homingPlayer = false, chainSource = null, kind = "bolt", pierce = false, bounce = false, explosionRadius = 0, explosionDamage = null, chainRadius = 0, growthRate = 2.2, boomerang = null, whirlwind = null, blackHole = null, polarityDelay = 0, dodgeMotion = null, arcMotion = null, orbitMotion = null, moduleInstanceId = null, beam = null, hitLimit = 0, featherMarkDuration = 0, featherBurstDamage = 0, skyProtocolId = null, moonSide = 1, skyDamageMultiplier = 1, pulseDelay = 0, whiteHoleHealState = null, element = "neutral", burn = null, slow = null }) {
-    Object.assign(this, { x, y, vx, vy, damage, damageEnd, radius, color, life, chainLife, chainFlashDuration, team, homing, homingDelay, homingTurnRate, target, playerTarget, homingPlayer, chainSource, kind, pierce, bounce, explosionRadius, explosionDamage, chainRadius, growthRate, boomerang, whirlwind, blackHole, polarityDelay, dodgeMotion, arcMotion, orbitMotion, moduleInstanceId, beam, hitLimit, featherMarkDuration, featherBurstDamage, skyProtocolId, moonSide, skyDamageMultiplier, pulseDelay, whiteHoleHealState, element, burn, slow });
+  constructor({ x, y, vx = 0, vy = 0, damage, damageEnd, radius, color, life, chainLife = null, chainFlashDuration = 0.045, team, homing = false, homingDelay = 0, homingTurnRate = 2.4, target = null, playerTarget = null, homingPlayer = false, chainSource = null, kind = "bolt", pierce = false, bounce = false, explosionRadius = 0, explosionDamage = null, triggerRadius = 0, chainRadius = 0, growthRate = 2.2, boomerang = null, whirlwind = null, blackHole = null, polarityDelay = 0, dodgeMotion = null, arcMotion = null, orbitMotion = null, moduleInstanceId = null, beam = null, hitLimit = 0, featherMarkDuration = 0, featherBurstDamage = 0, skyProtocolId = null, moonSide = 1, skyDamageMultiplier = 1, pulseDelay = 0, whiteHoleHealState = null, element = "neutral", burn = null, slow = null }) {
+    Object.assign(this, { x, y, vx, vy, damage, damageEnd, radius, color, life, chainLife, chainFlashDuration, team, homing, homingDelay, homingTurnRate, target, playerTarget, homingPlayer, chainSource, kind, pierce, bounce, explosionRadius, explosionDamage, triggerRadius, chainRadius, growthRate, boomerang, whirlwind, blackHole, polarityDelay, dodgeMotion, arcMotion, orbitMotion, moduleInstanceId, beam, hitLimit, featherMarkDuration, featherBurstDamage, skyProtocolId, moonSide, skyDamageMultiplier, pulseDelay, whiteHoleHealState, element, burn, slow });
     this.age = 0;
     this.origin = { x, y };
     this.phase = 0;
@@ -222,6 +222,14 @@ export class Projectile {
         const missileWidth = Math.max(4, this.radius * 0.8); const missileLength = Math.max(18, this.radius * 3);
         ctx.fillRect(-missileWidth / 2, -missileLength / 2, missileWidth, missileLength); ctx.fillStyle = "#fff0c2"; ctx.fillRect(-missileWidth * 0.25, missileLength / 2 - 1, missileWidth * 0.5, missileWidth);
       }
+    } else if (this.kind === "starArc") {
+      const pulse = 1 + Math.sin(this.age * 12) * 0.08;
+      ctx.globalCompositeOperation = "lighter"; ctx.rotate(Math.atan2(this.vy, this.vx) + Math.PI / 2);
+      const length = this.radius * 5.8; const width = this.radius * 1.35;
+      ctx.shadowBlur = 24; ctx.shadowColor = this.color; ctx.fillStyle = this.color; ctx.strokeStyle = "#dffaff"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, -length / 2); ctx.lineTo(width, -length * .14); ctx.lineTo(width * .72, length / 2); ctx.lineTo(-width * .72, length / 2); ctx.lineTo(-width, -length * .14); ctx.closePath(); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = "#effcff"; ctx.fillRect(-width * .22, -length * .34, width * .44, length * .68);
+      ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.arc(0, -length * .42, width * .42 * pulse, 0, Math.PI * 2); ctx.fill();
     } else if (this.kind === "photonNote") {
       ctx.globalCompositeOperation = "lighter"; ctx.shadowBlur = 24; ctx.shadowColor = this.color;
       ctx.strokeStyle = "#fffce8"; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(0, 0, this.radius * 1.45, this.age * 7, this.age * 7 + Math.PI * 1.45); ctx.stroke();
@@ -308,6 +316,12 @@ export class Projectile {
       ctx.rotate(this.age * 3); ctx.globalCompositeOperation = "lighter"; ctx.strokeStyle = this.color; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.arc(0, 0, this.radius * 1.8, 0, Math.PI * 1.35); ctx.stroke(); ctx.strokeStyle = "#fff5cf"; ctx.lineWidth = 1; ctx.beginPath(); ctx.arc(0, 0, this.radius * 0.8, Math.PI, Math.PI * 2.35); ctx.stroke();
     } else if (this.kind === "dodgeWave") {
       ctx.rotate(Math.atan2(this.vy, this.vx) + Math.PI / 2); ctx.fillStyle = this.color; ctx.beginPath(); ctx.moveTo(0, -this.radius * 1.8); ctx.lineTo(this.radius * 1.4, this.radius * 1.3); ctx.lineTo(0, this.radius * 0.7); ctx.lineTo(-this.radius * 1.4, this.radius * 1.3); ctx.closePath(); ctx.fill();
+    } else if (this.kind === "tacticalMine") {
+      const pulse = 1 + Math.sin(this.age * 5.5) * 0.12;
+      ctx.globalCompositeOperation = "lighter"; ctx.fillStyle = this.color; ctx.strokeStyle = "#eaffff"; ctx.lineWidth = 1.2;
+      ctx.rotate(Math.PI / 4); ctx.fillRect(-this.radius * pulse * 0.72, -this.radius * pulse * 0.72, this.radius * pulse * 1.44, this.radius * pulse * 1.44); ctx.strokeRect(-this.radius * 0.72, -this.radius * 0.72, this.radius * 1.44, this.radius * 1.44);
+      ctx.rotate(-Math.PI / 4); ctx.fillStyle = "#123c58"; ctx.beginPath(); ctx.arc(0, 0, this.radius * .42, 0, Math.PI * 2); ctx.fill(); ctx.strokeStyle = "#b9f7ff"; ctx.stroke();
+      ctx.globalAlpha = 0.35; ctx.beginPath(); ctx.arc(0, 0, this.triggerRadius * pulse, 0, Math.PI * 2); ctx.stroke();
     } else if (this.kind === "dodgeMine") {
       const pulse = 1 + Math.sin(this.age * 5.5) * 0.12;
       ctx.globalCompositeOperation = "lighter"; ctx.fillStyle = this.color; ctx.strokeStyle = "#eaffff"; ctx.lineWidth = 1.2;

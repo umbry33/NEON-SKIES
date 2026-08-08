@@ -1,4 +1,4 @@
-import { ASSEMBLY_BOARD, MODULE_CONFIG, createLoadout, getFootprintBounds, getInstalledModules, getModuleById, getModuleElement } from "../config/module-config.js";
+import { ASSEMBLY_BOARD, FUSION_MODULES, MODULE_CONFIG, createLoadout, getFootprintBounds, getInstalledModules, getModuleById, getModuleElement } from "../config/module-config.js";
 import { MAX_SKILL_MODULES, calculateFinalStats, countSkillModules, pruneDisconnected, validateGeometry, validateLoadout } from "../systems/ModuleSystem.js";
 import { decodeLoadoutCode, encodeLoadoutCode } from "../systems/LoadoutCodec.js";
 import { paintModuleCanvas, setModuleGlowEnabled } from "../rendering/ModuleRenderer.js";
@@ -17,7 +17,9 @@ import { HANGAR_SLOT_COUNT, LocalSaveSystem } from "../systems/LocalSaveSystem.j
 const scoreText = (value) => String(Math.max(0, Math.floor(value))).padStart(6, "0");
 const timeText = (seconds) => `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
 const escapeHtml = (value) => String(value).replace(/[&<>\x27"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\x27": "&#39;", '"': "&quot;" }[char]));
-const moduleGroups = [["weapon", "\u81ea\u52a8\u6a21\u5757", MODULE_CONFIG.weapons], ["special", "\u6280\u80fd\u6a21\u5757", MODULE_CONFIG.specials]];
+const fusionModuleIds = new Set(FUSION_MODULES.map((module) => module.id));
+const playerModules = (modules) => modules.filter((module) => !fusionModuleIds.has(module.id));
+const moduleGroups = [["weapon", "\u81ea\u52a8\u6a21\u5757", playerModules(MODULE_CONFIG.weapons)], ["special", "\u6280\u80fd\u6a21\u5757", playerModules(MODULE_CONFIG.specials)]];
 const typeLabels = { core: "\u6838\u5fc3\u6a21\u5757", weapon: "\u81ea\u52a8\u6a21\u5757", special: "\u6280\u80fd\u6a21\u5757" };
 const rarityLabels = { common: "\u666e\u901a", uncommon: "\u975e\u51e1", rare: "\u7a00\u6709", epic: "\u53f2\u8bd7", legendary: "\u4f20\u8bf4" };
 const elementLabels = { neutral: "\u65e0\u5c5e\u6027", electric: "\u7535\u5c5e\u6027", light: "\u5149\u5c5e\u6027", dark: "\u6697\u5c5e\u6027", ice: "\u51b0\u5c5e\u6027", water: "\u6c34\u5c5e\u6027", fire: "\u706b\u5c5e\u6027" };
@@ -747,11 +749,20 @@ export class UI {
       button.dataset.skillId = skill.id;
       const name = button.querySelector("span");
       if (name) name.textContent = skill.name;
-      const cooldown = Math.max(0, skill.cooldownRemaining ?? 0);
-      const cooling = cooldown > 0;
-      button.classList.toggle("is-cooling", cooling);
-      button.disabled = cooling;
-      button.querySelector("small").textContent = cooling ? `${cooldown.toFixed(1)}s` : "\u5c31\u7eea";
+      const hasCharges = (skill.maxCharges ?? 1) > 1;
+      if (hasCharges) {
+        const charges = Math.max(0, skill.charges ?? 0); const maxCharges = Math.max(1, skill.maxCharges);
+        const charging = charges < maxCharges; const chargeTimer = Math.max(0, skill.chargeTimer ?? 0);
+        button.classList.toggle("is-cooling", charges <= 0);
+        button.disabled = charges <= 0;
+        button.querySelector("small").textContent = `${charges}/${maxCharges}${charging ? ` · ${chargeTimer.toFixed(1)}s` : ""}`;
+      } else {
+        const cooldown = Math.max(0, skill.cooldownRemaining ?? 0);
+        const cooling = cooldown > 0;
+        button.classList.toggle("is-cooling", cooling);
+        button.disabled = cooling;
+        button.querySelector("small").textContent = cooling ? `${cooldown.toFixed(1)}s` : "\u5c31\u7eea";
+      }
     });
   }
   showGameOver({ score, elapsed, victory = false, level = null, mode = "endless" }) { this.battleScreen.classList.remove("is-hidden"); this.gameOverScreen.classList.remove("is-hidden"); this.finalScoreValue.textContent = scoreText(score); this.timeValue.textContent = timeText(elapsed); const dodge = mode === "dodge"; this.gameOverEyebrow.textContent = victory ? "MISSION CLEAR" : dodge ? "DODGE COMPLETE" : "SIGNAL LOST"; this.gameOverTitle.textContent = victory ? "关卡完成" : dodge ? "躲避结束" : "任务结束"; this.gameOverMessage.textContent = victory ? `第 ${level} 关已完成，准备迎接下一场战斗。` : dodge ? "弹幕躲避训练结束，继续挑战更高难度吧。" : "你的战机已失去战斗能力。"; this.nextLevelButton.textContent = "下一关"; this.nextLevelButton.classList.toggle("is-hidden", !victory || !level || level >= 100); this.returnLevelSelectButton.classList.remove("is-hidden"); this.gameOverReturnTarget = mode === "endless" || dodge ? "mode" : "level"; this.returnLevelSelectButton.textContent = this.gameOverReturnTarget === "mode" ? "返回模式选择" : "返回选关"; }
