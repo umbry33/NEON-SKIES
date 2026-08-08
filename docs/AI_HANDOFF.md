@@ -10,7 +10,7 @@
 - 技术形态：原生 HTML5/CSS/ES Modules + Canvas 2D + Web Audio，无 npm 依赖、无构建步骤、无数据库。
 - 本轮功能：已加入浏览器本地存档；普通模式改装界面提供 10 个机库槽位并自动保存当前槽位，支持点击名称重命名和槽位配置码直接导入/导出，机体名称直接占用槽位标题行并使用白色粗体显示，光锥之外改装界面不显示机库，未完成航程使用独立本地安全断点。
 - 发布部署：已加入 `.github/workflows/deploy-pages.yml`，GitHub Pages 从 `main` 分支自动部署完整源码。
-- 工作区：本轮开始前已有用户修改的 `.agents/skills/local-save/SKILL.md` 与 `.agents/skills/publish-release/SKILL.md`，按工作区归属规则保留且不纳入本次发布；v0.9.0 更新日志已确认，发布提交尚未创建。生成的 `publish-package/` 和 ZIP 被 Git 忽略，不能作为源码基线。
+- 工作区：本轮开始前已有用户修改的 `.agents/skills/local-save/SKILL.md` 与 `.agents/skills/publish-release/SKILL.md`，按工作区归属规则保留且不纳入本次发布；v0.9.0 发布提交已完成并推送到 `main`。生成的 `publish-package/` 和 ZIP 被 Git 忽略，不能作为源码基线。
 
 ## 最近完成
 
